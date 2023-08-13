@@ -10,7 +10,7 @@ The source files in this repo have an expected tab width of 4.
 ----
 
 The application requires a platform-specific shared library that is accessed through the Java Native Interface \(JNI\).
-The application expects to find the library in the following directory:
+The application expects to find the library in the following directory:\
 `src/main/resources/uk/blankaspect/fat32manager/lib`
 
 Binaries of shared libraries are provided for 64-bit Linux and Windows:
