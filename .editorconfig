@@ -1,0 +1,21 @@
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+
+[*.cc]
+indent_style = tab
+indent_size = 4
+
+[*.h]
+indent_style = tab
+indent_size = 4
+
+[*.java]
+indent_style = tab
+indent_size = 4
+
+[*.kts]
+indent_style = tab
+indent_size = 4
