@@ -19,7 +19,7 @@ variable to be defined:
 // Plug-ins
 
 plugins {
-	java
+    java
 }
 
 //----------------------------------------------------------------------
@@ -27,7 +27,7 @@ plugins {
 // Functions
 
 fun _path(vararg components : String) : String =
-		components.map { it.replace('/', File.separatorChar) }.joinToString(separator = File.separator)
+        components.map { it.replace('/', File.separatorChar) }.joinToString(separator = File.separator)
 
 //----------------------------------------------------------------------
 
@@ -35,27 +35,28 @@ fun _path(vararg components : String) : String =
 
 val javaVersion = 17
 
-val packageName		= "fat32manager"
-val mainClassName	= "uk.blankaspect.${packageName}.Fat32ManagerApp"
+val packageName     = "fat32manager"
+val mainClassName   = "uk.blankaspect.${packageName}.Fat32ManagerApp"
 
-val jarDir		= _path("${buildDir}", "bin")
-val jarFilename	= "fat32Manager.jar"
+val buildDir    = layout.buildDirectory.get().getAsFile().toString()
+val jarDir      = _path(buildDir, "bin")
+val jarFilename = "fat32Manager.jar"
 
-val jfxLibDir	= _path(System.getenv("JAVAFX_HOME"), "lib")
-val jfxLibs		= listOf(
-	"javafx.base",
-	"javafx.controls",
-	"javafx.graphics",
-	"javafx.swing"
+val jfxLibDir   = _path(System.getenv("JAVAFX_HOME"), "lib")
+val jfxLibs     = listOf(
+    "javafx.base",
+    "javafx.controls",
+    "javafx.graphics",
+    "javafx.swing"
 )
 
 // Location of the Java launcher in a JRE that includes JavaFX modules.  Note the unconventional test for Windows.
 val jfxLauncher = _path(System.getenv("JRE_DIR"), "bin", if (File.separatorChar.equals('\\')) "java.exe" else "java")
 
 // Java launcher: add JavaFX modules to module path
-val jfxArgs	= listOf(
-	"--module-path", jfxLibDir,
-	"--add-modules", jfxLibs.joinToString(",")
+val jfxArgs = listOf(
+    "--module-path", jfxLibDir,
+    "--add-modules", jfxLibs.joinToString(",")
 )
 
 //----------------------------------------------------------------------
@@ -63,7 +64,7 @@ val jfxArgs	= listOf(
 // Dependencies
 
 dependencies {
-	jfxLibs.forEach { compileOnly(files(_path(jfxLibDir, it + ".jar"))) }
+    jfxLibs.forEach { compileOnly(files(_path(jfxLibDir, it + ".jar"))) }
 }
 
 //----------------------------------------------------------------------
@@ -71,7 +72,7 @@ dependencies {
 // Java version
 
 tasks.compileJava {
-	options.release.set(javaVersion)
+    options.release.set(javaVersion)
 }
 
 //----------------------------------------------------------------------
@@ -79,14 +80,14 @@ tasks.compileJava {
 // Create executable JAR
 
 tasks.jar {
-	destinationDirectory.set(file(jarDir))
-	archiveFileName.set(jarFilename)
-	manifest {
-		attributes(
-			"Application-Name" to project.name,
-			"Main-Class"       to mainClassName
-		)
-	}
+    destinationDirectory.set(file(jarDir))
+    archiveFileName.set(jarFilename)
+    manifest {
+        attributes(
+            "Application-Name" to project.name,
+            "Main-Class"       to mainClassName
+        )
+    }
 }
 
 //----------------------------------------------------------------------
@@ -94,9 +95,9 @@ tasks.jar {
 // Run main class with Gradle's Java launcher
 
 tasks.register<JavaExec>("runMain") {
-	classpath = sourceSets["main"].runtimeClasspath
-	mainClass.set(mainClassName)
-	jvmArgs = jfxArgs
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(mainClassName)
+    jvmArgs = jfxArgs
 }
 
 //----------------------------------------------------------------------
@@ -104,9 +105,9 @@ tasks.register<JavaExec>("runMain") {
 // Run main class with Java launcher from JavaFX JRE
 
 tasks.register<JavaExec>("runMainJre") {
-	classpath = sourceSets["main"].runtimeClasspath
-	mainClass.set(mainClassName)
-	executable = jfxLauncher
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(mainClassName)
+    executable = jfxLauncher
 }
 
 //----------------------------------------------------------------------
@@ -114,8 +115,8 @@ tasks.register<JavaExec>("runMainJre") {
 // Run executable JAR with Gradle's Java launcher
 
 tasks.register<JavaExec>("runJar") {
-	classpath = files(tasks.jar)
-	jvmArgs = jfxArgs
+    classpath = files(tasks.jar)
+    jvmArgs = jfxArgs
 }
 
 //----------------------------------------------------------------------
@@ -123,8 +124,8 @@ tasks.register<JavaExec>("runJar") {
 // Run executable JAR with Java launcher from JavaFX JRE
 
 tasks.register<JavaExec>("runJarJre") {
-	classpath = files(tasks.jar)
-	executable = jfxLauncher
+    classpath = files(tasks.jar)
+    executable = jfxLauncher
 }
 
 //----------------------------------------------------------------------
