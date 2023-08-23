@@ -572,11 +572,11 @@ public class ColourPropertySet
 	//------------------------------------------------------------------
 
 	public Map<String, String> getColourProperties(
-		String	theme)
+		String	themeId)
 	{
 		return colourPropertySets.entrySet().stream()
 											.flatMap(entry -> entry.getValue().entrySet().stream()
-																.filter(entry0 -> entry0.getKey().equals(theme)))
+																.filter(entry0 -> entry0.getKey().equals(themeId)))
 											.flatMap(entry -> entry.getValue().entrySet().stream())
 											.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v2));
 	}
