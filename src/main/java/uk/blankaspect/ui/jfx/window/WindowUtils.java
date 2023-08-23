@@ -20,6 +20,9 @@ package uk.blankaspect.ui.jfx.window;
 
 import java.io.File;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+
 import javafx.application.Platform;
 
 import javafx.geometry.Bounds;
@@ -29,6 +32,8 @@ import javafx.scene.Node;
 
 import javafx.stage.Stage;
 import javafx.stage.Window;
+
+import javafx.util.Duration;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
@@ -78,9 +83,9 @@ public class WindowUtils
 		if (File.separatorChar == '\\')
 			fixHeight.run();
 
-		// ... otherwise, run later
+		// ... otherwise, run after a delay of 100 ms
 		else
-			Platform.runLater(fixHeight);
+			new Timeline(new KeyFrame(Duration.millis(100.0), event -> fixHeight.run())).play();
 	}
 
 	//------------------------------------------------------------------
