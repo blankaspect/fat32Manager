@@ -20,6 +20,8 @@ package uk.blankaspect.fat32manager;
 
 import java.io.IOException;
 
+import java.lang.invoke.MethodHandles;
+
 import java.nio.channels.FileChannel;
 
 import java.nio.file.Files;
@@ -407,15 +409,17 @@ public class SectorClusterViewDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BUTTON_BACKGROUND				= "sectorClusterViewDialog.button.background";
-		String	BUTTON_BORDER					= "sectorClusterViewDialog.button.border";
-		String	CONTENT_PANE_BORDER				= "sectorClusterViewDialog.contentPane.border";
-		String	LOCATION_PANE_BACKGROUND		= "sectorClusterViewDialog.locationPane.background";
-		String	LOCATION_PANE_BORDER			= "sectorClusterViewDialog.locationPane.border";
-		String	OFFSET_LABEL_BACKGROUND			= "sectorClusterViewDialog.offsetLabel.background";
-		String	OFFSET_LABEL_BORDER				= "sectorClusterViewDialog.offsetLabel.border";
-		String	OPERATION_BUTTON_BACKGROUND		= "sectorClusterViewDialog.operationButton.background";
-		String	SAVE_SECTOR_CLUSTER_PANE_BORDER	= "sectorClusterViewDialog.saveSectorClusterPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BUTTON_BACKGROUND				= PREFIX + "button.background";
+		String	BUTTON_BORDER					= PREFIX + "button.border";
+		String	CONTENT_PANE_BORDER				= PREFIX + "contentPane.border";
+		String	LOCATION_PANE_BACKGROUND		= PREFIX + "locationPane.background";
+		String	LOCATION_PANE_BORDER			= PREFIX + "locationPane.border";
+		String	OFFSET_LABEL_BACKGROUND			= PREFIX + "offsetLabel.background";
+		String	OFFSET_LABEL_BORDER				= PREFIX + "offsetLabel.border";
+		String	OPERATION_BUTTON_BACKGROUND		= PREFIX + "operationButton.background";
+		String	SAVE_SECTOR_CLUSTER_PANE_BORDER	= PREFIX + "saveSectorClusterPane.border";
 	}
 
 	/** Identifiers of nodes. */
@@ -1377,8 +1381,7 @@ public class SectorClusterViewDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

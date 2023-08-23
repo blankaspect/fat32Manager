@@ -97,9 +97,9 @@ public abstract class AbstractTheme
 	private interface ErrorMsg
 	{
 		String	FAILED_TO_READ_COLOURS			= "Failed to read the set of colours.";
-		String	MALFORMED_KEY_VALUE_PAIR		= "Line %d: The key-value pair is malformed.";
-		String	DUPLICATE_KEY					= "Line %d: The key '%s' appears more than once.";
-		String	INVALID_COLOUR					= "Line %d: The colour specifier is invalid.";
+		String	MALFORMED_KEY_VALUE_PAIR		= "The key-value pair is malformed.";
+		String	DUPLICATE_KEY					= "The key '%s' appears more than once.";
+		String	INVALID_COLOUR					= "The colour specifier is invalid.";
 		String	ERROR_PARSING_BASE_STYLE_SHEET	= "An error occurred when parsing the base style sheet:";
 		String	ERRORS_PARSING_BASE_STYLE_SHEET	= "%d errors occurred when parsing the base style sheet.\n"
 													+ "First error:";
@@ -134,7 +134,8 @@ public abstract class AbstractTheme
 ////////////////////////////////////////////////////////////////////////
 
 	public static Map<String, Color> parseColours(
-		List<String> lines)
+		Iterable<String>	lines,
+		String				keyPrefix)
 		throws BaseException
 	{
 		// Initialise map of colours
@@ -142,10 +143,9 @@ public abstract class AbstractTheme
 
 		// Parse list of colours
 		int lineIndex = 0;
-		while (lineIndex < lines.size())
+		for (String line : lines)
 		{
 			// Remove any comment from line
-			String line = lines.get(lineIndex++);
 			int index = line.indexOf(ColourPropertySet.PROPERTY_COMMENT_CHAR);
 			if (index >= 0)
 				line = line.substring(0, index);
@@ -157,14 +157,20 @@ public abstract class AbstractTheme
 			// Split line into key and value
 			index = line.indexOf(ColourPropertySet.PROPERTY_SEPARATOR_CHAR);
 			if (index < 0)
-				throw new BaseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
+				throw new ParseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
 
 			// Extract key
 			String key = line.substring(0, index).trim();
 			if (key.isEmpty())
-				throw new BaseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
+				throw new ParseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
+
+			// Apply prefix to key
+			if (keyPrefix != null)
+				key = keyPrefix + key;
+
+			// Test for duplicate key
 			if (colours.containsKey(key))
-				throw new BaseException(ErrorMsg.DUPLICATE_KEY, lineIndex, key);
+				throw new ParseException(ErrorMsg.DUPLICATE_KEY, lineIndex, key);
 
 			// Parse colour
 			Color colour = null;
@@ -174,7 +180,7 @@ public abstract class AbstractTheme
 			}
 			catch (IllegalArgumentException e)
 			{
-				throw new BaseException(ErrorMsg.INVALID_COLOUR, e, lineIndex);
+				throw new ParseException(ErrorMsg.INVALID_COLOUR, e, lineIndex);
 			}
 
 			// Add colour to map
@@ -189,7 +195,8 @@ public abstract class AbstractTheme
 
 	public static Map<String, Color> readColours(
 		Class<?>	cls,
-		String		pathname)
+		String		pathname,
+		String		keyPrefix)
 		throws LocationException
 	{
 		// Read lines of resource
@@ -207,7 +214,7 @@ public abstract class AbstractTheme
 		Map<String, Color> colours = null;
 		try
 		{
-			colours = parseColours(lines);
+			colours = parseColours(lines, keyPrefix);
 		}
 		catch (BaseException e)
 		{
@@ -221,7 +228,8 @@ public abstract class AbstractTheme
 	//------------------------------------------------------------------
 
 	public static Map<String, Color> readColours(
-		Path	location)
+		Path	location,
+		String	keyPrefix)
 		throws FileException
 	{
 		// Read lines of file
@@ -239,7 +247,7 @@ public abstract class AbstractTheme
 		Map<String, Color> colours = null;
 		try
 		{
-			colours = parseColours(lines);
+			colours = parseColours(lines, keyPrefix);
 		}
 		catch (BaseException e)
 		{
@@ -527,28 +535,31 @@ public abstract class AbstractTheme
 	//------------------------------------------------------------------
 
 	public void loadDefaultColours(
-		String	pathname)
+		String	pathname,
+		String	keyPrefix)
 		throws LocationException
 	{
-		defaultColours.putAll(readColours(getClass(), pathname));
+		defaultColours.putAll(readColours(getClass(), pathname, keyPrefix));
 	}
 
 	//------------------------------------------------------------------
 
 	public void loadColours(
-		String	pathname)
+		String	pathname,
+		String	keyPrefix)
 		throws LocationException
 	{
-		colours.putAll(readColours(getClass(), pathname));
+		colours.putAll(readColours(getClass(), pathname, keyPrefix));
 	}
 
 	//------------------------------------------------------------------
 
 	public void loadColours(
-		Path	location)
+		Path	location,
+		String	keyPrefix)
 		throws FileException
 	{
-		colours.putAll(readColours(location));
+		colours.putAll(readColours(location, keyPrefix));
 	}
 
 	//------------------------------------------------------------------
@@ -648,6 +659,84 @@ public abstract class AbstractTheme
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: PARSE EXCEPTION
+
+
+	/**
+	 * This class implements an exception that is thrown if an error occurs when parsing a file of colour properties.
+	 */
+
+	public static class ParseException
+		extends BaseException
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Constants
+	////////////////////////////////////////////////////////////////////
+
+		/** Miscellaneous strings. */
+		private static final	String	LINE_STR	= "Line";
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates a new instance of an exception with the specified message and line index.
+		 *
+		 * @param message
+		 *          the message of the exception.
+		 * @param lineIndex
+		 *          the zero-based index of the line at which the exception occurred.
+		 * @param replacements
+		 *          the objects whose string representations will replace placeholders in {@code message}.
+		 */
+
+		private ParseException(
+			String		message,
+			int			lineIndex,
+			Object...	replacements)
+		{
+			// Call alternative constructor
+			this(message, null, lineIndex, replacements);
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates a new instance of an exception with the specified message, cause and line index.
+		 *
+		 * @param message
+		 *          the message of the exception.
+		 * @param cause
+		 *          the underlying cause of the exception, which may be {@code null}.
+		 * @param lineIndex
+		 *          the zero-based index of the line at which the exception occurred.
+		 * @param replacements
+		 *          the objects whose string representations will replace placeholders in {@code message}.
+		 */
+
+		private ParseException(
+			String		message,
+			Throwable	cause,
+			int			lineIndex,
+			Object...	replacements)
+		{
+			// Call superclass constructor
+			super(LINE_STR + " " + (lineIndex + 1) + ": " + message, cause, replacements);
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

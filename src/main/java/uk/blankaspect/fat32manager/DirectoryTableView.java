@@ -275,12 +275,14 @@ public class DirectoryTableView
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	CELL_ATTRIBUTE_TEXT				= "directoryTableView.cell.attribute.text";
-		String	HEADER_CELL_BACKGROUND			= "directoryTableView.header.cell.background";
-		String	HEADER_CELL_BACKGROUND_DELETED	= "directoryTableView.header.cell.background.deleted";
-		String	HEADER_CELL_BACKGROUND_PREVIEW	= "directoryTableView.header.cell.background.preview";
-		String	HEADER_CELL_BORDER				= "directoryTableView.header.cell.border";
-		String	PLACEHOLDER_TEXT				= "directoryTableView.placeholder.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	CELL_ATTRIBUTE_TEXT				= PREFIX + "cell.attribute.text";
+		String	HEADER_CELL_BACKGROUND			= PREFIX + "header.cell.background";
+		String	HEADER_CELL_BACKGROUND_DELETED	= PREFIX + "header.cell.background.deleted";
+		String	HEADER_CELL_BACKGROUND_PREVIEW	= PREFIX + "header.cell.background.preview";
+		String	HEADER_CELL_BORDER				= PREFIX + "header.cell.border";
+		String	PLACEHOLDER_TEXT				= PREFIX + "placeholder.text";
 	}
 
 	/** Keys of images that are used in CSS rule sets. */
@@ -647,8 +649,7 @@ public class DirectoryTableView
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

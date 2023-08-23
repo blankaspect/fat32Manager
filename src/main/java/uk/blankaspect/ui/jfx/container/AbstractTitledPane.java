@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.container;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.geometry.Insets;
@@ -105,10 +107,12 @@ public abstract class AbstractTitledPane
 	}
 
 	/** Keys of colours that are used in colour properties. */
-	public interface ColourKey
+	private interface ColourKey
 	{
-		String	TITLE_BACKGROUND	= "titledHeaderPane.title.background";
-		String	TITLE_BORDER		= "titledHeaderPane.title.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	TITLE_BACKGROUND	= PREFIX + "title.background";
+		String	TITLE_BORDER		= PREFIX + "title.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -200,8 +204,7 @@ public abstract class AbstractTitledPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

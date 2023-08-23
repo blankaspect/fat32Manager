@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.date;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -300,21 +302,23 @@ public class DaySelectionPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BORDER								= "daySelectionPane.border";
-		String	CELL_BACKGROUND_EVEN				= "daySelectionPane.cell.background.even";
-		String	CELL_BACKGROUND_ODD					= "daySelectionPane.cell.background.odd";
-		String	CELL_BACKGROUND_SELECTED			= "daySelectionPane.cell.background.selected";
-		String	CELL_BACKGROUND_SELECTED_FOCUSED	= "daySelectionPane.cell.background.selected.focused";
-		String	CELL_BORDER							= "daySelectionPane.cell.border";
-		String	CELL_BORDER_SELECTED				= "daySelectionPane.cell.border.selected";
-		String	CELL_BORDER_SELECTED_FOCUSED		= "daySelectionPane.cell.border.selected.focused";
-		String	CELL_TEXT							= "daySelectionPane.cell.text";
-		String	CELL_TEXT_INVALID					= "daySelectionPane.cell.text.invalid";
-		String	HEADER_CELL_BACKGROUND				= "daySelectionPane.header.cell.background";
-		String	HEADER_CELL_BORDER					= "daySelectionPane.header.cell.border";
-		String	POPUP_TEXT							= "daySelectionPane.popup.text";
-		String	POPUP_BACKGROUND					= "daySelectionPane.popup.background";
-		String	POPUP_BORDER						= "daySelectionPane.popup.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BORDER								= PREFIX + "border";
+		String	CELL_BACKGROUND_EVEN				= PREFIX + "cell.background.even";
+		String	CELL_BACKGROUND_ODD					= PREFIX + "cell.background.odd";
+		String	CELL_BACKGROUND_SELECTED			= PREFIX + "cell.background.selected";
+		String	CELL_BACKGROUND_SELECTED_FOCUSED	= PREFIX + "cell.background.selected.focused";
+		String	CELL_BORDER							= PREFIX + "cell.border";
+		String	CELL_BORDER_SELECTED				= PREFIX + "cell.border.selected";
+		String	CELL_BORDER_SELECTED_FOCUSED		= PREFIX + "cell.border.selected.focused";
+		String	CELL_TEXT							= PREFIX + "cell.text";
+		String	CELL_TEXT_INVALID					= PREFIX + "cell.text.invalid";
+		String	HEADER_CELL_BACKGROUND				= PREFIX + "header.cell.background";
+		String	HEADER_CELL_BORDER					= PREFIX + "header.cell.border";
+		String	POPUP_TEXT							= PREFIX + "popup.text";
+		String	POPUP_BACKGROUND					= PREFIX + "popup.background";
+		String	POPUP_BORDER						= PREFIX + "popup.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -652,8 +656,7 @@ public class DaySelectionPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

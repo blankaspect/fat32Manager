@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.listview;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,7 +147,7 @@ public class FilteredListView<T>
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.HIGHLIGHTED_TEXT_SPAN,
+			ColourKey.TEXT_SPAN_HIGHLIGHTED,
 			CssSelector.builder()
 						.cls(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
 						.build()
@@ -153,7 +155,7 @@ public class FilteredListView<T>
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.HIGHLIGHTED_SELECTED_TEXT_SPAN,
+			ColourKey.TEXT_SPAN_HIGHLIGHTED_SELECTED,
 			CssSelector.builder()
 						.cls(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
 						.desc(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
@@ -187,8 +189,10 @@ public class FilteredListView<T>
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	HIGHLIGHTED_SELECTED_TEXT_SPAN	= "filteredListView.textSpan.highlighted.selected";
-		String	HIGHLIGHTED_TEXT_SPAN			= "filteredListView.textSpan.highlighted";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	TEXT_SPAN_HIGHLIGHTED_SELECTED	= PREFIX + "textSpan.highlighted.selected";
+		String	TEXT_SPAN_HIGHLIGHTED			= PREFIX + "textSpan.highlighted";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -272,7 +276,7 @@ public class FilteredListView<T>
 		focusedBackgroundColour = getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED);
 		selectedFocusedBackgroundColour = getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED);
 		textColour = getColour(ListViewStyle.ColourKey.CELL_TEXT);
-		highlightedTextColour = getColour(ColourKey.HIGHLIGHTED_TEXT_SPAN);
+		highlightedTextColour = getColour(ColourKey.TEXT_SPAN_HIGHLIGHTED);
 		graphicTextGap = DEFAULT_GRAPHIC_TEXT_GAP;
 		cellVerticalPadding = DEFAULT_CELL_VERTICAL_PADDING;
 		filterMode = new SimpleObjectProperty<>(DEFAULT_FILTER_MODE);
@@ -358,8 +362,7 @@ public class FilteredListView<T>
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

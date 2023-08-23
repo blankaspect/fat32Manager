@@ -18,6 +18,8 @@ package uk.blankaspect.fat32manager;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -172,12 +174,14 @@ public class DirectoryPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	DIRECTORY_BAR_ARROWHEAD					= "directoryPane.directoryBar.arrowhead";
-		String	DIRECTORY_BAR_BACKGROUND				= "directoryPane.directoryBar.background";
-		String	DIRECTORY_BAR_BORDER					= "directoryPane.directoryBar.border";
-		String	DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED	= "directoryPane.directoryBar.button.background.hovered";
-		String	DIRECTORY_BAR_BUTTON_BORDER_HOVERED		= "directoryPane.directoryBar.button.border.hovered";
-		String	DIRECTORY_BAR_TEXT						= "directoryPane.directoryBar.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	DIRECTORY_BAR_ARROWHEAD					= PREFIX + "directoryBar.arrowhead";
+		String	DIRECTORY_BAR_BACKGROUND				= PREFIX + "directoryBar.background";
+		String	DIRECTORY_BAR_BORDER					= PREFIX + "directoryBar.border";
+		String	DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED	= PREFIX + "directoryBar.button.background.hovered";
+		String	DIRECTORY_BAR_BUTTON_BORDER_HOVERED		= PREFIX + "directoryBar.button.border.hovered";
+		String	DIRECTORY_BAR_TEXT						= PREFIX + "directoryBar.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -368,8 +372,7 @@ public class DirectoryPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

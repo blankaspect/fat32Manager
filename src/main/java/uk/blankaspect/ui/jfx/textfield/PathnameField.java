@@ -20,6 +20,8 @@ package uk.blankaspect.ui.jfx.textfield;
 
 import java.io.File;
 
+import java.lang.invoke.MethodHandles;
+
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
@@ -131,7 +133,9 @@ public class PathnameField
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BACKGROUND_INVALID	= "pathnameField.background.invalid";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BACKGROUND_INVALID	= PREFIX + "background.invalid";
 	}
 
 	/** Error messages. */
@@ -394,8 +398,7 @@ public class PathnameField
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

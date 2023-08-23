@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.textfield;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.time.DateTimeException;
 import java.time.LocalDate;
 
@@ -149,10 +151,12 @@ public class DateField
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BACKGROUND_INVALID		= "dateField.background.invalid";
-		String	BACKGROUND_VALID		= "dateField.background.valid";
-		String	HIGHLIGHT_FOCUSED		= "dateField.highlight.focused";
-		String	HIGHLIGHT_TEXT_FOCUSED	= "dateField.highlight.text.focused";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BACKGROUND_INVALID		= PREFIX + "background.invalid";
+		String	BACKGROUND_VALID		= PREFIX + "background.valid";
+		String	HIGHLIGHT_FOCUSED		= PREFIX + "highlight.focused";
+		String	HIGHLIGHT_TEXT_FOCUSED	= PREFIX + "highlight.text.focused";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -289,8 +293,7 @@ public class DateField
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

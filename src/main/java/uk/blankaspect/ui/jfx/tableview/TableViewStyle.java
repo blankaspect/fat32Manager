@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.tableview;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.geometry.Side;
@@ -266,20 +268,22 @@ public class TableViewStyle
 	/** Keys of colours that are used in colour properties. */
 	public interface ColourKey
 	{
-		String	CELL_BACKGROUND_EMPTY				= "tableView.cell.background.empty";
-		String	CELL_BACKGROUND_EVEN				= "tableView.cell.background.even";
-		String	CELL_BACKGROUND_ODD					= "tableView.cell.background.odd";
-		String	CELL_BACKGROUND_FOCUSED				= "tableView.cell.background.focused";
-		String	CELL_BACKGROUND_SELECTED			= "tableView.cell.background.selected";
-		String	CELL_BACKGROUND_SELECTED_FOCUSED	= "tableView.cell.background.selected.focused";
-		String	CELL_BORDER							= "tableView.cell.border";
-		String	CELL_POPUP_BACKGROUND				= "tableView.cell.popup.background";
-		String	CELL_POPUP_BORDER					= "tableView.cell.popup.border";
-		String	CELL_POPUP_TEXT						= "tableView.cell.popup.text";
-		String	CELL_TEXT							= "tableView.cell.text";
-		String	CELL_TEXT_SELECTED					= "tableView.cell.text.selected";
-		String	HEADER_CELL_BACKGROUND				= "tableView.header.cell.background";
-		String	HEADER_CELL_BORDER					= "tableView.header.cell.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	CELL_BACKGROUND_EMPTY				= PREFIX + "cell.background.empty";
+		String	CELL_BACKGROUND_EVEN				= PREFIX + "cell.background.even";
+		String	CELL_BACKGROUND_ODD					= PREFIX + "cell.background.odd";
+		String	CELL_BACKGROUND_FOCUSED				= PREFIX + "cell.background.focused";
+		String	CELL_BACKGROUND_SELECTED			= PREFIX + "cell.background.selected";
+		String	CELL_BACKGROUND_SELECTED_FOCUSED	= PREFIX + "cell.background.selected.focused";
+		String	CELL_BORDER							= PREFIX + "cell.border";
+		String	CELL_POPUP_BACKGROUND				= PREFIX + "cell.popup.background";
+		String	CELL_POPUP_BORDER					= PREFIX + "cell.popup.border";
+		String	CELL_POPUP_TEXT						= PREFIX + "cell.popup.text";
+		String	CELL_TEXT							= PREFIX + "cell.text";
+		String	CELL_TEXT_SELECTED					= PREFIX + "cell.text.selected";
+		String	HEADER_CELL_BACKGROUND				= PREFIX + "header.cell.background";
+		String	HEADER_CELL_BORDER					= PREFIX + "header.cell.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////

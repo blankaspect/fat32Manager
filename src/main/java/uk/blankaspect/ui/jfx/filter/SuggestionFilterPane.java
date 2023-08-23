@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.filter;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import java.util.stream.Stream;
@@ -125,7 +127,9 @@ public class SuggestionFilterPane<T>
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	LIST_VIEW_PLACEHOLDER_TEXT	= "suggestionFilterPane.listView.placeholder.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	LIST_VIEW_PLACEHOLDER_TEXT	= PREFIX + "listView.placeholder.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -419,8 +423,7 @@ public class SuggestionFilterPane<T>
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.listview;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -168,9 +170,11 @@ public class SimpleTextListView<T>
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	UNIFORM_CELL_BACKGROUND	= "simpleTextListView.uniform.cell.background";
-		String	UNIFORM_CELL_BORDER		= "simpleTextListView.uniform.cell.border";
-		String	UNIFORM_CELL_TEXT		= "simpleTextListView.uniform.cell.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	UNIFORM_CELL_BACKGROUND	= PREFIX + "uniform.cell.background";
+		String	UNIFORM_CELL_BORDER		= PREFIX + "uniform.cell.border";
+		String	UNIFORM_CELL_TEXT		= PREFIX + "uniform.cell.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -319,8 +323,7 @@ public class SimpleTextListView<T>
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

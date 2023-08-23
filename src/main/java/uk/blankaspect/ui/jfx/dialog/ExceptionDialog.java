@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -229,10 +231,12 @@ public class ExceptionDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	DETAILS_AREA_BACKGROUND				= "exceptionDialog.detailsArea.background";
-		String	DETAILS_BUTTON_ARROWHEAD			= "exceptionDialog.detailsButton.arrowhead";
-		String	DETAILS_BUTTON_BACKGROUND_FOCUSED	= "exceptionDialog.detailsButton.background.focused";
-		String	DETAILS_BUTTON_BORDER				= "exceptionDialog.detailsButton.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	DETAILS_AREA_BACKGROUND				= PREFIX + "detailsArea.background";
+		String	DETAILS_BUTTON_ARROWHEAD			= PREFIX + "detailsButton.arrowhead";
+		String	DETAILS_BUTTON_BACKGROUND_FOCUSED	= PREFIX + "detailsButton.background.focused";
+		String	DETAILS_BUTTON_BORDER				= PREFIX + "detailsButton.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -835,8 +839,7 @@ public class ExceptionDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

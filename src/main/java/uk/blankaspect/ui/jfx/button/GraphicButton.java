@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.button;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.EnumSet;
 import java.util.List;
 
@@ -266,16 +268,18 @@ public class GraphicButton
 	}
 
 	/** Keys of colours that are used in colour properties. */
-	public interface ColourKey
+	private interface ColourKey
 	{
-		String	BACKGROUND			= "graphicButton.background";
-		String	BACKGROUND_ARMED	= "graphicButton.background.armed";
-		String	BACKGROUND_HOVERED	= "graphicButton.background.hovered";
-		String	BACKGROUND_SELECTED	= "graphicButton.background.selected";
-		String	BORDER				= "graphicButton.border";
-		String	BORDER_ARMED		= "graphicButton.border.armed";
-		String	BORDER_HOVERED		= "graphicButton.border.hovered";
-		String	BORDER_SELECTED		= "graphicButton.border.selected";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BACKGROUND			= PREFIX + "background";
+		String	BACKGROUND_ARMED	= PREFIX + "background.armed";
+		String	BACKGROUND_HOVERED	= PREFIX + "background.hovered";
+		String	BACKGROUND_SELECTED	= PREFIX + "background.selected";
+		String	BORDER				= PREFIX + "border";
+		String	BORDER_ARMED		= PREFIX + "border.armed";
+		String	BORDER_HOVERED		= PREFIX + "border.hovered";
+		String	BORDER_SELECTED		= PREFIX + "border.selected";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -307,7 +311,7 @@ public class GraphicButton
 	private	SimpleObjectProperty<ToggleGroup>	toggleGroup;
 
 	/** The modifiers whose keys were down when this button was last fired. */
-	private	EnumSet<ModifierKey>					modifiers;
+	private	EnumSet<ModifierKey>				modifiers;
 
 	/** The tooltip text for this button. */
 	private	String								tooltipText;
@@ -559,8 +563,7 @@ public class GraphicButton
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

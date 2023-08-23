@@ -20,6 +20,8 @@ package uk.blankaspect.ui.jfx.locationchooser;
 
 import java.io.File;
 
+import java.lang.invoke.MethodHandles;
+
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -130,7 +132,9 @@ public class LocationChooser
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	DIALOG_OUTER_BUTTON_PANE_BORDER	= "locationChooser.dialog.outerButtonPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	DIALOG_OUTER_BUTTON_PANE_BORDER	= PREFIX + "dialog.outerButtonPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -246,8 +250,7 @@ public class LocationChooser
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

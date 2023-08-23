@@ -136,8 +136,8 @@ public class StyleManager
 	{
 		String	FAILED_TO_CREATE_TEMPORARY_DIRECTORY	= "Failed to create a temporary directory.";
 		String	NO_DEFAULT_THEME						= "The file does not contain the default theme.";
-		String	NO_COLOUR_FOR_PROPERTY					= "Selector(s): %s\nProperty: %s\nColour key: %s\n"
-															+ "There is no colour for the property.";
+		String	NO_COLOUR_FOR_PROPERTY1					= "Colour key: %s\nThere is no colour for the property.";
+		String	NO_COLOUR_FOR_PROPERTY2					= "Selector(s): %s\nProperty: %s\n" + NO_COLOUR_FOR_PROPERTY1;
 		String	FAILED_TO_READ_DEFAULT_COLOUR_PROVIDERS	= "Failed to read the list of default-colour providers.";
 		String	CANNOT_FIND_DEFAULT_COLOUR_PROVIDER		= "Class: %s\nCannot find the default-colour provider.";
 		String	FAILED_TO_CONVERT_URI					= "Failed to convert the URI to a file-system location.";
@@ -216,7 +216,7 @@ public class StyleManager
 				// Load default colours of theme
 				String pathname = ResourceUtils.normalisedPathname(cls, DEFAULT_COLOURS_FILENAME);
 				if (ResourceUtils.hasResource(cls, pathname))
-					theme.loadDefaultColours(pathname);
+					theme.loadDefaultColours(pathname, colourKeyPrefix(cls));
 			}
 		}
 		catch (BaseException e)
@@ -238,6 +238,14 @@ public class StyleManager
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
 
+	public static String colourKeyPrefix(
+		Class<?>	cls)
+	{
+		return cls.getCanonicalName() + ".";
+	}
+
+	//------------------------------------------------------------------
+
 	public static Map<String, Color> readColours(
 		Class<?>	cls)
 		throws LocationException
@@ -247,7 +255,8 @@ public class StyleManager
 
 		// Read colours from resource
 		String pathname = coloursResourcePathname(cls, themeId);
-		return ResourceUtils.hasResource(cls, pathname) ? AbstractTheme.readColours(cls, pathname) : null;
+		return ResourceUtils.hasResource(cls, pathname) ? AbstractTheme.readColours(cls, pathname, colourKeyPrefix(cls))
+														: null;
 	}
 
 	//------------------------------------------------------------------
@@ -451,6 +460,20 @@ public class StyleManager
 		if (theme == null)
 			theme = findTheme(DEFAULT_THEME_ID);
 		return (theme == null) ? null : theme.getColour(key);
+	}
+
+	//------------------------------------------------------------------
+
+	public Color getColourOrDefault(
+		String	key)
+	{
+		Color colour = getColour(key);
+		if (colour == null)
+		{
+			colour = DEFAULT_COLOUR;
+			System.err.println(String.format(ErrorMsg.NO_COLOUR_FOR_PROPERTY1, key));
+		}
+		return colour;
 	}
 
 	//------------------------------------------------------------------
@@ -730,21 +753,7 @@ public class StyleManager
 		{
 			String pathname = coloursResourcePathname(cls, theme.getId());
 			if (ResourceUtils.hasResource(cls, pathname))
-				theme.loadDefaultColours(pathname);
-		}
-	}
-
-	//------------------------------------------------------------------
-
-	public void loadDefaultColours(
-		Map<String, String>	pathnames)
-		throws LocationException
-	{
-		for (String id : pathnames.keySet())
-		{
-			AbstractTheme theme = findTheme(id);
-			if (theme != null)
-				theme.loadDefaultColours(pathnames.get(id));
+				theme.loadDefaultColours(pathname, colourKeyPrefix(cls));
 		}
 	}
 
@@ -752,7 +761,8 @@ public class StyleManager
 
 	public void loadColours(
 		String	filenamePrefix,
-		Path	directory)
+		Path	directory,
+		String	keyPrefix)
 		throws FileException
 	{
 		for (AbstractTheme theme : themes)
@@ -762,21 +772,22 @@ public class StyleManager
 								+ filenamePrefix + ColourPropertyConstants.COLOUR_PROPERTIES_FILENAME_SUFFIX;
 			Path location = directory.resolve(pathname);
 			if (Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS))
-				theme.loadColours(location);
+				theme.loadColours(location, keyPrefix);
 		}
 	}
 
 	//------------------------------------------------------------------
 
 	public void loadColours(
-		Map<String, Path>	locations)
+		Map<String, Path>	locations,
+		String				keyPrefix)
 		throws FileException
 	{
 		for (String id : locations.keySet())
 		{
 			AbstractTheme theme = findTheme(id);
 			if (theme != null)
-				theme.loadColours(locations.get(id));
+				theme.loadColours(locations.get(id), keyPrefix);
 		}
 	}
 
@@ -824,7 +835,7 @@ public class StyleManager
 					{
 						String selectors = String.join(", ", property.getSelectors());
 						String colourKey = property.getColourKey();
-						System.err.println(String.format(ErrorMsg.NO_COLOUR_FOR_PROPERTY, selectors,
+						System.err.println(String.format(ErrorMsg.NO_COLOUR_FOR_PROPERTY2, selectors,
 														 property.getFxProperty().getName(),
 														 (colourKey == null) ? "" : colourKey));
 					}

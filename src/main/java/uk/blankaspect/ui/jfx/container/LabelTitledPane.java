@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.container;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -108,10 +110,12 @@ public class LabelTitledPane
 	}
 
 	/** Keys of colours that are used in colour properties. */
-	public interface ColourKey
+	private interface ColourKey
 	{
-		String	TITLE_BACKGROUND	= "labelTitledPane.title.background";
-		String	TITLE_BORDER		= "labelTitledPane.title.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	TITLE_BACKGROUND	= PREFIX + "title.background";
+		String	TITLE_BORDER		= PREFIX + "title.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -247,8 +251,7 @@ public class LabelTitledPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

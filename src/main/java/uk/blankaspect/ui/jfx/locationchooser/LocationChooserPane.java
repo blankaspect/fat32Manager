@@ -189,6 +189,7 @@ import uk.blankaspect.ui.jfx.image.ImageUtils;
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 import uk.blankaspect.ui.jfx.listview.FilteredListView;
+import uk.blankaspect.ui.jfx.listview.ListViewStyle;
 
 import uk.blankaspect.ui.jfx.math.FxGeomUtils;
 
@@ -532,19 +533,21 @@ public class LocationChooserPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	DIRECTORY_BAR_ARROWHEAD					= "locationChooserPane.directoryBar.arrowhead";
-		String	DIRECTORY_BAR_BACKGROUND				= "locationChooserPane.directoryBar.background";
-		String	DIRECTORY_BAR_BORDER					= "locationChooserPane.directoryBar.border";
-		String	DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED	= "locationChooserPane.directoryBar.button.background.hovered";
-		String	DIRECTORY_BAR_BUTTON_BORDER_HOVERED		= "locationChooserPane.directoryBar.button.border.hovered";
-		String	DIRECTORY_BAR_TEXT						= "locationChooserPane.directoryBar.text";
-		String	FOCUS_INDICATOR							= "locationChooserPane.focusIndicator";
-		String	FOCUS_INDICATOR_PANE_BORDER				= "locationChooserPane.focusIndicator.pane.border";
-		String	NON_EDITABLE_FIELD_BACKGROUND			= "locationChooserPane.nonEditableField.background";
-		String	NON_EDITABLE_FIELD_BORDER				= "locationChooserPane.nonEditableField.border";
-		String	TABLE_VIEW_HEADER_CELL_BACKGROUND		= "locationChooserPane.tableView.header.cell.background";
-		String	TABLE_VIEW_HEADER_CELL_BORDER			= "locationChooserPane.tableView.header.cell.border";
-		String	TABLE_VIEW_PLACEHOLDER_TEXT				= "locationChooserPane.tableView.placeholder.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	DIRECTORY_BAR_ARROWHEAD					= PREFIX + "directoryBar.arrowhead";
+		String	DIRECTORY_BAR_BACKGROUND				= PREFIX + "directoryBar.background";
+		String	DIRECTORY_BAR_BORDER					= PREFIX + "directoryBar.border";
+		String	DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED	= PREFIX + "directoryBar.button.background.hovered";
+		String	DIRECTORY_BAR_BUTTON_BORDER_HOVERED		= PREFIX + "directoryBar.button.border.hovered";
+		String	DIRECTORY_BAR_TEXT						= PREFIX + "directoryBar.text";
+		String	FOCUS_INDICATOR							= PREFIX + "focusIndicator";
+		String	FOCUS_INDICATOR_PANE_BORDER				= PREFIX + "focusIndicator.pane.border";
+		String	NON_EDITABLE_FIELD_BACKGROUND			= PREFIX + "nonEditableField.background";
+		String	NON_EDITABLE_FIELD_BORDER				= PREFIX + "nonEditableField.border";
+		String	TABLE_VIEW_HEADER_CELL_BACKGROUND		= PREFIX + "tableView.header.cell.background";
+		String	TABLE_VIEW_HEADER_CELL_BORDER			= PREFIX + "tableView.header.cell.border";
+		String	TABLE_VIEW_PLACEHOLDER_TEXT				= PREFIX + "tableView.placeholder.text";
 	}
 
 	/** Error messages. */
@@ -612,7 +615,7 @@ public class LocationChooserPane
 	{
 		// Register the style properties of this class and its dependencies with the style manager
 		StyleManager.INSTANCE.register(LocationChooserPane.class, COLOUR_PROPERTIES, RULE_SETS,
-									   TableViewStyle.class, TreeViewStyle.class);
+									   ListViewStyle.class, TableViewStyle.class, TreeViewStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -1482,8 +1485,7 @@ public class LocationChooserPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

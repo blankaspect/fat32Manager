@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.label;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.event.EventHandler;
@@ -134,8 +136,10 @@ public class OverlayLabel
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	POPUP_BACKGROUND	= "overlayLabel.popup.background";
-		String	POPUP_BORDER		= "overlayLabel.popup.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	POPUP_BACKGROUND	= PREFIX + "popup.background";
+		String	POPUP_BORDER		= PREFIX + "popup.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -398,8 +402,7 @@ public class OverlayLabel
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

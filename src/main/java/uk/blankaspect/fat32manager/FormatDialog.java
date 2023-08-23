@@ -179,9 +179,11 @@ public class FormatDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	INFO_LABEL_TEXT			= "formatDialog.infoLabel.text";
-		String	INFO_LABEL_BACKGROUND	= "formatDialog.infoLabel.background";
-		String	INFO_LABEL_BORDER		= "formatDialog.infoLabel.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	INFO_LABEL_TEXT			= PREFIX + "infoLabel.text";
+		String	INFO_LABEL_BACKGROUND	= PREFIX + "infoLabel.background";
+		String	INFO_LABEL_BORDER		= PREFIX + "infoLabel.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -465,8 +467,7 @@ public class FormatDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

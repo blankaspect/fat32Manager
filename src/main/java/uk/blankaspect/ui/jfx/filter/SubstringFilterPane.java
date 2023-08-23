@@ -20,6 +20,8 @@ package uk.blankaspect.ui.jfx.filter;
 
 import java.io.ByteArrayInputStream;
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -150,9 +152,11 @@ public class SubstringFilterPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	FILTER_MODE_BUTTON_BACKGROUND	= "substringFilterPane.filterModeButton.background";
-		String	FILTER_MODE_BUTTON_BORDER		= "substringFilterPane.filterModeButton.border";
-		String	FILTER_MODE_BUTTON_TEXT			= "substringFilterPane.filterModeButton.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	FILTER_MODE_BUTTON_BACKGROUND	= PREFIX + "filterModeButton.background";
+		String	FILTER_MODE_BUTTON_BORDER		= PREFIX + "filterModeButton.border";
+		String	FILTER_MODE_BUTTON_TEXT			= PREFIX + "filterModeButton.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -361,8 +365,7 @@ public class SubstringFilterPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

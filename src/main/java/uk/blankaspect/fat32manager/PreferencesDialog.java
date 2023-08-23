@@ -135,7 +135,9 @@ public class PreferencesDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	TABBED_PANE_BORDER	= "preferencesDialog.tabbedPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	TABBED_PANE_BORDER	= PREFIX + "tabbedPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -373,8 +375,7 @@ public class PreferencesDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

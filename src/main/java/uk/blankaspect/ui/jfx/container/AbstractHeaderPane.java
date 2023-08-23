@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.container;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.geometry.Insets;
@@ -98,7 +100,9 @@ public abstract class AbstractHeaderPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BORDER	= "headerPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BORDER	= PREFIX + "border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -194,8 +198,7 @@ public abstract class AbstractHeaderPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

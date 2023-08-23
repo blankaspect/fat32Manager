@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -175,7 +177,9 @@ public abstract class SimpleDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	CONTENT_PANE_BORDER	= "simpleDialog.contentPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	CONTENT_PANE_BORDER	= PREFIX + "contentPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -560,8 +564,7 @@ public abstract class SimpleDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

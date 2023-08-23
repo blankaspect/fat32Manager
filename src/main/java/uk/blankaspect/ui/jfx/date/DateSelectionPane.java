@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.date;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.time.LocalDate;
 
 import java.util.Calendar;
@@ -270,15 +272,17 @@ public class DateSelectionPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	MONTH_LABEL_BACKGROUND			= "dateSelectionPane.monthLabel.background";
-		String	MONTH_LABEL_BACKGROUND_HOVERED	= "dateSelectionPane.monthLabel.background.hovered";
-		String	MONTH_YEAR_DIALOG_BACKGROUND	= "dateSelectionPane.monthYearDialog.background";
-		String	MONTH_YEAR_DIALOG_BORDER		= "dateSelectionPane.monthYearDialog.border";
-		String	MONTH_YEAR_DIALOG_DIVIDER		= "dateSelectionPane.monthYearDialog.divider";
-		String	NAVIGATION_BUTTON_BACKGROUND	= "dateSelectionPane.navigationButton.background";
-		String	NAVIGATION_BUTTON_BORDER		= "dateSelectionPane.navigationButton.border";
-		String	NAVIGATION_BUTTON_ICON			= "dateSelectionPane.navigationButton.icon";
-		String	NAVIGATION_PANE_BORDER			= "dateSelectionPane.navigationPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	MONTH_LABEL_BACKGROUND			= PREFIX + "monthLabel.background";
+		String	MONTH_LABEL_BACKGROUND_HOVERED	= PREFIX + "monthLabel.background.hovered";
+		String	MONTH_YEAR_DIALOG_BACKGROUND	= PREFIX + "monthYearDialog.background";
+		String	MONTH_YEAR_DIALOG_BORDER		= PREFIX + "monthYearDialog.border";
+		String	MONTH_YEAR_DIALOG_DIVIDER		= PREFIX + "monthYearDialog.divider";
+		String	NAVIGATION_BUTTON_BACKGROUND	= PREFIX + "navigationButton.background";
+		String	NAVIGATION_BUTTON_BORDER		= PREFIX + "navigationButton.border";
+		String	NAVIGATION_BUTTON_ICON			= PREFIX + "navigationButton.icon";
+		String	NAVIGATION_PANE_BORDER			= PREFIX + "navigationPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -617,8 +621,7 @@ public class DateSelectionPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

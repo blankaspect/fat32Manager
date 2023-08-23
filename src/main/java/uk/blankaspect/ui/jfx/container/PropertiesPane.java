@@ -177,10 +177,12 @@ public class PropertiesPane
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	VALUE_LABEL_BACKGROUND		= "propertiesPane.valueLabel.background";
-		String	VALUE_LABEL_BORDER			= "propertiesPane.valueLabel.border";
-		String	VALUE_LABEL_POPUP_BORDER	= "propertiesPane.valueLabel.popup.border";
-		String	VALUE_LABEL_TEXT			= "propertiesPane.valueLabel.text";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	VALUE_LABEL_BACKGROUND		= PREFIX + "valueLabel.background";
+		String	VALUE_LABEL_BORDER			= PREFIX + "valueLabel.border";
+		String	VALUE_LABEL_POPUP_BORDER	= PREFIX + "valueLabel.popup.border";
+		String	VALUE_LABEL_TEXT			= PREFIX + "valueLabel.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -277,8 +279,7 @@ public class PropertiesPane
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

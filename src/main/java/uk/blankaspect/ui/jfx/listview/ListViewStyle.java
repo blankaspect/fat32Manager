@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.listview;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.geometry.Side;
@@ -196,18 +198,20 @@ public class ListViewStyle
 	/** Keys of colours that are used in colour properties. */
 	public interface ColourKey
 	{
-		String	CELL_BACKGROUND_EMPTY				= "listView.cell.background.empty";
-		String	CELL_BACKGROUND_EVEN				= "listView.cell.background.even";
-		String	CELL_BACKGROUND_ODD					= "listView.cell.background.odd";
-		String	CELL_BACKGROUND_FOCUSED				= "listView.cell.background.focused";
-		String	CELL_BACKGROUND_SELECTED			= "listView.cell.background.selected";
-		String	CELL_BACKGROUND_SELECTED_FOCUSED	= "listView.cell.background.selected.focused";
-		String	CELL_BORDER							= "listView.cell.border";
-		String	CELL_POPUP_BACKGROUND				= "listView.cell.popup.background";
-		String	CELL_POPUP_BORDER					= "listView.cell.popup.border";
-		String	CELL_POPUP_TEXT						= "listView.cell.popup.text";
-		String	CELL_TEXT							= "listView.cell.text";
-		String	CELL_TEXT_SELECTED					= "listView.cell.text.selected";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	CELL_BACKGROUND_EMPTY				= PREFIX + "cell.background.empty";
+		String	CELL_BACKGROUND_EVEN				= PREFIX + "cell.background.even";
+		String	CELL_BACKGROUND_ODD					= PREFIX + "cell.background.odd";
+		String	CELL_BACKGROUND_FOCUSED				= PREFIX + "cell.background.focused";
+		String	CELL_BACKGROUND_SELECTED			= PREFIX + "cell.background.selected";
+		String	CELL_BACKGROUND_SELECTED_FOCUSED	= PREFIX + "cell.background.selected.focused";
+		String	CELL_BORDER							= PREFIX + "cell.border";
+		String	CELL_POPUP_BACKGROUND				= PREFIX + "cell.popup.background";
+		String	CELL_POPUP_BORDER					= PREFIX + "cell.popup.border";
+		String	CELL_POPUP_TEXT						= PREFIX + "cell.popup.text";
+		String	CELL_TEXT							= PREFIX + "cell.text";
+		String	CELL_TEXT_SELECTED					= PREFIX + "cell.text.selected";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -237,6 +241,14 @@ public class ListViewStyle
 ////////////////////////////////////////////////////////////////////////
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
+
+	public static String colourKey(
+		String	suffix)
+	{
+		return StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass()) + suffix;
+	}
+
+	//------------------------------------------------------------------
 
 	public static CssRuleSet focusedCellRuleSet(
 		String	selector,

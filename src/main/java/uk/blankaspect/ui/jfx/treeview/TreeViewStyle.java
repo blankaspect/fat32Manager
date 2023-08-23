@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.treeview;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import uk.blankaspect.common.css.CssRuleSet;
@@ -182,17 +184,19 @@ public class TreeViewStyle
 	/** Keys of colours that are used in colour properties. */
 	public interface ColourKey
 	{
-		String	CELL_BACKGROUND						= "treeView.cell.background";
-		String	CELL_BACKGROUND_FOCUSED				= "treeView.cell.background.focused";
-		String	CELL_BACKGROUND_SELECTED			= "treeView.cell.background.selected";
-		String	CELL_BACKGROUND_SELECTED_FOCUSED	= "treeView.cell.background.selected.focused";
-		String	CELL_DISCLOSURE_ARROW				= "treeView.cell.disclosureArrow";
-		String	CELL_DISCLOSURE_ARROW_SELECTED		= "treeView.cell.disclosureArrow.selected";
-		String	CELL_POPUP_BACKGROUND				= "treeView.cell.popup.background";
-		String	CELL_POPUP_BORDER					= "treeView.cell.popup.border";
-		String	CELL_POPUP_TEXT						= "treeView.cell.popup.text";
-		String	CELL_TEXT							= "treeView.cell.text";
-		String	CELL_TEXT_SELECTED					= "treeView.cell.text.selected";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	CELL_BACKGROUND						= PREFIX + "cell.background";
+		String	CELL_BACKGROUND_FOCUSED				= PREFIX + "cell.background.focused";
+		String	CELL_BACKGROUND_SELECTED			= PREFIX + "cell.background.selected";
+		String	CELL_BACKGROUND_SELECTED_FOCUSED	= PREFIX + "cell.background.selected.focused";
+		String	CELL_DISCLOSURE_ARROW				= PREFIX + "cell.disclosureArrow";
+		String	CELL_DISCLOSURE_ARROW_SELECTED		= PREFIX + "cell.disclosureArrow.selected";
+		String	CELL_POPUP_BACKGROUND				= PREFIX + "cell.popup.background";
+		String	CELL_POPUP_BORDER					= PREFIX + "cell.popup.border";
+		String	CELL_POPUP_TEXT						= PREFIX + "cell.popup.text";
+		String	CELL_TEXT							= PREFIX + "cell.text";
+		String	CELL_TEXT_SELECTED					= PREFIX + "cell.text.selected";
 	}
 
 ////////////////////////////////////////////////////////////////////////

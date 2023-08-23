@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.button;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import javafx.beans.property.BooleanProperty;
@@ -133,10 +135,12 @@ public class SlideButton
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	SLIDER			= "slideButton.slider";
-		String	SLIDER_SELECTED	= "slideButton.slider.selected";
-		String	TRACK			= "slideButton.track";
-		String	TRACK_SELECTED	= "slideButton.track.selected";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	SLIDER			= PREFIX + "slider";
+		String	SLIDER_SELECTED	= PREFIX + "slider.selected";
+		String	TRACK			= PREFIX + "track";
+		String	TRACK_SELECTED	= PREFIX + "track.selected";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -279,8 +283,7 @@ public class SlideButton
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

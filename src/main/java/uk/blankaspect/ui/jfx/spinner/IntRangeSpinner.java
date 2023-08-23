@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.spinner;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -269,15 +271,17 @@ public class IntRangeSpinner
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BUTTON_BACKGROUND			= "intRangeSpinner.button.background";
-		String	BUTTON_BACKGROUND_PRESSED	= "intRangeSpinner.button.background.pressed";
-		String	BUTTON_ICON					= "intRangeSpinner.button.icon";
-		String	FRAME						= "intRangeSpinner.frame";
-		String	LIST_VIEW_TICK				= "intRangeSpinner.listView.tick";
-		String	TEXT_BOX_BACKGROUND			= "intRangeSpinner.textBox.background";
-		String	TEXT_BOX_BACKGROUND_EMPTY	= "intRangeSpinner.textBox.background.empty";
-		String	TEXT_BOX_TEXT				= "intRangeSpinner.textBox.text";
-		String	TEXT_BOX_TEXT_EMPTY			= "intRangeSpinner.textBox.text.empty";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BUTTON_BACKGROUND			= PREFIX + "button.background";
+		String	BUTTON_BACKGROUND_PRESSED	= PREFIX + "button.background.pressed";
+		String	BUTTON_ICON					= PREFIX + "button.icon";
+		String	FRAME						= PREFIX + "frame";
+		String	LIST_VIEW_TICK				= PREFIX + "listView.tick";
+		String	TEXT_BOX_BACKGROUND			= PREFIX + "textBox.background";
+		String	TEXT_BOX_BACKGROUND_EMPTY	= PREFIX + "textBox.background.empty";
+		String	TEXT_BOX_TEXT				= PREFIX + "textBox.text";
+		String	TEXT_BOX_TEXT_EMPTY			= PREFIX + "textBox.text.empty";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -735,8 +739,7 @@ public class IntRangeSpinner
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

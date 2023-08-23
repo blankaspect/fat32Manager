@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.time.LocalDate;
 
 import java.util.List;
@@ -134,8 +136,10 @@ public class DateSelectionDialog
 	/** Keys of colours that are used in colour properties. */
 	private interface ColourKey
 	{
-		String	BORDER				= "dateSelectionDialog.border";
-		String	BUTTON_PANE_BORDER	= "dateSelectionDialog.buttonPane.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BORDER				= PREFIX + "border";
+		String	BUTTON_PANE_BORDER	= PREFIX + "buttonPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -276,8 +280,7 @@ public class DateSelectionDialog
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------

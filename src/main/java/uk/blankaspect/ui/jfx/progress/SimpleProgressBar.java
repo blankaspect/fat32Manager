@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.progress;
 // IMPORTS
 
 
+import java.lang.invoke.MethodHandles;
+
 import java.nio.IntBuffer;
 
 import java.util.List;
@@ -133,11 +135,13 @@ public class SimpleProgressBar
 	}
 
 	/** Keys of colours that are used in colour properties. */
-	public interface ColourKey
+	private interface ColourKey
 	{
-		String	BAR					= "simpleProgressBar.bar";
-		String	FRAME_BACKGROUND	= "simpleProgressBar.frame.background";
-		String	FRAME_BORDER		= "simpleProgressBar.frame.border";
+		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
+
+		String	BAR					= PREFIX + "bar";
+		String	FRAME_BACKGROUND	= PREFIX + "frame.background";
+		String	FRAME_BORDER		= PREFIX + "frame.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -313,8 +317,7 @@ public class SimpleProgressBar
 	private static Color getColour(
 		String	key)
 	{
-		Color colour = StyleManager.INSTANCE.getColour(key);
-		return (colour == null) ? StyleManager.DEFAULT_COLOUR : colour;
+		return StyleManager.INSTANCE.getColourOrDefault(key);
 	}
 
 	//------------------------------------------------------------------
