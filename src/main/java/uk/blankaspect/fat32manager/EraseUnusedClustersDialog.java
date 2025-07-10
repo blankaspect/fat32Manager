@@ -25,7 +25,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 
@@ -35,7 +34,11 @@ import javafx.stage.Window;
 
 import uk.blankaspect.common.function.IProcedure0;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.textfield.FilterFactory;
 
@@ -95,7 +98,7 @@ public class EraseUnusedClustersDialog
 		fillerField.setTextFormatter(new TextFormatter<>(FilterFactory.hexInteger(FILLER_FIELD_NUM_COLUMNS)));
 
 		// Create control pane
-		HBox controlPane = new HBox(CONTROL_PANE_GAP, new Label(FILLER_VALUE_STR), fillerField);
+		HBox controlPane = new HBox(CONTROL_PANE_GAP, Labels.hNoShrink(FILLER_VALUE_STR), fillerField);
 		controlPane.setAlignment(Pos.CENTER);
 		controlPane.setPadding(CONTROL_PANE_PADDING);
 
@@ -103,7 +106,7 @@ public class EraseUnusedClustersDialog
 		addContent(controlPane);
 
 		// Create button: erase
-		Button eraseButton = new Button(ERASE_STR);
+		Button eraseButton = Buttons.hNoShrink(ERASE_STR);
 		eraseButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		eraseButton.setOnAction(event ->
 		{
@@ -126,7 +129,7 @@ public class EraseUnusedClustersDialog
 		updateEraseButton.invoke();
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);

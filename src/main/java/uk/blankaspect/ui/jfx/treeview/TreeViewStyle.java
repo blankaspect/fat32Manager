@@ -2,7 +2,7 @@
 
 TreeViewStyle.java
 
-Class: style information for a tree view
+Class: style information for a tree view.
 
 \*====================================================================*/
 
@@ -54,109 +54,109 @@ public class TreeViewStyle
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW).pseudo(FxPseudoClass.FOCUSED)
-						.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.TREE_VIEW).pseudo(FxPseudoClass.FOCUSED)
+					.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(StyleClass.CELL_LABEL)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(StyleClass.CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT_SELECTED,
 			CssSelector.builder()
-						.cls(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.CELL_LABEL)
-						.build()
+					.cls(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_DISCLOSURE_ARROW,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL)
-						.child(FxStyleClass.TREE_DISCLOSURE_NODE)
-						.child(FxStyleClass.ARROW)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL)
+					.child(FxStyleClass.TREE_DISCLOSURE_NODE)
+					.child(FxStyleClass.ARROW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_DISCLOSURE_ARROW_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.TREE_VIEW)
-						.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
-						.child(FxStyleClass.TREE_DISCLOSURE_NODE)
-						.child(FxStyleClass.ARROW)
-						.build()
+					.cls(StyleClass.TREE_VIEW)
+					.desc(FxStyleClass.TREE_CELL).pseudo(FxPseudoClass.SELECTED)
+					.child(FxStyleClass.TREE_DISCLOSURE_NODE)
+					.child(FxStyleClass.ARROW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_POPUP_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_POPUP_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_POPUP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		)
 	);
 
@@ -236,7 +236,7 @@ public class TreeViewStyle
 				.selector(selector)
 				.property(FxProperty.BACKGROUND_COLOUR,
 						  StyleConstants.COLOUR_KEY_PREFIX + outerColourKey + StyleConstants.VALUE_SEPARATOR
-							+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
+								+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
 				.property(FxProperty.BACKGROUND_INSETS, "0, 1")
 				.build();
 	}

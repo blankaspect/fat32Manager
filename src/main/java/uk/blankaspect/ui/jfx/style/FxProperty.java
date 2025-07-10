@@ -25,11 +25,6 @@ public enum FxProperty
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	BACKGROUND
-	(
-		"background"
-	),
-
 	BACKGROUND_COLOUR
 	(
 		"background-color"
@@ -85,6 +80,16 @@ public enum FxProperty
 		"fill"
 	),
 
+	FONT_FAMILY
+	(
+		"font-family"
+	),
+
+	FONT_SIZE
+	(
+		"font-size"
+	),
+
 	FONT_SMOOTHING_TYPE
 	(
 		"font-smoothing-type"
@@ -115,9 +120,19 @@ public enum FxProperty
 		"opacity"
 	),
 
+	PROMPT_TEXT_FILL
+	(
+		"prompt-text-fill"
+	),
+
 	STROKE
 	(
 		"stroke"
+	),
+
+	TAB_SIZE
+	(
+		"tab-size"
 	),
 
 	TEXT_BASE_COLOR
@@ -128,6 +143,11 @@ public enum FxProperty
 	TEXT_FILL
 	(
 		"text-fill"
+	),
+
+	UNDERLINE
+	(
+		"underline"
 	);
 
 	public static final	String	NAME_PREFIX	= "-fx-";

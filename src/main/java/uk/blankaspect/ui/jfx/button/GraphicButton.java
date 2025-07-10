@@ -20,8 +20,11 @@ package uk.blankaspect.ui.jfx.button;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -51,6 +54,7 @@ import javafx.scene.input.MouseEvent;
 
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Border;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -144,20 +148,35 @@ public class GraphicButton
 	/** The default padding around the graphic content of the button. */
 	public static final		Insets	DEFAULT_PADDING	= new Insets(1.0);
 
-	/** The default background colour of the button. */
-	private static final	Color	DEFAULT_BACKGROUND_COLOUR	= Color.TRANSPARENT;
+	/** A map of the default background colours of this button. */
+	private static final	Map<State, Color>	DEFAULT_BACKGROUND_COLOURS;
 
-	/** The default border colour of the button. */
-	private static final	Color	DEFAULT_BORDER_COLOUR	= Color.TRANSPARENT;
+	/** A map of the default border colours of this button. */
+	private static final	Map<State, Color>	DEFAULT_BORDER_COLOURS;
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
+	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** The pseudo-class that is associated with the <i>inactive</i> state. */
-	private static final	PseudoClass	INACTIVE_PSEUDO_CLASS		= PseudoClass.getPseudoClass(PseudoClassKey.INACTIVE);
+	private static final	PseudoClass	INACTIVE_PSEUDO_CLASS	=
+			PseudoClass.getPseudoClass(PseudoClassKey.INACTIVE);
 
 	/** The pseudo-class that is associated with the <i>selected</i> state. */
-	private static final	PseudoClass	SELECTED_PSEUDO_CLASS		= PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
+	private static final	PseudoClass	SELECTED_PSEUDO_CLASS	=
+			PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
+
+	/** Miscellaneous strings. */
+	private static final	String	NULL_STATES_STR	= "Null states";
+
+	/** The states of a button. */
+	public enum State
+	{
+		INACTIVE,
+		HOVERED,
+		ARMED,
+		SELECTED
+	}
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -167,88 +186,88 @@ public class GraphicButton
 			FxProperty.FILL,
 			ColourKey.BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(PseudoClassKey.INACTIVE)
-						.desc(StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(PseudoClassKey.INACTIVE)
+					.desc(StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BACKGROUND_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(StyleClass.INNER_VIEW)
-						.build(),
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(StyleClass.INNER_VIEW)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.HOVER)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.HOVERED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BACKGROUND_ARMED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.ARMED)
-						.desc(StyleClass.INNER_VIEW)
-						.build(),
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.ARMED)
+					.desc(StyleClass.INNER_VIEW)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.ARMED)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.ARMED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BACKGROUND_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON)
-						.desc(StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON)
+					.desc(StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.BORDER_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(StyleClass.INNER_VIEW)
-						.build(),
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(StyleClass.INNER_VIEW)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.HOVER)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.HOVERED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.BORDER_ARMED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.ARMED)
-						.desc(StyleClass.INNER_VIEW)
-						.build(),
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.ARMED)
+					.desc(StyleClass.INNER_VIEW)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.ARMED)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED).pseudo(FxPseudoClass.ARMED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.BORDER_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.INNER_VIEW).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		)
 	);
 
@@ -257,7 +276,7 @@ public class GraphicButton
 	{
 		String	GRAPHIC_BUTTON	= StyleConstants.CLASS_PREFIX + "graphic-button";
 		String	INNER_VIEW		= StyleConstants.CLASS_PREFIX + "inner-view";
-		String	OUTER_VIEW		= StyleConstants.CLASS_PREFIX + "outer-view";
+		String	VIEW			= StyleConstants.CLASS_PREFIX + "view";
 	}
 
 	/** Keys of CSS pseudo-classes. */
@@ -319,11 +338,11 @@ public class GraphicButton
 	/** The manager of the pop-up for the tooltip. */
 	private	LabelPopUpManager					tooltipPopUpManager;
 
-	/** The background colour of this button. */
-	private	Color								backgroundColour;
+	/** A map of the background colours of this button. */
+	private	Map<State, Color>					backgroundColours;
 
-	/** The border colour of this button. */
-	private	Color								borderColour;
+	/** A map of the border colours of this button. */
+	private	Map<State, Color>					borderColours;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -333,6 +352,20 @@ public class GraphicButton
 	{
 		// Register the style properties of this class with the style manager
 		StyleManager.INSTANCE.register(GraphicButton.class, COLOUR_PROPERTIES);
+
+		// Initialise map of default background colours
+		DEFAULT_BACKGROUND_COLOURS = new EnumMap<>(State.class);
+		DEFAULT_BACKGROUND_COLOURS.put(State.INACTIVE, getColour(ColourKey.BACKGROUND));
+		DEFAULT_BACKGROUND_COLOURS.put(State.HOVERED,  getColour(ColourKey.BACKGROUND_HOVERED));
+		DEFAULT_BACKGROUND_COLOURS.put(State.ARMED,    getColour(ColourKey.BACKGROUND_ARMED));
+		DEFAULT_BACKGROUND_COLOURS.put(State.SELECTED, getColour(ColourKey.BACKGROUND_SELECTED));
+
+		// Initialise map of default border colours
+		DEFAULT_BORDER_COLOURS = new EnumMap<>(State.class);
+		DEFAULT_BORDER_COLOURS.put(State.INACTIVE, getColour(ColourKey.BORDER));
+		DEFAULT_BORDER_COLOURS.put(State.HOVERED,  getColour(ColourKey.BORDER_HOVERED));
+		DEFAULT_BORDER_COLOURS.put(State.ARMED,    getColour(ColourKey.BORDER_ARMED));
+		DEFAULT_BORDER_COLOURS.put(State.SELECTED, getColour(ColourKey.BORDER_SELECTED));
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -373,12 +406,10 @@ public class GraphicButton
 		highlightIfSelected = true;
 		selected = new SimpleBooleanProperty(false);
 		toggleGroup = new SimpleObjectProperty<>();
-		backgroundColour = DEFAULT_BACKGROUND_COLOUR;
-		borderColour = DEFAULT_BORDER_COLOUR;
 
 		// Set properties
-		setMinSize(USE_PREF_SIZE, USE_PREF_SIZE);
-		setMaxSize(USE_PREF_SIZE, USE_PREF_SIZE);
+		setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+		setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 		setPadding(DEFAULT_PADDING);
 		setBackground(Background.EMPTY);
 		setBorder(Border.EMPTY);
@@ -393,7 +424,7 @@ public class GraphicButton
 
 		// Create procedure to update 'hover' pseudo-class state
 		IProcedure1<Boolean> updateHoverState = hovered ->
-				pseudoClassStateChanged(PseudoClass.getPseudoClass(FxPseudoClass.HOVER), hovered);
+				pseudoClassStateChanged(PseudoClass.getPseudoClass(FxPseudoClass.HOVERED), hovered);
 
 		// Initialise 'inactive' pseudo-class state
 		updateInactiveState.invoke();
@@ -551,12 +582,12 @@ public class GraphicButton
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -731,7 +762,7 @@ public class GraphicButton
 	public Dimension2D getSize()
 	{
 		// Get graphic
-		Node graphic = getGraphic();
+		Node graphic = graphic();
 
 		// Get bounds of graphic
 		Bounds bounds = (graphic == null) ? null : graphic.getLayoutBounds();
@@ -906,18 +937,76 @@ public class GraphicButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the background colour of this button to the specified value.
+	 * Sets the background colour that will apply to this button when it is in the inactive state.
 	 *
 	 * @param colour
-	 *          the value to which the background colour of this button will be set.  If it is {@code null}, the
-	 *          background colour will be set to its default value (transparent).
+	 *          the value to which the background colour of this button will be set.  If it is {@code null}, the default
+	 *          background colour for the inactive state will be used.
 	 */
 
 	public void setBackgroundColour(
 		Color	colour)
 	{
-		// Update instance variable
-		backgroundColour = (colour == null) ? DEFAULT_BACKGROUND_COLOUR : colour;
+		setBackgroundColour(colour, State.INACTIVE);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the background colour that will apply to this button when it is in any of the specified states.
+	 *
+	 * @param colour
+	 *          the value to which the background colour of this button will be set.  If it is {@code null}, the default
+	 *          background colour for {@code state} will be used.
+	 * @param states
+	 *          the states of this button in which {@code colour} will apply.
+	 */
+
+	public void setBackgroundColour(
+		Color		colour,
+		State...	states)
+	{
+		setBackgroundColour(colour, List.of(states));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the background colour that will apply to this button when it is in any of the specified states.
+	 *
+	 * @param colour
+	 *          the value to which the background colour of this button will be set.  If it is {@code null}, the default
+	 *          background colour for {@code state} will be used.
+	 * @param states
+	 *          the states of this button in which {@code colour} will apply.
+	 */
+
+	public void setBackgroundColour(
+		Color				colour,
+		Collection<State>	states)
+	{
+		// Validate arguments
+		if (states == null)
+			throw new IllegalArgumentException(NULL_STATES_STR);
+
+		// Add colour to map
+		if (colour == null)
+		{
+			if (backgroundColours != null)
+			{
+				for (State state : states)
+					backgroundColours.put(state, DEFAULT_BACKGROUND_COLOURS.get(state));
+			}
+		}
+		else
+		{
+			for (State state : states)
+			{
+				if (backgroundColours == null)
+					backgroundColours = new EnumMap<>(DEFAULT_BACKGROUND_COLOURS);
+				backgroundColours.put(state, colour);
+			}
+		}
 
 		// Update button view
 		update();
@@ -926,21 +1015,94 @@ public class GraphicButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the border colour of this button to the specified value.
+	 * Sets the border colour that will apply to this button when it is in the inactive state.
 	 *
+	 * @param state
+	 *          the state of this button in which {@code colour} will apply.
 	 * @param colour
-	 *          the value to which the border colour of this button will be set.  If it is {@code null}, the border
-	 *          colour will be set to its default value (transparent).
+	 *          the value to which the border colour of this button will be set.  If it is {@code null}, the default
+	 *          border colour for the inactive state will be used.
 	 */
 
 	public void setBorderColour(
 		Color	colour)
 	{
-		// Update instance variable
-		borderColour = (colour == null) ? DEFAULT_BORDER_COLOUR : colour;
+		setBorderColour(colour, State.INACTIVE);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the border colour that will apply to this button when it is in any of the specified states.
+	 *
+	 * @param colour
+	 *          the value to which the border colour of this button will be set.  If it is {@code null}, the default
+	 *          border colour for {@code state} will be used.
+	 * @param states
+	 *          the states of this button in which {@code colour} will apply.
+	 */
+
+	public void setBorderColour(
+		Color		colour,
+		State...	states)
+	{
+		setBorderColour(colour, List.of(states));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the border colour that will apply to this button when it is in any of the specified states.
+	 *
+	 * @param colour
+	 *          the value to which the border colour of this button will be set.  If it is {@code null}, the default
+	 *          border colour for {@code state} will be used.
+	 * @param states
+	 *          the states of this button in which {@code colour} will apply.
+	 */
+
+	public void setBorderColour(
+		Color				colour,
+		Collection<State>	states)
+	{
+		// Validate arguments
+		if (states == null)
+			throw new IllegalArgumentException(NULL_STATES_STR);
+
+		// Add colour to map
+		if (colour == null)
+		{
+			if (borderColours != null)
+			{
+				for (State state : states)
+					borderColours.put(state, DEFAULT_BORDER_COLOURS.get(state));
+			}
+		}
+		else
+		{
+			for (State state : states)
+			{
+				if (borderColours == null)
+					borderColours = new EnumMap<>(DEFAULT_BORDER_COLOURS);
+				borderColours.put(state, colour);
+			}
+		}
 
 		// Update button view
 		update();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the graphic of this button.
+	 *
+	 * @return the graphic of this button.
+	 */
+
+	protected Node graphic()
+	{
+		return getGraphic();
 	}
 
 	//------------------------------------------------------------------
@@ -952,7 +1114,7 @@ public class GraphicButton
 
 	protected void update()
 	{
-		SceneUtils.runOnFxApplicationThread(() -> view.update());
+		SceneUtils.runOnFxApplicationThread(view::update);
 	}
 
 	//------------------------------------------------------------------
@@ -995,7 +1157,7 @@ public class GraphicButton
 		{
 			// Set properties
 			setMouseTransparent(true);
-			getStyleClass().add(StyleClass.OUTER_VIEW);
+			getStyleClass().add(StyleClass.VIEW);
 		}
 
 		//--------------------------------------------------------------
@@ -1012,7 +1174,7 @@ public class GraphicButton
 		{
 			// Get graphic
 			GraphicButton button = GraphicButton.this;
-			Node graphic = button.getGraphic();
+			Node graphic = button.graphic();
 
 			// If button is disabled, reduce opacity of graphic
 			if ((graphic != null) && button.isDisabled())
@@ -1024,23 +1186,24 @@ public class GraphicButton
 				graphic.setOpacity(DISABLED_OPACITY);
 			}
 
+			// Get button state
+			State state = mouseWithin
+								? pressed
+										? State.ARMED
+										: State.HOVERED
+								: (button.isSelected() && highlightIfSelected)
+										? State.SELECTED
+										: State.INACTIVE;
+
 			// Get background colour
-			Color backgroundColour = mouseWithin
-										? pressed
-												? getColour(ColourKey.BACKGROUND_ARMED)
-												: getColour(ColourKey.BACKGROUND_HOVERED)
-										: (button.isSelected() && highlightIfSelected)
-												? getColour(ColourKey.BACKGROUND_SELECTED)
-												: button.backgroundColour;
+			Color backgroundColour = (backgroundColours == null)
+												? DEFAULT_BACKGROUND_COLOURS.get(state)
+												: backgroundColours.get(state);
 
 			// Get border colour
-			Color borderColour = mouseWithin
-										? pressed
-												? getColour(ColourKey.BORDER_ARMED)
-												: getColour(ColourKey.BORDER_HOVERED)
-										: (button.isSelected() && highlightIfSelected)
-												? getColour(ColourKey.BORDER_SELECTED)
-												: button.borderColour;
+			Color borderColour = (borderColours == null)
+												? DEFAULT_BORDER_COLOURS.get(state)
+												: borderColours.get(state);
 
 			// Remove all children
 			getChildren().clear();

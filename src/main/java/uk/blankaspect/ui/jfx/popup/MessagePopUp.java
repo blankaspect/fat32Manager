@@ -70,30 +70,30 @@ public class MessagePopUp
 			FxProperty.TEXT_FILL,
 			ColourKey.TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.MESSAGE_POPUP)
-						.desc(FxStyleClass.LABEL)
-						.build()
+					.cls(StyleClass.MESSAGE_POPUP)
+					.desc(FxStyleClass.LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.MESSAGE_POPUP)
-						.build()
+					.cls(StyleClass.MESSAGE_POPUP)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.MESSAGE_POPUP)
-						.build()
+					.cls(StyleClass.MESSAGE_POPUP)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	MESSAGE_POPUP	= StyleConstants.CLASS_PREFIX + "message-popup";
 	}
@@ -161,12 +161,12 @@ public class MessagePopUp
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

@@ -56,6 +56,14 @@ public class DirectoryUtils
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
+	/** A predicate that is {@code true} if a specified location is a regular file. */
+	public static final		Predicate<Path>	IS_REGULAR_FILE	= location ->
+			Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS);
+
+	/** A predicate that is {@code true} if a specified location is a directory. */
+	public static final		Predicate<Path>	IS_DIRECTORY	= location ->
+			Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS);
+
 	/** The number of attempts that will be made to delete a file or directory. */
 	private static final	int		NUM_DELETION_ATTEMPTS	= 3;
 
@@ -72,6 +80,7 @@ public class DirectoryUtils
 		String	FAILED_TO_COPY_FILE			= "Failed to copy the file.";
 		String	ERROR_LISTING_DIRECTORY		= "An error occurred when listing the entries of the directory.";
 		String	ERROR_TRAVERSING_DIRECTORY	= "An error occurred when traversing the directory structure.";
+		String	FAILED_TO_VISIT_FILE		= "The file or directory could not be processed.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -99,7 +108,7 @@ public class DirectoryUtils
 	 *           the location of the directory for which a list of entries is required.
 	 * @return a list of the entries of {@code directory}.
 	 * @throws FileException
-	 *           if an error occurred when listing the directory entries.
+	 *           if an error occurs when listing the directory entries.
 	 */
 
 	public static List<Path> listEntries(
@@ -149,7 +158,7 @@ public class DirectoryUtils
 	 *           the location of the directory for which a list of files is required.
 	 * @return a list of the regular files in {@code directory}.
 	 * @throws FileException
-	 *           if an error occurred when listing the directory entries.
+	 *           if an error occurs when listing the directory entries.
 	 */
 
 	public static List<Path> listFiles(
@@ -173,7 +182,7 @@ public class DirectoryUtils
 	 * @return a list of the regular files in {@code directory} after applying {@code filter} to the location of each
 	 *         file.
 	 * @throws FileException
-	 *           if an error occurred when listing the directory entries.
+	 *           if an error occurs when listing the directory entries.
 	 */
 
 	public static List<Path> listFiles(
@@ -226,7 +235,7 @@ public class DirectoryUtils
 	 *           the location of the directory for which a list of subdirectories is required.
 	 * @return a list of the subdirectories of {@code directory}.
 	 * @throws FileException
-	 *           if an error occurred when listing the directory entries.
+	 *           if an error occurs when listing the directory entries.
 	 */
 
 	public static List<Path> listDirectories(
@@ -250,7 +259,7 @@ public class DirectoryUtils
 	 * @return a list of the subdirectories of {@code directory} after applying {@code filter} to the location of each
 	 *         subdirectory.
 	 * @throws FileException
-	 *           if an error occurred when listing the directory entries.
+	 *           if an error occurs when listing the directory entries.
 	 */
 
 	public static List<Path> listDirectories(
@@ -297,12 +306,166 @@ public class DirectoryUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Traverses the directory structure whose root is the specified directory, creates a list of the files that are
+	 * accepted by the specified filter and returns the resulting list.  The traversal of the directory structure is
+	 * <i>depth-first</i>.
+	 *
+	 * @param  directory
+	 *           the root of the directory structure that will be traversed.
+	 * @param  filter
+	 *           the filter that will be applied to the location of each file that is encountered in the traversal of
+	 *           the directory structure.
+	 * @return a list of the locations of the files that are encountered in the traversal of the directory structure and
+	 *         that are accepted by {@code filter}.
+	 * @throws FileException
+	 *           if an exception occurred when traversing the directory structure.
+	 */
+
+	public static List<Path> findFiles(
+		Path			directory,
+		Predicate<Path>	filter)
+		throws FileException
+	{
+		return findLocations(directory, IS_REGULAR_FILE.and(filter));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Traverses the directory structure whose root is the specified directory, creates a list of the directories that
+	 * are accepted by the specified filter and returns the resulting list.  The traversal of the directory structure is
+	 * <i>depth-first</i>.
+	 *
+	 * @param  directory
+	 *           the root of the directory structure that will be traversed.
+	 * @param  filter
+	 *           the filter that will be applied to the location of each directory that is encountered in the traversal
+	 *           of the directory structure.
+	 * @return a list of the locations of the directories that are encountered in the traversal of the directory
+	 *         structure and that are accepted by {@code filter}.
+	 * @throws FileException
+	 *           if an exception occurred when traversing the directory structure.
+	 */
+
+	public static List<Path> findDirectories(
+		Path			directory,
+		Predicate<Path>	filter)
+		throws FileException
+	{
+		return findLocations(directory, IS_DIRECTORY.and(filter));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Traverses the directory structure whose root is the specified directory, creates a list of the files and
+	 * directories that are accepted by the specified filter and returns the resulting list.  The traversal of the
+	 * directory structure is <i>depth-first</i>.
+	 *
+	 * @param  directory
+	 *           the root of the directory structure that will be traversed.
+	 * @param  filter
+	 *           the filter that will be applied to the location of each file or directory that is encountered in the
+	 *           traversal of the directory structure.
+	 * @return a list of the locations of the files and directories that are encountered in the traversal of the
+	 *         directory structure and that are accepted by {@code filter}.
+	 * @throws FileException
+	 *           if an exception occurred when traversing the directory structure.
+	 */
+
+	public static List<Path> findLocations(
+		Path			directory,
+		Predicate<Path>	filter)
+		throws FileException
+	{
+		// Initialise list of locations
+		List<Path> locations = new ArrayList<>();
+
+		// Traverse directory structure
+		try
+		{
+			Files.walkFileTree(directory, new SimpleFileVisitor<>()
+			{
+				@Override
+				public FileVisitResult preVisitDirectory(
+					Path				directory,
+					BasicFileAttributes	attrs)
+					throws IOException
+				{
+					// If location of directory is accepted by filter, add it to list
+					if (filter.test(directory))
+						locations.add(directory);
+
+					// Continue with traversal
+					return FileVisitResult.CONTINUE;
+				}
+
+				//------------------------------------------------------
+
+				@Override
+				public FileVisitResult visitFile(
+					Path				file,
+					BasicFileAttributes	attrs)
+					throws IOException
+				{
+					// If location of file is accepted by filter, add it to list
+					if (filter.test(file))
+						locations.add(file);
+
+					// Continue with traversal
+					return FileVisitResult.CONTINUE;
+				}
+
+				//------------------------------------------------------
+
+				@Override
+				public FileVisitResult visitFileFailed(
+					Path		file,
+					IOException	exception)
+					throws IOException
+				{
+					throw new OuterIOException(new FileException(ErrorMsg.FAILED_TO_VISIT_FILE, exception, file));
+				}
+
+				//------------------------------------------------------
+
+				@Override
+				public FileVisitResult postVisitDirectory(
+					Path		directory,
+					IOException	exception)
+					throws IOException
+				{
+					// If an exception was thrown when traversing the directory, rethrow it
+					if (exception != null)
+						throw exception;
+
+					// Continue with traversal
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		}
+		catch (IOException e)
+		{
+			// If cause was a file exception, throw it
+			FileException.throwCause(e);
+
+			// Throw exception
+			throw new FileException(ErrorMsg.ERROR_TRAVERSING_DIRECTORY, e, directory);
+		}
+
+		// Return list of locations
+		return locations;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Recursively deletes the directory at the specified location.
 	 *
 	 * @param  location
 	 *           the location of the directory that will be deleted.
 	 * @throws FileException
-	 *           if an error occurred when traversing the directory structure or when deleting a file or directory.
+	 *           if an error occurs when traversing the directory structure or when deleting a file or directory.
 	 */
 
 	public static void deleteDirectory(
@@ -324,7 +487,7 @@ public class DirectoryUtils
 	 *           if {@code true}, only the contents of the directory will be deleted; the directory itself will not be
 	 *           deleted.
 	 * @throws FileException
-	 *           if an error occurred when traversing the directory structure or when deleting a file or directory.
+	 *           if an error occurs when traversing the directory structure or when deleting a file or directory.
 	 */
 
 	public static void deleteDirectory(
@@ -367,7 +530,7 @@ public class DirectoryUtils
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exception) throws IOException
 				{
-					// Throw any exception
+					// If an exception was thrown when traversing the directory, rethrow it
 					if (exception != null)
 						throw exception;
 
@@ -409,7 +572,7 @@ public class DirectoryUtils
 	 * @param  destDirectory
 	 *           the location of the destination directory.
 	 * @throws FileException
-	 *           if an error occurred when copying the directory.
+	 *           if an error occurs when copying the directory.
 	 */
 
 	public static void copyDirectory(

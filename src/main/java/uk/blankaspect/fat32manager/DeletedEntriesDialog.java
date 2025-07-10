@@ -39,6 +39,8 @@ import uk.blankaspect.driveio.VolumeException;
 
 import uk.blankaspect.fat32manager.Fat32Directory.Entry;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
 import uk.blankaspect.ui.jfx.window.WindowState;
@@ -106,8 +108,9 @@ public class DeletedEntriesDialog
 					{
 						try
 						{
-							SectorClusterViewDialog.showCluster(getWindow(), volume,
-																volume.getFat().indexFinder(entry.getClusterIndex(), -1));
+							SectorClusterViewDialog
+									.showCluster(getWindow(), volume,
+												 volume.getFat().indexFinder(entry.getClusterIndex(), -1));
 						}
 						catch (VolumeException e)
 						{
@@ -126,7 +129,7 @@ public class DeletedEntriesDialog
 		setContent(tableView);
 
 		// Create button: close
-		Button closeButton = new Button(CLOSE_STR);
+		Button closeButton = Buttons.hNoShrink(CLOSE_STR);
 		closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		closeButton.setOnAction(event -> requestClose());
 		addButton(closeButton, HPos.RIGHT);

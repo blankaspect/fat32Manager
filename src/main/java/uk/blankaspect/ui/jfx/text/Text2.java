@@ -178,8 +178,9 @@ public class Text2
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates and returns a tile (a {@link Group}) that contains a text node centred on a transparent rectangle.  The
-	 * dimensions of the tile are the corresponding dimensions of the text node, each rounded up to the nearest integer.
+	 * Creates and returns a tile (a {@link Group}) that contains a text node that is centred on a transparent
+	 * rectangle.  The dimensions of the tile are the corresponding dimensions of the text node, each rounded up to the
+	 * nearest integer.
 	 *
 	 * @param  text
 	 *           the text for which a tile will be created.
@@ -189,9 +190,32 @@ public class Text2
 	public static Group createTile(
 		String	text)
 	{
+		return createTile(text, null);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a tile (a {@link Group}) that contains a text node of the specified colour, centred on a
+	 * transparent rectangle.  The dimensions of the tile are the corresponding dimensions of the text node, each
+	 * rounded up to the nearest integer.
+	 *
+	 * @param  text
+	 *           the text for which a tile will be created.
+	 * @param  colour
+	 *           the colour of the text, which may be {@code null}.
+	 * @return the tile that was created for {@code text}.
+	 */
+
+	public static Group createTile(
+		String	text,
+		Color	colour)
+	{
 		// Create text node
 		Text2 textNode = new Text2(text);
 		textNode.setBoundsType(TextBoundsType.LOGICAL_VERTICAL_CENTER);
+		if (colour != null)
+			textNode.setFill(colour);
 
 		// Get dimensions of text node
 		double textWidth = textNode.getLayoutBounds().getWidth();

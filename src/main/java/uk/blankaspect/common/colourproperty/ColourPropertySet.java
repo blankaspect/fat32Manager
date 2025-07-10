@@ -32,14 +32,13 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
-import java.nio.file.FileVisitor;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 
 import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -111,21 +110,50 @@ public class ColourPropertySet
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	CLASS_FILE_RESOURCE_NOT_FOUND		= "Class: %s\nThe class-file resource was not found.";
-		String	MALFORMED_JAR_URL					= "The URL of the JAR file is malformed.";
-		String	CANNOT_EXTRACT_CLASS_FILE_PARENT	= "Cannot extract the parent directory from the location of the class file.";
-		String	FAILED_TO_CONVERT_RESOURCE_URL		= "Failed to convert the resource URL to a file-system location.";
-		String	FAILED_TO_OPEN_CONNECTION_TO_JAR	= "Failed to open a connection to the JAR file.";
-		String	FAILED_TO_OPEN_CONNECTION			= "Failed to open a connection.";
-		String	FAILED_TO_CLOSE_CONNECTION			= "Failed to close the connection.";
-		String	FAILED_TO_CONNECT_TO_FILE			= "Failed to connect to the file.";
-		String	FILE_IS_TOO_LONG					= "The file is too long to be read.";
-		String	ERROR_READING_FILE					= "An error occurred when reading the file.";
-		String	ERROR_WRITING_FILE					= "An error occurred when writing the file.";
-		String	ERROR_TRAVERSING_DIRECTORY			= "An error occurred when traversing the directory structure.";
-		String	MALFORMED_KEY_VALUE_PAIR			= "Line %d: The key-value pair is malformed.";
-		String	DUPLICATE_KEY						= "Line %d: The key '%s' appears more than once.";
-		String	INVALID_COLOUR						= "Line %d: The colour specifier is invalid.";
+		String	CLASS_FILE_RESOURCE_NOT_FOUND =
+				"Class: %s\nThe class-file resource was not found.";
+
+		String	MALFORMED_JAR_URL =
+				"The URL of the JAR file is malformed.";
+
+		String	CANNOT_EXTRACT_CLASS_FILE_PARENT =
+				"Cannot extract the parent directory from the location of the class file.";
+
+		String	FAILED_TO_CONVERT_RESOURCE_URL =
+				"Failed to convert the resource URL to a file-system location.";
+
+		String	FAILED_TO_OPEN_CONNECTION_TO_JAR =
+				"Failed to open a connection to the JAR file.";
+
+		String	FAILED_TO_OPEN_CONNECTION =
+				"Failed to open a connection.";
+
+		String	FAILED_TO_CLOSE_CONNECTION =
+				"Failed to close the connection.";
+
+		String	FAILED_TO_CONNECT_TO_FILE =
+				"Failed to connect to the file.";
+
+		String	FILE_IS_TOO_LONG =
+				"The file is too long to be read.";
+
+		String	ERROR_READING_FILE =
+				"An error occurred when reading the file.";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred when writing the file.";
+
+		String	ERROR_TRAVERSING_DIRECTORY =
+				"An error occurred when traversing the directory structure.";
+
+		String	MALFORMED_KEY_VALUE_PAIR =
+				"Line %d: The key-value pair is malformed.";
+
+		String	DUPLICATE_KEY =
+				"Line %d: The key '%s' occurs more than once.";
+
+		String	INVALID_COLOUR =
+				"Line %d: The colour specifier is invalid.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -176,7 +204,7 @@ public class ColourPropertySet
 		String	str)
 	{
 		// Split input string into components
-		String[] strs = str.trim().split(ColourConstants.RGB_SEPARATOR_REGEX, -1);
+		String[] strs = str.strip().split(ColourConstants.RGB_SEPARATOR_REGEX, -1);
 		int numComponents = strs.length;
 		if (numComponents > 4)
 			throw new IllegalArgumentException("Malformed colour");
@@ -191,7 +219,8 @@ public class ColourPropertySet
 				try
 				{
 					value = Integer.parseInt(strs[index]);
-					if ((value < ColourConstants.MIN_RGB_COMPONENT_VALUE) || (value > ColourConstants.MAX_RGB_COMPONENT_VALUE))
+					if ((value < ColourConstants.MIN_RGB_COMPONENT_VALUE)
+							|| (value > ColourConstants.MAX_RGB_COMPONENT_VALUE))
 						throw new IllegalArgumentException("RGB component out of bounds: " + value);
 				}
 				catch (NumberFormatException e)
@@ -327,7 +356,7 @@ public class ColourPropertySet
 				throw new FileException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, file, lineIndex);
 
 			// Extract key
-			String key = line.substring(0, index).trim();
+			String key = line.substring(0, index).strip();
 			if (key.isEmpty())
 				throw new FileException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, file, lineIndex);
 			if (keysFound.contains(key))
@@ -343,7 +372,7 @@ public class ColourPropertySet
 				keysNotFound.remove(key);
 
 				// Replace value of property
-				if (!value.equals(line.substring(index + 1).trim()))
+				if (!value.equals(line.substring(index + 1).strip()))
 				{
 					lines.set(lineIndex - 1, key + " " + PROPERTY_SEPARATOR_CHAR + " " + value);
 					changed = true;
@@ -378,7 +407,7 @@ public class ColourPropertySet
 	 *           the location of the file.
 	 * @return the text content of the file denoted by {@code url}.
 	 * @throws UrlException
-	 *           if an error occurred when reading the file.
+	 *           if an error occurs when reading the file.
 	 */
 
 	private static String readTextFile(
@@ -467,7 +496,7 @@ public class ColourPropertySet
 				}
 				catch (Exception e0)
 				{
-					// Ignore
+					// ignore
 				}
 			}
 
@@ -505,7 +534,7 @@ public class ColourPropertySet
 				throw new BaseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
 
 			// Extract key
-			String key = line.substring(0, index).trim();
+			String key = line.substring(0, index).strip();
 			if (key.isEmpty())
 				throw new BaseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
 			if (properties.containsKey(key))
@@ -575,10 +604,10 @@ public class ColourPropertySet
 		String	themeId)
 	{
 		return colourPropertySets.entrySet().stream()
-											.flatMap(entry -> entry.getValue().entrySet().stream()
-																.filter(entry0 -> entry0.getKey().equals(themeId)))
-											.flatMap(entry -> entry.getValue().entrySet().stream())
-											.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v2));
+				.flatMap(entry ->
+						entry.getValue().entrySet().stream().filter(entry0 -> entry0.getKey().equals(themeId)))
+				.flatMap(entry -> entry.getValue().entrySet().stream())
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v2));
 	}
 
 	//------------------------------------------------------------------
@@ -682,7 +711,7 @@ public class ColourPropertySet
 		Class<?>...	classes)
 		throws BaseException
 	{
-		readColourProperties(Arrays.asList(classes));
+		readColourProperties(List.of(classes));
 	}
 
 	//------------------------------------------------------------------
@@ -763,33 +792,11 @@ public class ColourPropertySet
 		Path	rootDirectory)
 		throws LocationException
 	{
+		Path normRootDirectory = rootDirectory.normalize();
 		try
 		{
-			Files.walkFileTree(rootDirectory, new FileVisitor<>()
+			Files.walkFileTree(normRootDirectory, new SimpleFileVisitor<>()
 			{
-				@Override
-				public FileVisitResult preVisitDirectory(
-					Path				directory,
-					BasicFileAttributes	attrs)
-					throws IOException
-				{
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult postVisitDirectory(
-					Path		directory,
-					IOException	exception)
-					throws IOException
-				{
-					// If an exception was thrown, rethrow it
-					if (exception != null)
-						throw exception;
-
-					// Continue to traverse directory structure
-					return FileVisitResult.CONTINUE;
-				}
-
 				@Override
 				public FileVisitResult visitFile(
 					Path				file,
@@ -804,7 +811,7 @@ public class ColourPropertySet
 						return FileVisitResult.CONTINUE;
 
 					// Get pathname of file relative to root directory
-					String pathname = rootDirectory.relativize(file).toString()
+					String pathname = normRootDirectory.relativize(file.normalize()).toString()
 											.replace(File.separatorChar, PATHNAME_SEPARATOR_CHAR);
 
 					// Split relative pathname into its elements
@@ -831,28 +838,15 @@ public class ColourPropertySet
 					try
 					{
 						Map<String, String> properties = readColourProperties(file);
-						colourPropertySets.computeIfAbsent(className, key -> new LinkedHashMap<>()).put(themeId, properties);
+						colourPropertySets.computeIfAbsent(className, key -> new LinkedHashMap<>())
+								.put(themeId, properties);
 					}
 					catch (FileException e)
 					{
 						throw new OuterIOException(e);
 					}
 
-					// Continue to traverse directory structure
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFileFailed(
-					Path		file,
-					IOException	exception)
-					throws IOException
-				{
-					// If an exception was thrown, rethrow it
-					if (exception != null)
-						throw exception;
-
-					// Continue to traverse directory structure
+					// Continue to traverse the tree
 					return FileVisitResult.CONTINUE;
 				}
 			});
@@ -863,7 +857,7 @@ public class ColourPropertySet
 			FileException.throwCause(e);
 
 			// Throw exception
-			throw new FileException(ErrorMsg.ERROR_TRAVERSING_DIRECTORY, e, rootDirectory);
+			throw new FileException(ErrorMsg.ERROR_TRAVERSING_DIRECTORY, e, normRootDirectory);
 		}
 	}
 

@@ -26,10 +26,10 @@ import java.util.List;
 
 import javafx.animation.AnimationTimer;
 
-import javafx.application.Platform;
-
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+
+import javafx.beans.value.ChangeListener;
 
 import javafx.geometry.Insets;
 
@@ -59,7 +59,8 @@ import uk.blankaspect.ui.jfx.style.StyleManager;
 
 
 /**
- * This class implements a simple progress bar.
+ * This class implements a simple progress bar.  When the progress bar is no longer used, it should be disabled to stop
+ * the timer for the indeterminate-progress indicator.
  */
 
 public class SimpleProgressBar
@@ -102,27 +103,27 @@ public class SimpleProgressBar
 			FxProperty.FILL,
 			ColourKey.FRAME_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_PROGRESS_BAR)
-						.desc(StyleClass.FRAME)
-						.build()
+					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
+					.desc(StyleClass.FRAME)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.FRAME_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_PROGRESS_BAR)
-						.desc(StyleClass.FRAME)
-						.build()
+					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
+					.desc(StyleClass.FRAME)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BAR,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_PROGRESS_BAR)
-						.desc(StyleClass.BAR)
-						.build()
+					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
+					.desc(StyleClass.BAR)
+					.build()
 		)
 	);
 
@@ -154,6 +155,12 @@ public class SimpleProgressBar
 	/** The height of this progress bar. */
 	private	double					height;
 
+	/** The background colour of the frame of this progress bar. */
+	private	Color					frameBackgroundColour;
+
+	/** The border colour of the frame of this progress bar. */
+	private	Color					frameBorderColour;
+
 	/** The colour of the bar of this progress bar. */
 	private	Color					barColour;
 
@@ -168,6 +175,9 @@ public class SimpleProgressBar
 
 	/** The progress value of this progress bar. */
 	private	SimpleDoubleProperty	progress;
+
+	/** The listener that is set on {@link #progress}. */
+	private	ChangeListener<Number>	progressListener;
 
 	/** The timer that animates the pattern of the indicator of indeterminate progress. */
 	private	AnimationTimer			indeterminateTimer;
@@ -219,28 +229,47 @@ public class SimpleProgressBar
 		// Initialise instance variables
 		this.width = width;
 		this.height = height;
+		frameBackgroundColour = getColour(ColourKey.FRAME_BACKGROUND);
+		frameBorderColour = getColour(ColourKey.FRAME_BORDER);
 		barColour = getColour(ColourKey.BAR);
 		barMargins = DEFAULT_BAR_MARGINS;
 		progress = new SimpleDoubleProperty(0.0);
+		progressListener = (observable, oldProgress, newProgress) ->
+		{
+			// If indeterminate progress, start animation of indicator ...
+			double progress = newProgress.doubleValue();
+			if (progress < 0.0)
+				indeterminateTimer.start();
+
+			// ... otherwise, update progress bar
+			else
+			{
+				// Stop animation of indeterminate progress
+				indeterminateTimer.stop();
+
+				// Redraw control
+				requestLayout();
+			}
+		};
 
 		// Set properties
 		getStyleClass().add(StyleClass.SIMPLE_PROGRESS_BAR);
 
 		// Create frame
 		frame = new Rectangle(width, height);
+		frame.setFill(frameBackgroundColour);
+		frame.setStroke(frameBorderColour);
 		frame.setStrokeWidth(BORDER_WIDTH);
 		frame.setStrokeType(StrokeType.INSIDE);
-		frame.setFill(getColour(ColourKey.FRAME_BACKGROUND));
-		frame.setStroke(getColour(ColourKey.FRAME_BORDER));
 		frame.getStyleClass().add(StyleClass.FRAME);
 
 		// Create bar
 		bar = new Rectangle();
-		bar.setFill(getColour(ColourKey.BAR));
+		bar.setFill(barColour);
 		bar.setMouseTransparent(true);
 		bar.getStyleClass().add(StyleClass.BAR);
 
-		// Add children to this group
+		// Add children to this container
 		getChildren().setAll(frame, bar);
 
 		// Create timer that animates indicator of indeterminate progress
@@ -265,37 +294,31 @@ public class SimpleProgressBar
 				if (updateTime == 0)
 					updateTime = time;
 
-				// Update progress bar
-				while (updateTime <= time)
+				// Test whether to update progress bar
+				if (updateTime <= time)
 				{
-					updateBar();
-					updateTime += BAR_UPDATE_INTERVAL;
+					// Set next update time
+					while (updateTime <= time)
+						updateTime += BAR_UPDATE_INTERVAL;
+
+					// Redraw control
+					requestLayout();
 				}
 			}
 		};
 
 		// Update bar when progress changes
-		progress.addListener((observable, oldProgress, newProgress) ->
-		{
-			// If indeterminate progress, start animation of indicator ...
-			double progress = newProgress.doubleValue();
-			if (progress < 0.0)
-				indeterminateTimer.start();
-
-			// ... otherwise, update progress bar
-			else
-			{
-				// Stop animation of indeterminate progress
-				indeterminateTimer.stop();
-
-				// Update progress bar
-				Platform.runLater(() -> updateBar());
-			}
-		});
+		progress.addListener(progressListener);
 
 		// Reduce opacity of progress bar if disabled
 		disabledProperty().addListener((observable, oldDisabled, disabled) ->
-				setOpacity(disabled ? DISABLED_OPACITY : 1.0));
+		{
+			// Stop timer for indeterminate-progress indicator
+			indeterminateTimer.stop();
+
+			// Reduce opacity of progress bar
+			setOpacity(disabled ? DISABLED_OPACITY : 1.0);
+		});
 	}
 
 	//------------------------------------------------------------------
@@ -305,12 +328,12 @@ public class SimpleProgressBar
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -517,14 +540,26 @@ public class SimpleProgressBar
 	 * Sets the background colour of this progress bar to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the background colour of this progress bar will be set.
+	 *          the value to which the background colour of this progress bar will be set.  If it is {@code null}, the
+	 *          default background colour will be used.
 	 */
 
 	public void setBackgroundColour(
 		Color	colour)
 	{
-		// Set fill colour of frame
-		frame.setFill(colour);
+		// Replace null colour with default colour
+		if (colour == null)
+			colour = getColour(ColourKey.FRAME_BACKGROUND);
+
+		// Update instance variable and redraw progress bar
+		if (!colour.equals(frameBackgroundColour))
+		{
+			// Update instance variable
+			frameBackgroundColour = colour;
+
+			// Update frame
+			frame.setFill(colour);
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -533,14 +568,26 @@ public class SimpleProgressBar
 	 * Sets the border colour of this progress bar to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the border colour of this progress bar will be set.
+	 *          the value to which the border colour of this progress bar will be set.  If it is {@code null}, the
+	 *          default border colour will be used.
 	 */
 
 	public void setBorderColour(
 		Color	colour)
 	{
-		// Set stroke colour of frame
-		frame.setStroke(colour);
+		// Replace null colour with default colour
+		if (colour == null)
+			colour = getColour(ColourKey.FRAME_BORDER);
+
+		// Update instance variable and redraw progress bar
+		if (!colour.equals(frameBorderColour))
+		{
+			// Update instance variable
+			frameBorderColour = colour;
+
+			// Update frame
+			frame.setStroke(colour);
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -549,27 +596,25 @@ public class SimpleProgressBar
 	 * Sets the bar colour of this progress bar to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the bar colour of this progress bar will be set.
+	 *          the value to which the bar colour of this progress bar will be set.  If it is {@code null}, the default
+	 *          bar colour will be used.
 	 */
 
 	public void setBarColour(
 		Color	colour)
 	{
-		// Validate arguments
+		// Replace null colour with default colour
 		if (colour == null)
-			throw new IllegalArgumentException("Null colour");
+			colour = getColour(ColourKey.BAR);
 
-		// Set bar colour
+		// Update instance variable and redraw progress bar
 		if (!colour.equals(barColour))
 		{
 			// Update instance variable
 			barColour = colour;
 
-			// Update image of pattern of indicator of indeterminate progress
-			updateImage();
-
-			// Update bar
-			updateBar();
+			// Redraw progress bar
+			requestLayout();
 		}
 	}
 
@@ -589,13 +634,13 @@ public class SimpleProgressBar
 		if (margins == null)
 			throw new IllegalArgumentException("Null margins");
 
-		// Set bar margins
+		// Update instance variable and redraw progress bar
 		if (!margins.equals(barMargins))
 		{
 			// Update instance variable
 			barMargins = margins;
 
-			// Redraw control
+			// Redraw progress bar
 			requestLayout();
 		}
 	}

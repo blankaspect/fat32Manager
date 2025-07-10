@@ -120,7 +120,7 @@ public class ImageButton
 		this.image = image;
 
 		// Update graphic content
-		setGraphic(ImageUtils.createSmoothImageView(image));
+		setGraphic(ImageUtils.smoothImageView(image));
 	}
 
 	//------------------------------------------------------------------

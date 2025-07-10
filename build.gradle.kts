@@ -26,14 +26,21 @@ plugins {
 
 // Functions
 
-fun _path(vararg components : String) : String =
+fun _path(vararg components : String): String =
         components.map { it.replace('/', File.separatorChar) }.joinToString(separator = File.separator)
+
+fun _appSystemProperties() =
+        System.getProperties()
+                .filter { (key, _) -> (key is String) && key.startsWith("blankaspect.app.") }
+                .mapKeys { it.key as String }
 
 //----------------------------------------------------------------------
 
 // Properties
 
 val javaVersion = 17
+
+val projectName = project.name
 
 val packageName     = "fat32manager"
 val mainClassName   = "uk.blankaspect.${packageName}.Fat32ManagerApp"
@@ -84,7 +91,7 @@ tasks.jar {
     archiveFileName.set(jarFilename)
     manifest {
         attributes(
-            "Application-Name" to project.name,
+            "Application-Name" to projectName,
             "Main-Class"       to mainClassName
         )
     }
@@ -98,6 +105,8 @@ tasks.register<JavaExec>("runMain") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(mainClassName)
     jvmArgs = jfxArgs
+
+    systemProperties(_appSystemProperties())
 }
 
 //----------------------------------------------------------------------
@@ -108,6 +117,8 @@ tasks.register<JavaExec>("runMainJre") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(mainClassName)
     executable = jfxLauncher
+
+    systemProperties(_appSystemProperties())
 }
 
 //----------------------------------------------------------------------
@@ -117,6 +128,8 @@ tasks.register<JavaExec>("runMainJre") {
 tasks.register<JavaExec>("runJar") {
     classpath = files(tasks.jar)
     jvmArgs = jfxArgs
+
+    systemProperties(_appSystemProperties())
 }
 
 //----------------------------------------------------------------------
@@ -126,6 +139,8 @@ tasks.register<JavaExec>("runJar") {
 tasks.register<JavaExec>("runJarJre") {
     classpath = files(tasks.jar)
     executable = jfxLauncher
+
+    systemProperties(_appSystemProperties())
 }
 
 //----------------------------------------------------------------------

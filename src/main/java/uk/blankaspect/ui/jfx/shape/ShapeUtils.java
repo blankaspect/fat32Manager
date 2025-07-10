@@ -18,6 +18,9 @@ package uk.blankaspect.ui.jfx.shape;
 // IMPORTS
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javafx.scene.paint.Color;
 
 import javafx.scene.shape.Rectangle;
@@ -107,12 +110,12 @@ public class ShapeUtils
 	 *           the width of the rectangles.
 	 * @param  height
 	 *           the height of the rectangles.
-	 * @return an array containing two rectangles.  The coordinates of the top left corner of each rectangle are (0, 0)
-	 *         and the dimensions of each rectangle are {@code width} and {@code height}.  The fills and borders of the
+	 * @return a list of two rectangles.  The coordinates of the top left corner of each rectangle are (0, 0) and the
+	 *         dimensions of each rectangle are {@code width} and {@code height}.  The fills and borders of the
 	 *         rectangles are described above.
 	 */
 
-	public static Rectangle[] createFocusBorder(
+	public static List<Rectangle> createFocusBorder(
 		double	width,
 		double	height)
 	{
@@ -145,18 +148,17 @@ public class ShapeUtils
 	 *               2 &times; {@code inset}.
 	 *             </li>
 	 *           </ul>
-	 * @return an array containing two rectangles.  The locations, dimensions, fills and borders of the rectangles are
-	 *         described above.
+	 * @return a list of two rectangles.  The locations, dimensions, fills and borders of the rectangles are described
+	 *         above.
 	 */
 
-	public static Rectangle[] createFocusBorder(
+	public static List<Rectangle> createFocusBorder(
 		double	width,
 		double	height,
 		double	inset)
 	{
-		int numBorders = 2;
-		Rectangle[] borders = new Rectangle[numBorders];
-		for (int i = 0; i < numBorders; i++)
+		List<Rectangle> borders = new ArrayList<>();
+		for (int i = 0; i < 2; i++)
 		{
 			Rectangle border = new Rectangle(width - 2.0 * inset, height - 2.0 * inset, Color.TRANSPARENT);
 			border.setStroke((i == 0) ? FOCUS_BORDER_COLOUR1 : FOCUS_BORDER_COLOUR2);
@@ -166,7 +168,7 @@ public class ShapeUtils
 				border.getStrokeDashArray().addAll(1.0, 1.0);
 			if (inset != 0.0)
 				border.relocate(inset, inset);
-			borders[i] = border;
+			borders.add(border);
 		}
 		return borders;
 	}

@@ -114,16 +114,16 @@ public class OverlayLabel
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.POPUP_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.OVERLAY_LABEL_POPUP)
-						.build()
+					.cls(StyleClass.OVERLAY_LABEL_POPUP)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.POPUP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.OVERLAY_LABEL_POPUP)
-						.build()
+					.cls(StyleClass.OVERLAY_LABEL_POPUP)
+					.build()
 		)
 	);
 
@@ -390,12 +390,12 @@ public class OverlayLabel
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

@@ -82,6 +82,10 @@ import uk.blankaspect.common.logging.Logger;
 import uk.blankaspect.common.logging.LoggerUtils;
 import uk.blankaspect.common.logging.LogLevel;
 
+import uk.blankaspect.common.message.MessageConstants;
+
+import uk.blankaspect.common.os.OsUtils;
+
 import uk.blankaspect.common.resource.ResourceProperties;
 import uk.blankaspect.common.resource.ResourceUtils;
 
@@ -97,16 +101,20 @@ import uk.blankaspect.driveio.IVolumeAccessor;
 import uk.blankaspect.driveio.Volume;
 import uk.blankaspect.driveio.VolumeException;
 
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
+
 import uk.blankaspect.ui.jfx.container.PropertiesPane;
 
 import uk.blankaspect.ui.jfx.dialog.ButtonInfo;
 import uk.blankaspect.ui.jfx.dialog.ConfirmationDialog;
 import uk.blankaspect.ui.jfx.dialog.ExceptionDialog;
-import uk.blankaspect.ui.jfx.dialog.MessageDialog;
 import uk.blankaspect.ui.jfx.dialog.MessageListDialog;
 import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
 
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
+
+import uk.blankaspect.ui.jfx.image.ImageData;
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
@@ -135,7 +143,7 @@ public class Fat32ManagerApp
 	/** The long name of the application. */
 	private static final	String	LONG_NAME	= "FAT32 manager";
 
-	/** The key with which the application is associated. */
+	/** The name of the application when used as a key. */
 	private static final	String	NAME_KEY	= "fat32Manager";
 
 	private static final	String	BUILD_PROPERTIES_FILENAME	= "build.properties";
@@ -169,14 +177,28 @@ public class Fat32ManagerApp
 	/** The suffix of the name of a thread on which a check of the current volume is performed. */
 	private static final	String	CHECK_VOLUME_THREAD_NAME_SUFFIX	= "checkVolume";
 
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
+
+	/** The delay (in milliseconds) before making the main window visible by restoring its opacity. */
+	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+
 	/** The margins that are applied to the visual bounds of each screen when determining whether the saved location of
 		the main window is within a screen. */
 	private static final	Insets	SCREEN_MARGINS	= new Insets(0.0, 32.0, 32.0, 0.0);
 
+	/** The key combination for the command that opens the previous directory. */
 	private static final	KeyCombination	KEY_COMBO_OPEN_PREVIOUS	=
 			new KeyCodeCombination(KeyCode.LEFT, KeyCombination.ALT_DOWN);
+
+	/** The key combination for the command that opens the next directory. */
 	private static final	KeyCombination	KEY_COMBO_OPEN_NEXT		=
 			new KeyCodeCombination(KeyCode.RIGHT, KeyCombination.ALT_DOWN);
+
+	/** The key combination for the command that opens the parent directory. */
 	private static final	KeyCombination	KEY_COMBO_OPEN_PARENT	=
 			new KeyCodeCombination(KeyCode.UP, KeyCombination.ALT_DOWN);
 
@@ -212,12 +234,12 @@ public class Fat32ManagerApp
 	private static final	String	SEARCHING_FOR_VOLUMES_STR	= "Searching for volumes";
 	private static final	String	NO_VOLUMES_TO_FORMAT_STR	= "No volumes are eligible to be formatted.";
 	private static final	String	FORMATTED_STR				=
-			"""
-			The volume was formatted.
-			Its capacity is %d bytes.""" + MessageDialog.MESSAGE_SEPARATOR +
-			"""
-			The operating system may not be able to detect the new format
-			unless you unmount or eject the volume.""";
+		"""
+		The volume was formatted.
+		Its capacity is %,d bytes.""" + MessageConstants.LABEL_SEPARATOR +
+		"""
+		The operating system may not be able to detect the new format
+		unless you unmount or eject the volume.""";
 	private static final	String	DETERMINING_NUM_SECTORS_STR	= "Determining the number of available sectors";
 	private static final	String	PROPERTIES_STR				= "Properties";
 	private static final	String	OF_STR						= " of ";
@@ -236,8 +258,9 @@ public class Fat32ManagerApp
 	private static final	String	SEARCHING_FOR_FILES_STR		= "Searching for files";
 	private static final	String	DEFRAGMENTING_FILES_STR		= "Defragmenting files";
 	private static final	String	NO_FILES_TO_DEFRAGMENT_STR	= "There are no files to defragment.";
-	private static final	String	NOT_ENOUGH_SPACE_STR		= "The following files could not be defragmented because\n"
-																	+ "there was not enough space on the volume:";
+	private static final	String	NOT_ENOUGH_SPACE_STR		= """
+		The following files could not be defragmented because
+		there was not enough space on the volume:""";
 	private static final	String	OK_STR						= "OK";
 	private static final	String	CONTINUE_STR				= "Continue";
 	private static final	String	CANCEL_STR					= "Cancel";
@@ -254,6 +277,8 @@ public class Fat32ManagerApp
 		String	COLUMN_HEADER_POP_UP_DELAY	= "columnHeaderPopUpDelay";
 		String	COLUMN_WIDTHS				= "columnWidths";
 		String	DELETED_ENTRIES_DIALOG		= "deletedEntriesDialog";
+		String	DIRECTORY_ENTRIES			= "directoryEntries";
+		String	FIX_INVALID_DATES_TIMES		= "fixInvalidDatesTimes";
 		String	FORMAT						= "format";
 		String	MAIN_WINDOW					= "mainWindow";
 		String	SECTOR_CLUSTER_VIEW_DIALOG	= "sectorClusterViewDialog";
@@ -267,6 +292,7 @@ public class Fat32ManagerApp
 	{
 		String	USE_STYLE_SHEET_FILE	= "useStyleSheetFile";
 		String	VOLUME_ACCESSOR			= "volumeAccessor";
+		String	WINDOW_SHOWN_DELAY		= "windowShownDelay";
 	}
 
 	/** Keys that are associated with dialogs. */
@@ -280,18 +306,41 @@ public class Fat32ManagerApp
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	VOLUME_ACCESSOR_CLASS_NOT_FOUND		= "The volume-accessor class '%s' was not found.";
-		String	INVALID_VOLUME_ACCESSOR_CLASS		= "The class '%s' is not a valid volume accessor.";
-		String	FAILED_TO_CREATE_VOLUME_ACCESSOR	= "Failed to create a volume accessor.";
-		String	INVALID_LIBRARY						= "The library '%s' is not valid.";
-		String	FAILED_TO_LOAD_LIBRARY				= "Failed to load the library '%s'.";
-		String	VOLUME_NOT_MOUNTED					= "Volume: %s\nThe volume is not mounted.";
-		String	UNSUPPORTED_SECTOR_SIZE				= "The formatter does not support a sector size of %d bytes.";
-		String	START_SECTOR_OUT_OF_BOUNDS			= "The start sector of the partition is out of bounds.";
-		String	TOO_FEW_SECTORS						= "The volume has too few sectors to format as FAT32.";
-		String	TOO_MANY_SECTORS					= "The volume has too many sectors to format as FAT32.";
-		String	INVALID_FORMAT_PARAMS				= "The format parameters are invalid.";
-		String	NO_AUXILIARY_DIRECTORY				= "The location of the auxiliary directory could not be determined.";
+		String	VOLUME_ACCESSOR_CLASS_NOT_FOUND =
+				"The volume-accessor class '%s' was not found.";
+
+		String	INVALID_VOLUME_ACCESSOR_CLASS =
+				"The class '%s' is not a valid volume accessor.";
+
+		String	FAILED_TO_CREATE_VOLUME_ACCESSOR =
+				"Failed to create a volume accessor.";
+
+		String	INVALID_LIBRARY =
+				"The library '%s' is not valid.";
+
+		String	FAILED_TO_LOAD_LIBRARY =
+				"Failed to load the library '%s'.";
+
+		String	VOLUME_NOT_MOUNTED =
+				"Volume: %s\nThe volume is not mounted.";
+
+		String	UNSUPPORTED_SECTOR_SIZE =
+				"The formatter does not support a sector size of %d bytes.";
+
+		String	START_SECTOR_OUT_OF_BOUNDS =
+				"The start sector of the partition is out of bounds.";
+
+		String	TOO_FEW_SECTORS =
+				"The volume has too few sectors to format as FAT32.";
+
+		String	TOO_MANY_SECTORS =
+				"The volume has too many sectors to format as FAT32.";
+
+		String	INVALID_FORMAT_PARAMS =
+				"The format parameters are invalid.";
+
+		String	NO_AUXILIARY_DIRECTORY =
+				"The location of the auxiliary directory could not be determined.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -310,8 +359,8 @@ public class Fat32ManagerApp
 
 	private	ResourceProperties					buildProperties;
 	private	String								versionStr;
-	private	Configuration						configuration;
 	private	Preferences							preferences;
+	private	FormatParams						formatParams;
 	private	SimpleObjectProperty<Fat32Volume>	volume;
 	private	IVolumeAccessor						volumeAccessor;
 	private	WindowState							mainWindowState;
@@ -371,6 +420,32 @@ public class Fat32ManagerApp
 
 	//------------------------------------------------------------------
 
+	/**
+	 * Returns the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 *
+	 * @return the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 */
+
+	private static int getWindowShownDelay()
+	{
+		int delay = OsUtils.isWindows() ? WINDOW_SHOWN_DELAY_WINDOWS : WINDOW_SHOWN_DELAY;
+		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
+		if (value != null)
+		{
+			try
+			{
+				delay = Integer.parseInt(value);
+			}
+			catch (NumberFormatException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return delay;
+	}
+
+	//------------------------------------------------------------------
+
 ////////////////////////////////////////////////////////////////////////
 //  Instance methods : overriding methods
 ////////////////////////////////////////////////////////////////////////
@@ -387,6 +462,9 @@ public class Fat32ManagerApp
 	public void start(
 		Stage	primaryStage)
 	{
+		// Make main window invisible until it is shown
+		primaryStage.setOpacity(0.0);
+
 		// Log stack trace of uncaught exception
 		if (ClassUtils.isFromJar(getClass()))
 		{
@@ -405,6 +483,7 @@ public class Fat32ManagerApp
 
 		// Initialise instance variables
 		preferences = new Preferences();
+		formatParams = new FormatParams();
 		volume = new SimpleObjectProperty<>();
 		mainWindowState = new WindowState(false, true);
 		tableViewColumnWidths = new LinkedHashMap<>();
@@ -444,7 +523,8 @@ public class Fat32ManagerApp
 		// Read build properties and initialise version string
 		try
 		{
-			buildProperties = new ResourceProperties(ResourceUtils.normalisedPathname(getClass(), BUILD_PROPERTIES_FILENAME));
+			buildProperties =
+					new ResourceProperties(ResourceUtils.normalisedPathname(getClass(), BUILD_PROPERTIES_FILENAME));
 			versionStr = BuildUtils.versionString(getClass(), buildProperties);
 		}
 		catch (LocationException e)
@@ -472,8 +552,8 @@ public class Fat32ManagerApp
 					tableView.clearHistory();
 					tableView.setDirectory(null);
 
-					// Disable directory pane
-					directoryPane.setDisable(true);
+					// Disable control pane of directory pane
+					directoryPane.getControlPane().setDisable(true);
 				}
 
 				// Case: volume
@@ -485,33 +565,42 @@ public class Fat32ManagerApp
 			});
 		});
 
+		// Create container for local variables
+		class Vars
+		{
+			Configuration	config;
+			BaseException	configException;
+		}
+		Vars vars = new Vars();
+
 		// Read configuration file and decode configuration
-		BaseException configException = null;
 		try
 		{
 			// Initialise configuration
-			configuration = new Configuration();
+			vars.config = new Configuration();
 
-			// Read configuration file
-			configuration.read();
+			// Read and decode configuration
+			if (!AppConfig.noConfigFile())
+			{
+				// Read configuration file
+				vars.config.read();
 
-			// Decode configuration
-			decodeConfig(configuration.getConfig());
+				// Decode configuration
+				decodeConfig(vars.config.getConfig());
+			}
 		}
 		catch (BaseException e)
 		{
-			configException = e;
+			vars.configException = e;
 		}
 
 		// Get style manager
 		StyleManager styleManager = StyleManager.INSTANCE;
 
-		// Select theme
+		// Select theme from system property
 		String themeId = System.getProperty(StyleManager.SystemPropertyKey.THEME);
-		if (StringUtils.isNullOrEmpty(themeId))
-			themeId = preferences.getThemeId();
-		if (themeId != null)
-			styleManager.selectTheme(themeId);
+		if (!StringUtils.isNullOrEmpty(themeId))
+			styleManager.selectThemeOrDefault(themeId);
 
 		// Set ID and style-sheet filename on style manager
 		if (Boolean.getBoolean(SystemPropertyKey.USE_STYLE_SHEET_FILE))
@@ -520,10 +609,13 @@ public class Fat32ManagerApp
 			styleManager.setStyleSheetFilename(STYLE_SHEET_FILENAME);
 		}
 
+		// Update images
+		ImageData.updateImages();
+
 		// Create directory pane
 		directoryPane = new DirectoryPane();
-		directoryPane.setDisable(true);
-		if (configuration != null)
+		directoryPane.getControlPane().setDisable(true);
+		if (vars.config != null)
 		{
 			MainDirectoryTableView tableView = getTableView();
 			tableView.setColumns(tableViewColumnWidths);
@@ -538,12 +630,19 @@ public class Fat32ManagerApp
 		Scene scene = new Scene(new VBox(createMenuBar(), mainPane));
 
 		// Add accelerators to scene
-		scene.getAccelerators().put(KEY_COMBO_OPEN_PREVIOUS, () -> getTableView().openPreviousDirectory());
-		scene.getAccelerators().put(KEY_COMBO_OPEN_NEXT,     () -> getTableView().openNextDirectory());
-		scene.getAccelerators().put(KEY_COMBO_OPEN_PARENT,   () -> getTableView().openParentDirectory());
+		scene.getAccelerators().put(KEY_COMBO_OPEN_PREVIOUS, getTableView()::openPreviousDirectory);
+		scene.getAccelerators().put(KEY_COMBO_OPEN_NEXT,     getTableView()::openNextDirectory);
+		scene.getAccelerators().put(KEY_COMBO_OPEN_PARENT,   getTableView()::openParentDirectory);
 
 		// Add style sheet to scene
 		styleManager.addStyleSheet(scene);
+
+		// Update images of image buttons when theme changes
+		StyleManager.INSTANCE.themeProperty().addListener(observable ->
+		{
+			ImageData.updateImages();
+			ImageDataButton.updateButtons();
+		});
 
 		// Set properties of main window
 		primaryStage.getIcons().addAll(Images.APP_ICON_IMAGES);
@@ -551,52 +650,62 @@ public class Fat32ManagerApp
 
 		// Set scene on main window
 		primaryStage.setScene(scene);
+		primaryStage.sizeToScene();
 
-		// Set location and size of main window when it is opening
-		primaryStage.setOnShowing(event ->
-		{
-			// Set location of window
-			Point2D location = mainWindowState.getLocation();
-			if (location != null)
-			{
-				primaryStage.setX(location.getX());
-				primaryStage.setY(location.getY());
-			}
-
-			// Set size of window
-			Dimension2D size = mainWindowState.getSize();
-			if (size == null)
-				primaryStage.sizeToScene();
-			else
-			{
-				primaryStage.setWidth(size.getWidth());
-				primaryStage.setHeight(size.getHeight());
-			}
-		});
-
-		// Set location of main window after it is shown
+		// When main window is shown, set its size and location after a delay
 		primaryStage.setOnShown(event ->
 		{
-			// Get location of window
-			Point2D location = mainWindowState.getLocation();
-
-			// Invalidate location if top centre of window is not within a screen
-			double width = primaryStage.getWidth();
-			if ((location != null)
-					&& !SceneUtils.isWithinScreen(location.getX() + 0.5 * width, location.getY(), SCREEN_MARGINS))
-				location = null;
-
-			// If there is no location, centre window within primary screen
-			if (location == null)
+			// Set size and location of main window after a delay
+			ExecUtils.afterDelay(getWindowShownDelay(), () ->
 			{
-				location = SceneUtils.centreInScreen(width, primaryStage.getHeight());
+				// Get size of window from saved state
+				Dimension2D size = mainWindowState.getSize();
+
+				// Set size of window
+				if (size != null)
+				{
+					primaryStage.setWidth(size.getWidth());
+					primaryStage.setHeight(size.getHeight());
+				}
+
+				// Get location of window from saved state
+				Point2D location = mainWindowState.getLocation();
+
+				// Invalidate location if top centre of window is not within a screen
+				double width = primaryStage.getWidth();
+				if ((location != null)
+						&& !SceneUtils.isWithinScreen(location.getX() + 0.5 * width, location.getY(), SCREEN_MARGINS))
+					location = null;
+
+				// If there is no location, centre window within primary screen
+				if (location == null)
+					location = SceneUtils.centreInScreen(width, primaryStage.getHeight());
+
+				// Set location of window
 				primaryStage.setX(location.getX());
 				primaryStage.setY(location.getY());
-			}
+
+				// Perform remaining initialisation after a delay
+				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () ->
+				{
+					// Make window visible
+					primaryStage.setOpacity(1.0);
+
+					// Report any configuration error
+					if (vars.configException != null)
+					{
+						Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + CONFIG_ERROR_STR,
+											   vars.configException);
+					}
+
+					// Perform remaining initialisation
+					initialise();
+				});
+			});
 		});
 
 		// Write configuration file when main window is closed
-		if (configuration != null)
+		if (vars.config != null)
 		{
 			primaryStage.setOnHiding(event ->
 			{
@@ -604,15 +713,15 @@ public class Fat32ManagerApp
 				mainWindowState.restoreAndUpdate(primaryStage);
 
 				// Write configuration
-				if (configuration.canWrite())
+				if (vars.config.canWrite())
 				{
 					try
 					{
 						// Encode configuration
-						encodeConfig(configuration.getConfig());
+						encodeConfig(vars.config.getConfig());
 
 						// Write configuration file
-						configuration.write();
+						vars.config.write();
 					}
 					catch (FileException e)
 					{
@@ -623,112 +732,8 @@ public class Fat32ManagerApp
 			});
 		}
 
-		// Update images of image buttons when theme changes
-		StyleManager.INSTANCE.themeProperty().addListener(observable -> Images.updateImageButtons(scene));
-
-		// Update images of image buttons
-		Images.updateImageButtons(scene);
-
 		// Display main window
 		primaryStage.show();
-
-		// Report any configuration error
-		if (configException != null)
-			Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + CONFIG_ERROR_STR, configException);
-
-		// Get name of volume-accessor class from system property
-		String accessorClassName = System.getProperty(SystemPropertyKey.VOLUME_ACCESSOR);
-
-		// If there is a volume-accessor class name, create instance of class and set volume accessor to it
-		if (accessorClassName != null)
-		{
-			try
-			{
-				try
-				{
-					// Get class from its name
-					Class<?> cls = Class.forName(accessorClassName);
-
-					// Test for volume accessor
-					if (!IVolumeAccessor.class.isAssignableFrom(cls))
-						throw new BaseException(ErrorMsg.INVALID_VOLUME_ACCESSOR_CLASS, accessorClassName);
-
-					// Create instance of volume accessor
-					volumeAccessor = (IVolumeAccessor)cls.getDeclaredConstructor().newInstance();
-				}
-				catch (ClassNotFoundException e)
-				{
-					throw new BaseException(ErrorMsg.VOLUME_ACCESSOR_CLASS_NOT_FOUND, accessorClassName);
-				}
-			}
-			catch (Throwable e)
-			{
-				Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
-									   ErrorMsg.FAILED_TO_CREATE_VOLUME_ACCESSOR, e);
-				Platform.exit();
-			}
-		}
-
-		// Load library of native methods
-		if (volumeAccessor == null)
-		{
-			volumeAccessor = DriveIO.ACCESSOR;
-			String libraryName = System.mapLibraryName(DriveIO.NAME);
-			try
-			{
-				if (!DriveIO.initLibrary(ResourceUtils.packagePathname(getClass()) + "/" + LIBRARY_DIRECTORY_NAME,
-										 AppAuxDirectory.resolve(NAME_KEY, getClass(), LIBRARY_DIRECTORY_NAME)))
-				{
-					Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
-										   String.format(ErrorMsg.INVALID_LIBRARY, libraryName));
-					Platform.exit();
-				}
-			}
-			catch (Throwable e)
-			{
-				Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
-									   String.format(ErrorMsg.FAILED_TO_LOAD_LIBRARY, libraryName), e);
-				Platform.exit();
-			}
-		}
-
-		// Set format parameters from configuration
-		String key = PropertyKey.FORMAT;
-		if ((configuration != null) && configuration.getConfig().hasMap(key))
-		{
-			FormatParams formatParams = FormatDialog.getParams();
-			formatParams.decode(configuration.getConfig().getMapNode(key));
-			preferences.update(formatParams);
-		}
-
-		// Start periodically checking current volume
-		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable ->
-				DaemonFactory.create(getClass().getSimpleName() + "-" + CHECK_VOLUME_THREAD_NAME_SUFFIX, runnable));
-		executor.scheduleWithFixedDelay(() ->
-		{
-			Fat32Volume volume = getVolume();
-			if ((volume != null) && !volume.isOpen())
-			{
-				String name = volume.getName();
-				if (!volumeAccessor.isVolumeMounted(name))
-				{
-					Platform.runLater(() ->
-					{
-						// Invalidate volume
-						invalidateVolume();
-
-						// Display error message
-						Utils.showErrorMessage(primaryStage, VOLUME_STR + " " + Utils.volumeDisplayName(name),
-											   String.format(ErrorMsg.VOLUME_NOT_MOUNTED, name));
-					});
-				}
-			}
-		},
-		CHECK_VOLUME_INTERVAL, CHECK_VOLUME_INTERVAL, TimeUnit.MILLISECONDS);
-
-		// Open volume that was specified on command line
-		if (!args.isEmpty())
-			openVolume(args.get(0), null);
 	}
 
 	//------------------------------------------------------------------
@@ -799,11 +804,11 @@ public class Fat32ManagerApp
 	//------------------------------------------------------------------
 
 	private void showMessageDialog(
-		String			titleStr,
+		String			title,
 		String			message,
 		MessageIcon32	icon)
 	{
-		NotificationDialog.show(primaryStage, titleStr, icon.get(), message);
+		NotificationDialog.show(primaryStage, title, icon.get(), message);
 	}
 
 	//------------------------------------------------------------------
@@ -815,7 +820,9 @@ public class Fat32ManagerApp
 		rootNode.clear();
 
 		// Encode theme ID
-		rootNode.addMap(PropertyKey.APPEARANCE).addString(PropertyKey.THEME, preferences.getThemeId());
+		String themeId = StyleManager.INSTANCE.getThemeId();
+		if (themeId != null)
+			rootNode.addMap(PropertyKey.APPEARANCE).addString(PropertyKey.THEME, themeId);
 
 		// Encode state of main window
 		MapNode mainWindowNode = mainWindowState.encodeTree();
@@ -847,8 +854,14 @@ public class Fat32ManagerApp
 		if (!sectorClusterViewDialogNode.isEmpty())
 			rootNode.add(PropertyKey.SECTOR_CLUSTER_VIEW_DIALOG, sectorClusterViewDialogNode);
 
+		// Create directory-entries node
+		MapNode dirEntriesNode = rootNode.addMap(PropertyKey.DIRECTORY_ENTRIES);
+
+		// Encode 'fix invalid dates and times' flag
+		dirEntriesNode.addBoolean(PropertyKey.FIX_INVALID_DATES_TIMES, preferences.isFixDirEntryDatesTimes());
+
 		// Encode format parameters
-		FormatParams formatParams = FormatDialog.getParams();
+		formatParams = FormatDialog.getParams();
 		formatParams.update(preferences);
 		rootNode.add(PropertyKey.FORMAT, formatParams.encode());
 	}
@@ -868,7 +881,10 @@ public class Fat32ManagerApp
 		// Decode theme ID
 		String key = PropertyKey.APPEARANCE;
 		if (rootNode.hasMap(key))
-			preferences.setThemeId(rootNode.getMapNode(key).getString(PropertyKey.THEME, StyleManager.DEFAULT_THEME_ID));
+		{
+			String themeId = rootNode.getMapNode(key).getString(PropertyKey.THEME, StyleManager.DEFAULT_THEME_ID);
+			StyleManager.INSTANCE.selectThemeOrDefault(themeId);
+		}
 
 		// Decode properties of main window
 		key = PropertyKey.MAIN_WINDOW;
@@ -886,8 +902,9 @@ public class Fat32ManagerApp
 				MapNode viewNode = mainWindowNode.getMapNode(key);
 
 				// Decode column-header pop-up delay
-				preferences.setColumnHeaderPopUpDelay(viewNode.getInt(PropertyKey.COLUMN_HEADER_POP_UP_DELAY,
-																	  DirectoryTableView.DEFAULT_HEADER_CELL_POP_UP_DELAY));
+				preferences.setColumnHeaderPopUpDelay(
+						viewNode.getInt(PropertyKey.COLUMN_HEADER_POP_UP_DELAY,
+										DirectoryTableView.DEFAULT_HEADER_CELL_POP_UP_DELAY));
 
 				// Decode 'show special directories' flag
 				preferences.setShowSpecialDirectories(viewNode.getBoolean(PropertyKey.SHOW_SPECIAL_DIRECTORIES, false));
@@ -913,6 +930,119 @@ public class Fat32ManagerApp
 		key = PropertyKey.SECTOR_CLUSTER_VIEW_DIALOG;
 		if (rootNode.hasMap(key))
 			SectorClusterViewDialog.decodeState(rootNode.getMapNode(key));
+
+		// Decode properties relating to directory entries
+		key = PropertyKey.DIRECTORY_ENTRIES;
+		if (rootNode.hasMap(key))
+		{
+			// Get directory-entries node
+			MapNode dirEntriesNode = rootNode.getMapNode(key);
+
+			// Decode 'fix invalid dates and times' flag
+			preferences.setFixDirEntryDatesTimes(dirEntriesNode.getBoolean(PropertyKey.FIX_INVALID_DATES_TIMES, false));
+		}
+
+		// Decode format parameters
+		key = PropertyKey.FORMAT;
+		if (rootNode.hasMap(key))
+		{
+			formatParams.decode(rootNode.getMapNode(key));
+			preferences.update(formatParams);
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private void initialise()
+	{
+		// Get name of volume-accessor class from system property
+		String accessorClassName = System.getProperty(SystemPropertyKey.VOLUME_ACCESSOR);
+
+		// If there is a volume-accessor class name, create instance of class and set volume accessor to it
+		if (accessorClassName != null)
+		{
+			try
+			{
+				try
+				{
+					// Get class from its name
+					Class<?> cls = Class.forName(accessorClassName);
+
+					// Test for volume accessor
+					if (!IVolumeAccessor.class.isAssignableFrom(cls))
+						throw new BaseException(ErrorMsg.INVALID_VOLUME_ACCESSOR_CLASS, accessorClassName);
+
+					// Create instance of volume accessor
+					volumeAccessor = (IVolumeAccessor)cls.getDeclaredConstructor().newInstance();
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new BaseException(ErrorMsg.VOLUME_ACCESSOR_CLASS_NOT_FOUND, accessorClassName);
+				}
+			}
+			catch (Throwable e)
+			{
+				Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
+									   ErrorMsg.FAILED_TO_CREATE_VOLUME_ACCESSOR, e);
+				Platform.exit();
+			}
+		}
+
+		// Load library of native methods
+		if (volumeAccessor == null)
+		{
+			volumeAccessor = DriveIO.ACCESSOR;
+			String libraryName = System.mapLibraryName(DriveIO.NAME);
+			try
+			{
+				if (!DriveIO.initLibrary(ResourceUtils.packagePathname(getClass()) + "/" + LIBRARY_DIRECTORY_NAME,
+										 AppAuxDirectory.resolve(NAME_KEY, getClass(), LIBRARY_DIRECTORY_NAME)))
+				{
+					Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
+										   String.format(ErrorMsg.INVALID_LIBRARY, libraryName));
+					Platform.exit();
+				}
+			}
+			catch (Throwable e)
+			{
+				Utils.showErrorMessage(primaryStage, SHORT_NAME + " : " + FATAL_ERROR_STR,
+									   String.format(ErrorMsg.FAILED_TO_LOAD_LIBRARY, libraryName), e);
+				Platform.exit();
+			}
+		}
+
+		// Set format parameters on format dialog
+		FormatDialog.setParams(formatParams);
+
+		// Start periodically checking current volume
+		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable ->
+				DaemonFactory.create(getClass().getSimpleName() + "-" + CHECK_VOLUME_THREAD_NAME_SUFFIX, runnable));
+		executor.scheduleWithFixedDelay(() ->
+		{
+			Fat32Volume volume = getVolume();
+			if ((volume != null) && !volume.isOpen())
+			{
+				String name = volume.getName();
+				if (!volumeAccessor.isVolumeMounted(name))
+				{
+					Platform.runLater(() ->
+					{
+						// Invalidate volume
+						invalidateVolume();
+
+						// Display error message
+						Utils.showErrorMessage(primaryStage, VOLUME_STR + " " + Utils.volumeDisplayName(name),
+											   String.format(ErrorMsg.VOLUME_NOT_MOUNTED, name));
+					});
+				}
+			}
+		},
+		CHECK_VOLUME_INTERVAL, CHECK_VOLUME_INTERVAL, TimeUnit.MILLISECONDS);
+
+		// Open volume that was specified on command line
+		List<String> args = getParameters().getRaw();
+		if (!args.isEmpty())
+			openVolume(args.get(0), null);
 	}
 
 	//------------------------------------------------------------------
@@ -1125,7 +1255,7 @@ public class Fat32ManagerApp
 			{
 				// Initialise task
 				updateTitle(title);
-				updateMessage(OPENING_STR + SimpleProgressDialog.SPACE_MESSAGE_SEPARATOR + name);
+				updateMessage(OPENING_STR + MessageConstants.SPACE_SEPARATOR + name);
 				updateProgress(-1, 1);
 			}
 
@@ -1142,6 +1272,7 @@ public class Fat32ManagerApp
 				{
 					// Create volume
 					volume = new Fat32Volume(name, volumeAccessor);
+					volume.setFixDirEntryDatesTimes(preferences.isFixDirEntryDatesTimes());
 
 					// Initialise volume
 					updateMessage(READING_FATS_STR);
@@ -1185,8 +1316,8 @@ public class Fat32ManagerApp
 				// Update instance variable
 				volume.set(result.volume);
 
-				// Enable directory pane
-				directoryPane.setDisable(false);
+				// Enable control pane of directory pane
+				directoryPane.getControlPane().setDisable(false);
 
 				// Clear history of table view
 				getTableView().clearHistory();
@@ -1354,7 +1485,8 @@ public class Fat32ManagerApp
 				// Format volume
 				Fat32Volume.format(name, result.getVolumeId(), result.getVolumeLabel(), result.getFormatterName(),
 								   bytesPerSector, startSector, numSectors, params.minNumReservedSectors(),
-								   result.getSectorsPerCluster(), params.sectorsPerFat(), volumeAccessor, createTaskStatus());
+								   result.getSectorsPerCluster(), params.sectorsPerFat(), volumeAccessor,
+								   createTaskStatus());
 
 				// Return nothing
 				return null;
@@ -1567,7 +1699,8 @@ public class Fat32ManagerApp
 			// Test for volumes
 			if (names.isEmpty())
 			{
-				NotificationDialog.show(primaryStage, OPEN_VOLUME_STR, MessageIcon32.ALERT.get(), NO_VOLUMES_TO_OPEN_STR);
+				NotificationDialog.show(primaryStage, OPEN_VOLUME_STR, MessageIcon32.ALERT.get(),
+										NO_VOLUMES_TO_OPEN_STR);
 				return;
 			}
 
@@ -1625,7 +1758,8 @@ public class Fat32ManagerApp
 
 				// Create list of invalid entries in cluster chains
 				Fat32Volume volume = getVolume();
-				int numClusters = volume.validateClusterChains(volume.getRootDir(), invalidClusters, createTaskStatus());
+				int numClusters =
+						volume.validateClusterChains(volume.getRootDir(), invalidClusters, createTaskStatus());
 
 				// If task has been cancelled, change state to 'cancelled'
 				hardCancel(false);
@@ -1652,9 +1786,10 @@ public class Fat32ManagerApp
 							volume.getNumClusters() - volume.getNumUnusedClusters() - volume.getRootDirNumClusters();
 					if (result.numClusters != expectedNumClusters)
 					{
-						showMessageDialog(getTitle(),
-										  String.format(UNEXPECTED_NUM_CLUSTERS_STR, result.numClusters, expectedNumClusters),
-										  MessageIcon32.WARNING);
+						showMessageDialog(
+								getTitle(),
+								String.format(UNEXPECTED_NUM_CLUSTERS_STR, result.numClusters, expectedNumClusters),
+								MessageIcon32.WARNING);
 					}
 				}
 
@@ -1742,15 +1877,15 @@ public class Fat32ManagerApp
 	{
 		Fat32Volume volume = getVolume();
 		PropertiesPane.create()
-						.verticalGap(4.0)
-						.padding(new Insets(0.0, 2.0, 0.0, 2.0))
-						.valueLabelPadding(new Insets(1.0, 6.0, 1.0, 6.0))
-						.nameConverter(name -> name.chars().allMatch(ch -> Character.isUpperCase(ch))
-																					? name
-																					: StringUtils.firstCharToLowerCase(name))
-						.properties1(volume.getProperties())
-						.showDialog(primaryStage, DialogKey.VOLUME_PROPERTIES,
-									PROPERTIES_STR + OF_STR + Utils.volumeDisplayName(volume));
+				.verticalGap(4.0)
+				.padding(new Insets(0.0, 2.0, 0.0, 2.0))
+				.valueLabelPadding(new Insets(1.0, 6.0, 1.0, 6.0))
+				.nameConverter(name -> name.chars().allMatch(ch -> Character.isUpperCase(ch))
+																			? name
+																			: StringUtils.firstCharToLowerCase(name))
+				.properties1(volume.getProperties())
+				.showDialog(primaryStage, DialogKey.VOLUME_PROPERTIES,
+							PROPERTIES_STR + OF_STR + Utils.volumeDisplayName(volume));
 	}
 
 	//------------------------------------------------------------------
@@ -1766,22 +1901,15 @@ public class Fat32ManagerApp
 			// Update instance variable
 			preferences = result;
 
-			// Apply theme
-			StyleManager styleManager = StyleManager.INSTANCE;
-			String themeId = preferences.getThemeId();
-			if ((themeId != null) && !themeId.equals(styleManager.getThemeId()))
-			{
-				// Update theme
-				styleManager.selectTheme(themeId);
-
-				// Reapply style sheet to the scenes of all JavaFX windows
-				styleManager.reapplyStylesheet();
-			}
-
 			// Apply table-view preferences
 			DirectoryTableView tableView = getTableView();
-			tableView.setShowSpecialDirectories(result.isShowSpecialDirectories());
-			tableView.setHeaderCellPopUpDelay(result.getColumnHeaderPopUpDelay());
+			tableView.setShowSpecialDirectories(preferences.isShowSpecialDirectories());
+			tableView.setHeaderCellPopUpDelay(preferences.getColumnHeaderPopUpDelay());
+
+			// Apply directory-entry preferences
+			Fat32Volume volume = getVolume();
+			if (volume != null)
+				volume.setFixDirEntryDatesTimes(preferences.isFixDirEntryDatesTimes());
 		}
 	}
 
@@ -1842,7 +1970,8 @@ public class Fat32ManagerApp
 				Result result = getValue();
 
 				// Display deleted entries in dialog
-				DeletedEntriesDialog dialog = new DeletedEntriesDialog(primaryStage, getDirectory(), result.deletedEntries);
+				DeletedEntriesDialog dialog =
+						new DeletedEntriesDialog(primaryStage, getDirectory(), result.deletedEntries);
 				if (!result.messages.isEmpty())
 				{
 					dialog.setOnShown(event ->
@@ -1967,7 +2096,8 @@ public class Fat32ManagerApp
 					else
 					{
 						// Count total number of clusters in entries
-						int totalNumClusters = result.entries.stream().mapToInt(Fat32Directory.Entry::getNumClusters).sum();
+						int totalNumClusters =
+								result.entries.stream().mapToInt(Fat32Directory.Entry::getNumClusters).sum();
 
 						// Defragment files
 						defragmentFiles(result.entries.iterator(), new ArrayList<>(), 0, totalNumClusters);
@@ -1976,7 +2106,10 @@ public class Fat32ManagerApp
 
 				// Case: invalid clusters
 				else
-					InvalidClusterDialog.show(primaryStage, getTitle() + " : " + INVALID_CLUSTERS_STR, result.invalidClusters);
+				{
+					InvalidClusterDialog.show(primaryStage, getTitle() + " : " + INVALID_CLUSTERS_STR,
+											  result.invalidClusters);
+				}
 			}
 
 			@Override
@@ -2060,7 +2193,10 @@ public class Fat32ManagerApp
 
 				// If no volume names, report and stop ...
 				if (volumeNames.isEmpty())
-					NotificationDialog.show(primaryStage, getTitle(), MessageIcon32.ALERT.get(), NO_VOLUMES_TO_FORMAT_STR);
+				{
+					NotificationDialog.show(primaryStage, getTitle(), MessageIcon32.ALERT.get(),
+											NO_VOLUMES_TO_FORMAT_STR);
+				}
 
 				// ... otherwise, display dialog for selecting volume
 				else
@@ -2131,13 +2267,18 @@ public class Fat32ManagerApp
 			// Call superclass constructor
 			super(ID, NAME_KEY, SHORT_NAME, LONG_NAME);
 
-			// Get location of parent directory of config file
-			AppAuxDirectory.Directory directory = AppAuxDirectory.getDirectory(NAME_KEY, Fat32ManagerApp.class);
-			if (directory == null)
-				throw new BaseException(ErrorMsg.NO_AUXILIARY_DIRECTORY);
+			// Determine location of config file
+			if (!noConfigFile())
+			{
+				// Get location of parent directory of config file
+				AppAuxDirectory.Directory directory =
+						AppAuxDirectory.getDirectory(NAME_KEY, getClass().getEnclosingClass());
+				if (directory == null)
+					throw new BaseException(ErrorMsg.NO_AUXILIARY_DIRECTORY);
 
-			// Set parent directory of config file
-			setDirectory(directory.location());
+				// Set parent directory of config file
+				setDirectory(directory.location());
+			}
 		}
 
 		//--------------------------------------------------------------

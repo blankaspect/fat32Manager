@@ -19,7 +19,6 @@ package uk.blankaspect.common.basictree;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -141,7 +140,7 @@ public class ListNode
 		AbstractNode...	elements)
 	{
 		// Call alternative constructor
-		this(parent, Arrays.asList(elements));
+		this(parent, List.of(elements));
 	}
 
 	//------------------------------------------------------------------
@@ -249,7 +248,8 @@ public class ListNode
 		if (this == obj)
 			return true;
 
-		return (obj instanceof ListNode other) && (elements.size() == other.elements.size()) && elements.equals(other.elements);
+		return (obj instanceof ListNode other) && (elements.size() == other.elements.size())
+				&& elements.equals(other.elements);
 	}
 
 	//------------------------------------------------------------------
@@ -304,16 +304,31 @@ public class ListNode
 	@Override
 	public String toString()
 	{
-		StringBuilder buffer = new StringBuilder(64);
-		for (int i = 0; i < elements.size(); i++)
+		return toString(true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * {@inheritDoc}
+	 */
+
+	@Override
+	public String toString(
+		boolean	printableAsciiOnly)
+	{
+		StringBuilder buffer = new StringBuilder(128);
+		buffer.append(START_CHAR);
+		int numElements = elements.size();
+		for (int i = 0; i < numElements; i++)
 		{
 			if (i > 0)
-			{
 				buffer.append(ELEMENT_SEPARATOR_CHAR);
-				buffer.append(' ');
-			}
-			buffer.append(elements.get(i));
+			buffer.append(' ');
+			buffer.append(elements.get(i).toString(printableAsciiOnly));
 		}
+		buffer.append(' ');
+		buffer.append(END_CHAR);
 		return buffer.toString();
 	}
 
@@ -584,8 +599,8 @@ public class ListNode
 
 	public boolean[] getBooleanArray()
 	{
-		boolean[] outValues = new boolean[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		boolean[] values = new boolean[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
@@ -595,9 +610,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to array
-			outValues[i] = booleanNode.getValue();
+			values[i] = booleanNode.getValue();
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -612,7 +627,7 @@ public class ListNode
 
 	public List<Boolean> getBooleanList()
 	{
-		List<Boolean> outValues = new ArrayList<>();
+		List<Boolean> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Check for element of the required type
@@ -620,9 +635,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to list
-			outValues.add(booleanNode.getValue());
+			values.add(booleanNode.getValue());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -669,8 +684,8 @@ public class ListNode
 
 	public int[] getIntArray()
 	{
-		int[] outValues = new int[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		int[] values = new int[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
@@ -680,9 +695,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to array
-			outValues[i] = intNode.getValue();
+			values[i] = intNode.getValue();
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -697,7 +712,7 @@ public class ListNode
 
 	public List<Integer> getIntList()
 	{
-		List<Integer> outValues = new ArrayList<>();
+		List<Integer> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Check for element of the required type
@@ -705,9 +720,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to list
-			outValues.add(intNode.getValue());
+			values.add(intNode.getValue());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -754,8 +769,8 @@ public class ListNode
 
 	public long[] getLongArray()
 	{
-		long[] outValues = new long[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		long[] values = new long[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
@@ -765,9 +780,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to array
-			outValues[i] = longNode.getValue();
+			values[i] = longNode.getValue();
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -782,7 +797,7 @@ public class ListNode
 
 	public List<Long> getLongList()
 	{
-		List<Long> outValues = new ArrayList<>();
+		List<Long> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Check for element of the required type
@@ -790,9 +805,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to list
-			outValues.add(longNode.getValue());
+			values.add(longNode.getValue());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -809,21 +824,21 @@ public class ListNode
 
 	public long[] getIntOrLongArray()
 	{
-		long[] outValues = new long[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		long[] values = new long[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
 
 			// Add value of element to array
 			if (element instanceof IntNode intNode)
-				outValues[i] = intNode.getValue();
+				values[i] = intNode.getValue();
 			else if (element instanceof LongNode longNode)
-				outValues[i] = longNode.getValue();
+				values[i] = longNode.getValue();
 			else
 				throw new NodeTypeException(element.getType());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -840,18 +855,18 @@ public class ListNode
 
 	public List<Long> getIntOrLongList()
 	{
-		List<Long> outValues = new ArrayList<>();
+		List<Long> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Add value of element to list
 			if (element instanceof IntNode intNode)
-				outValues.add((long)intNode.getValue());
+				values.add((long)intNode.getValue());
 			else if (element instanceof LongNode longNode)
-				outValues.add(longNode.getValue());
+				values.add(longNode.getValue());
 			else
 				throw new NodeTypeException(element.getType());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -898,8 +913,8 @@ public class ListNode
 
 	public double[] getDoubleArray()
 	{
-		double[] outValues = new double[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		double[] values = new double[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
@@ -909,9 +924,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to array
-			outValues[i] = doubleNode.getValue();
+			values[i] = doubleNode.getValue();
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -926,7 +941,7 @@ public class ListNode
 
 	public List<Double> getDoubleList()
 	{
-		List<Double> outValues = new ArrayList<>();
+		List<Double> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Check for element of the required type
@@ -934,9 +949,74 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to list
-			outValues.add(doubleNode.getValue());
+			values.add(doubleNode.getValue());
 		}
-		return outValues;
+		return values;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the underlying values of the elements of this list node as an array of {@code double}s.  The elements of
+	 * this list may be either {@linkplain IntNode 'int' nodes}, {@linkplain LongNode 'long' nodes} or {@linkplain
+	 * DoubleNode 'double' nodes}.
+	 *
+	 * @return an array of the underlying {@code double} values of the elements of this list node.
+	 * @throws NodeTypeException
+	 *           if any of the elements of this list node is not an {@linkplain IntNode 'int' node}, a {@linkplain
+	 *           LongNode 'long' node} or a {@linkplain DoubleNode 'double' node}.
+	 */
+
+	public double[] getNumberArray()
+	{
+		double[] values = new double[elements.size()];
+		for (int i = 0; i < values.length; i++)
+		{
+			// Get element
+			AbstractNode element = elements.get(i);
+
+			// Add value of element to array
+			if (element instanceof IntNode intNode)
+				values[i] = intNode.getValue();
+			else if (element instanceof LongNode longNode)
+				values[i] = longNode.getValue();
+			else if (element instanceof DoubleNode doubleNode)
+				values[i] = doubleNode.getValue();
+			else
+				throw new NodeTypeException(element.getType());
+		}
+		return values;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the underlying values of the elements of this list node as a list of {@code Double}s.  The elements of
+	 * this list may be {@linkplain IntNode 'int' nodes}, {@linkplain LongNode 'long' nodes} or {@linkplain DoubleNode
+	 * 'double' nodes}.
+	 *
+	 * @return a list of the underlying {@code Double} values of the elements of this list node.
+	 * @throws NodeTypeException
+	 *           if any of the elements of this list node is not an {@linkplain IntNode 'int' node}, a {@linkplain
+	 *           LongNode 'long' node} or a {@linkplain DoubleNode 'double' node}.
+	 */
+
+	public List<Double> getNumberList()
+	{
+		List<Double> values = new ArrayList<>();
+		for (AbstractNode element : elements)
+		{
+			// Add value of element to list
+			if (element instanceof IntNode intNode)
+				values.add((double)intNode.getValue());
+			else if (element instanceof LongNode longNode)
+				values.add((double)longNode.getValue());
+			else if (element instanceof DoubleNode doubleNode)
+				values.add(doubleNode.getValue());
+			else
+				throw new NodeTypeException(element.getType());
+		}
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -983,8 +1063,8 @@ public class ListNode
 
 	public String[] getStringArray()
 	{
-		String[] outValues = new String[elements.size()];
-		for (int i = 0; i < outValues.length; i++)
+		String[] values = new String[elements.size()];
+		for (int i = 0; i < values.length; i++)
 		{
 			// Get element
 			AbstractNode element = elements.get(i);
@@ -994,9 +1074,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to array
-			outValues[i] = stringNode.getValue();
+			values[i] = stringNode.getValue();
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -1011,7 +1091,7 @@ public class ListNode
 
 	public List<String> getStringList()
 	{
-		List<String> outValues = new ArrayList<>();
+		List<String> values = new ArrayList<>();
 		for (AbstractNode element : elements)
 		{
 			// Check for element of the required type
@@ -1019,9 +1099,9 @@ public class ListNode
 				throw new NodeTypeException(element.getType());
 
 			// Add value of element to list
-			outValues.add(stringNode.getValue());
+			values.add(stringNode.getValue());
 		}
-		return outValues;
+		return values;
 	}
 
 	//------------------------------------------------------------------
@@ -1103,7 +1183,8 @@ public class ListNode
 	public int indexOf(
 		AbstractNode	node)
 	{
-		for (int i = 0; i < elements.size(); i++)
+		int numElements = elements.size();
+		for (int i = 0; i < numElements; i++)
 		{
 			if (elements.get(i) == node)
 				return i;
@@ -1508,7 +1589,7 @@ public class ListNode
 	public ListNode addList(
 		AbstractNode...	elements)
 	{
-		ListNode node = new ListNode(Arrays.asList(elements));
+		ListNode node = new ListNode(List.of(elements));
 		add(node);
 		return node;
 	}

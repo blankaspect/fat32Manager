@@ -48,8 +48,7 @@ import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
 
-import javafx.scene.shape.Polygon;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 
 import javafx.stage.Window;
 
@@ -58,12 +57,18 @@ import uk.blankaspect.common.css.CssSelector;
 import uk.blankaspect.common.function.IFunction1;
 import uk.blankaspect.common.function.IFunction2;
 
+import uk.blankaspect.common.geometry.VHDirection;
+
 import uk.blankaspect.ui.jfx.button.GraphicButton;
-import uk.blankaspect.ui.jfx.button.ImageButton;
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
 
 import uk.blankaspect.ui.jfx.filler.FillerUtils;
 
+import uk.blankaspect.ui.jfx.image.ImageData;
+
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
+
+import uk.blankaspect.ui.jfx.shape.Shapes;
 
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
@@ -110,64 +115,69 @@ public class DirectoryPane
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.desc(StyleClass.DIRECTORY_BAR_TEXT)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR_TEXT)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.DIRECTORY_BAR_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.DIRECTORY_BAR_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_ARROWHEAD,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.desc(StyleClass.ARROWHEAD)
-						.build()
+					.cls(StyleClass.DIRECTORY_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(StyleClass.ARROWHEAD)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	DIRECTORY_PANE		= StyleConstants.CLASS_PREFIX + "fat32manager-directory-pane";
+		String	DIRECTORY_PANE	= StyleConstants.APP_CLASS_PREFIX + "directory-pane";
 
 		String	ARROWHEAD			= StyleConstants.CLASS_PREFIX + "arrowhead";
-		String	DIRECTORY_BAR		= DIRECTORY_PANE + "-directory-bar";
+		String	DIRECTORY_BAR		= StyleConstants.CLASS_PREFIX + "directory-bar";
 		String	DIRECTORY_BAR_TEXT	= StyleConstants.CLASS_PREFIX + "directory-bar-text";
 	}
 
@@ -211,27 +221,27 @@ public class DirectoryPane
 		getStyleClass().add(StyleClass.DIRECTORY_PANE);
 
 		// Create button: previous directory
-		ImageButton previousButton = new ImageButton(Images.LEFT_ARROW);
+		ImageDataButton previousButton = Images.imageButton(Images.ImageId.ARROW_LEFT);
 		previousButton.setDisable(true);
 		previousButton.setOnAction(event -> tableView.openPreviousDirectory());
 
 		// Create button: next directory
-		ImageButton nextButton = new ImageButton(Images.RIGHT_ARROW);
+		ImageDataButton nextButton = Images.imageButton(Images.ImageId.ARROW_RIGHT);
 		nextButton.setDisable(true);
 		nextButton.setOnAction(event -> tableView.openNextDirectory());
 
 		// Create button: open parent directory
-		ImageButton openParentButton = new ImageButton(Images.UP_ARROW);
+		ImageDataButton openParentButton = Images.imageButton(Images.ImageId.ARROW_UP);
 		openParentButton.setDisable(true);
 		openParentButton.setOnAction(event -> tableView.openParentDirectory());
 
 		// Create button: refresh
-		ImageButton refreshButton = new ImageButton(Images.REFRESH, REFRESH_DIRECTORY_STR);
+		ImageDataButton refreshButton = Images.imageButton(Images.ImageId.REFRESH, REFRESH_DIRECTORY_STR);
 		refreshButton.setOnAction(event -> tableView.refreshDirectory());
 
 		// Create left button pane
-		HBox leftButtonPane = new HBox(BUTTON_PANE_SPACING, previousButton, nextButton, openParentButton,
-									   refreshButton);
+		HBox leftButtonPane =
+				new HBox(BUTTON_PANE_SPACING, previousButton, nextButton, openParentButton, refreshButton);
 		leftButtonPane.setAlignment(Pos.CENTER_LEFT);
 
 		// Create directory bar
@@ -248,7 +258,7 @@ public class DirectoryPane
 		HBox.setHgrow(navigationPane, Priority.ALWAYS);
 
 		// Button: navigation mode
-		ImageButton navigationModeButton = new ImageButton(Images.PENCIL, SHOW_PATHNAME_FIELD_STR);
+		ImageDataButton navigationModeButton = Images.imageButton(Images.ImageId.PENCIL, SHOW_PATHNAME_FIELD_STR);
 		navigationModeButton.setOnAction(event ->
 		{
 			if (directoryBar.isVisible())
@@ -257,14 +267,14 @@ public class DirectoryPane
 				pathnameField.setVisible(true);
 				pathnameField.requestFocus();
 				pathnameField.selectAll();
-				navigationModeButton.setImage(Images.BUTTON_BAR);
+				navigationModeButton.setImage(ImageData.image(Images.ImageId.BUTTON_BAR));
 				navigationModeButton.setTooltipText(SHOW_DIRECTORY_BAR_STR);
 			}
 			else
 			{
 				directoryBar.setVisible(true);
 				pathnameField.setVisible(false);
-				navigationModeButton.setImage(Images.PENCIL);
+				navigationModeButton.setImage(ImageData.image(Images.ImageId.PENCIL));
 				navigationModeButton.setTooltipText(SHOW_PATHNAME_FIELD_STR);
 			}
 		});
@@ -360,12 +370,12 @@ public class DirectoryPane
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -415,10 +425,7 @@ public class DirectoryPane
 
 		private static final	String	SEPARATOR	= "/";
 
-		private static final	double	ARROWHEAD_WIDTH_FACTOR	= 0.5;
-		private static final	double	ARROWHEAD_HEIGHT_FACTOR	= 2.0 / 3.0;
-
-		private static final	double	ARROWHEAD_H_MARGIN	= 3.0;
+		private static final	double	ARROWHEAD_HEIGHT_FACTOR	= 1.125;
 
 		private static final	String	ROOT_DIR_DISPLAY_NAME	= "\u00ABROOT\u00BB";
 
@@ -449,26 +456,28 @@ public class DirectoryPane
 			setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.DIRECTORY_BAR_BORDER)));
 			getStyleClass().add(StyleClass.DIRECTORY_BAR);
 
-			// Calculate dimensions of components of navigation buttons
+			// Calculate size of icon of navigation buttons
 			double textHeight = TextUtils.textHeight();
-			double arrowheadWidth = Math.rint(ARROWHEAD_WIDTH_FACTOR * textHeight);
 			double arrowheadHeight = Math.rint(ARROWHEAD_HEIGHT_FACTOR * textHeight);
-			double rectWidth = 2.0 * ARROWHEAD_H_MARGIN + arrowheadWidth;
-			double rectHeight = Math.ceil(textHeight);
 
 			// Create factory for navigation button
-			IFunction1<GraphicButton, Polygon> navigationButtonFactory = arrowhead ->
+			IFunction1<GraphicButton, Shape> navigationButtonFactory = arrowhead ->
 			{
+				// Set properties of icon
 				arrowhead.setFill(getColour(ColourKey.DIRECTORY_BAR_ARROWHEAD));
 				arrowhead.getStyleClass().add(StyleClass.ARROWHEAD);
-				arrowhead.relocate(0.5 * (rectWidth - arrowheadWidth), 0.5 * (rectHeight - arrowheadHeight));
 
-				return new GraphicButton(new Group(new Rectangle(rectWidth, rectHeight, Color.TRANSPARENT), arrowhead));
+				// Create button
+				GraphicButton button = new GraphicButton(Shapes.tile(arrowhead, textHeight));
+				button.setBackgroundColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED),
+										   GraphicButton.State.HOVERED);
+				button.setBorderColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED),
+									   GraphicButton.State.HOVERED);
+				return button;
 			};
 
 			// Button: previous element
-			Polygon arrowhead = new Polygon(arrowheadWidth, 0.0, arrowheadWidth, arrowheadHeight, 0.0,
-											0.5 * arrowheadHeight);
+			Shape arrowhead = Shapes.arrowhead01(VHDirection.LEFT, arrowheadHeight);
 			previousElementButton = navigationButtonFactory.invoke(arrowhead);
 			previousElementButton.setDisable(true);
 			previousElementButton.setOnAction(event ->
@@ -485,7 +494,7 @@ public class DirectoryPane
 			getChildren().add(FillerUtils.hBoxFiller(0.0));
 
 			// Button: next element
-			arrowhead = new Polygon(0.0, 0.0, 0.0, arrowheadHeight, arrowheadWidth, 0.5 * arrowheadHeight);
+			arrowhead = Shapes.arrowhead01(VHDirection.RIGHT, arrowheadHeight);
 			nextElementButton = navigationButtonFactory.invoke(arrowhead);
 			nextElementButton.setDisable(true);
 			nextElementButton.setOnAction(event ->
@@ -534,11 +543,17 @@ public class DirectoryPane
 				// Create factory for button for element of pathname
 				IFunction2<GraphicButton, Fat32Directory, String> buttonFactory = (location, text) ->
 				{
-					// Create button
-					Group textGroup = Text2.createTile(text);
+					// Create graphic for button
+					Group textGroup = Text2.createTile(text, getColour(ColourKey.DIRECTORY_BAR_TEXT));
 					textGroup.getChildren().get(1).getStyleClass().add(StyleClass.DIRECTORY_BAR_TEXT);
+
+					// Create button
 					GraphicButton button = new GraphicButton(textGroup);
 					button.getProperties().put(ELEMENT_NODE_KEY, "");
+					button.setBackgroundColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED),
+											   GraphicButton.State.HOVERED);
+					button.setBorderColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED),
+										   GraphicButton.State.HOVERED);
 					button.setOnAction(event -> this.directory.set(location));
 
 					// Display context menu on request
@@ -551,7 +566,8 @@ public class DirectoryPane
 						ContextMenu menu = new ContextMenu();
 
 						// Menu item: copy pathname
-						MenuItem menuItem = new MenuItem(COPY_PATHNAME_STR, Images.icon(Images.COPY));
+						MenuItem menuItem =
+								new MenuItem(COPY_PATHNAME_STR, Images.icon(Images.ImageId.COPY));
 						menuItem.setOnAction(event0 ->
 								Utils.copyToClipboard(window, COPY_PATHNAME_STR, location.getPathname()));
 						menu.getItems().add(menuItem);
@@ -578,7 +594,7 @@ public class DirectoryPane
 					Fat32Directory dir = path.get(i);
 
 					// Create separator and add it to list
-					Group separator = Text2.createTile(SEPARATOR);
+					Group separator = Text2.createTile(SEPARATOR, getColour(ColourKey.DIRECTORY_BAR_TEXT));
 					separator.getChildren().get(1).getStyleClass().add(StyleClass.DIRECTORY_BAR_TEXT);
 					separator.getProperties().put(ELEMENT_NODE_KEY, "");
 					nodeInfos.add(new NodeInfo(separator));
@@ -664,7 +680,9 @@ public class DirectoryPane
 			{
 				// Initialise instance variables
 				this.node = node;
-				maxX = (node instanceof GraphicButton button) ? getButtonMaxX(button) : node.getLayoutBounds().getMaxX();
+				maxX = (node instanceof GraphicButton button)
+										? getButtonMaxX(button)
+										: node.getLayoutBounds().getMaxX();
 			}
 
 			//----------------------------------------------------------

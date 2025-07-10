@@ -32,7 +32,7 @@ public interface FxPseudoClass
 	String	EVEN			= "even";
 	String	FILLED			= "filled";
 	String	FOCUSED			= "focused";
-	String	HOVER			= "hover";
+	String	HOVERED			= "hover";
 	String	ODD				= "odd";
 	String	PRESSED			= "pressed";
 	String	ROW_SELECTION	= "row-selection";

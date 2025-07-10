@@ -15,6 +15,14 @@ package uk.blankaspect.common.task;
 //----------------------------------------------------------------------
 
 
+// IMPORTS
+
+
+import uk.blankaspect.common.message.MessageConstants;
+
+//----------------------------------------------------------------------
+
+
 // INTERFACE: STATUS OF A TASK
 
 
@@ -25,13 +33,6 @@ public interface ITaskStatus
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
-
-	/** A string that may be used to separate adjacent components of the text of a status message. */
-	String	MESSAGE_SEPARATOR		= "\u200B";		// zero-width space;
-
-	/** A space followed by a string that may be used to separate adjacent components of the text of a status
-		message. */
-	String	SPACE_MESSAGE_SEPARATOR	= " " + MESSAGE_SEPARATOR;
 
 	/** A task status that has no effect. */
 	ITaskStatus	VOID	= new ITaskStatus()
@@ -95,6 +96,53 @@ public interface ITaskStatus
 
 	void setProgress(
 		double	progress);
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a string that may be used to separate adjacent components of the text of a status message.
+	 *
+	 * @return a string that may be used to separate adjacent components of the text of a status message.
+	 */
+
+	default String messageSeparator()
+	{
+		return MessageConstants.SEPARATOR;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a string that contains a space (U+0020) followed by a string that may be used to separate adjacent
+	 * components of the text of a status message.
+	 *
+	 * @return a string that contains a space (U+0020) followed by a string that may be used to separate adjacent
+	 *         components of the text of a status message.
+	 */
+
+	default String spaceMessageSeparator()
+	{
+		return MessageConstants.SPACE_SEPARATOR;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the message of this task status to the result of joining the string representations of the two specified
+	 * objects with the value that is returned by {@link #spaceMessageSeparator()}.
+	 *
+	 * @param obj1
+	 *          the object whose string representation will constitute the first part of the message.
+	 * @param obj2
+	 *          the object whose string representation will constitute the second part of the message.
+	 */
+
+	default void setSpacedMessage(
+		Object	obj1,
+		Object	obj2)
+	{
+		setMessage(obj1 + spaceMessageSeparator() + obj2);
+	}
 
 	//------------------------------------------------------------------
 

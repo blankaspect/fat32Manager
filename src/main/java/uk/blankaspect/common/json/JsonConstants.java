@@ -18,7 +18,6 @@ package uk.blankaspect.common.json;
 // IMPORTS
 
 
-import java.util.Arrays;
 import java.util.List;
 
 import uk.blankaspect.common.basictree.BooleanNode;
@@ -52,7 +51,7 @@ public interface JsonConstants
 	char	ARRAY_START_CHAR	= '[';
 
 	/** The character that denotes the end of a JSON array. */
-	char	ARRAY_END_CHAR	= ']';
+	char	ARRAY_END_CHAR		= ']';
 
 	/** The character that separates adjacent elements of a JSON array. */
 	char	ARRAY_ELEMENT_SEPARATOR_CHAR	= ',';
@@ -61,16 +60,16 @@ public interface JsonConstants
 	char	OBJECT_START_CHAR	= '{';
 
 	/** The character that denotes the end of a JSON object. */
-	char	OBJECT_END_CHAR	= '}';
+	char	OBJECT_END_CHAR		= '}';
 
-	/** The character that separates the name and value of a property of a JSON object. */
+	/** The character that separates the name and value of a member of a JSON object. */
 	char	OBJECT_NAME_VALUE_SEPARATOR_CHAR	= ':';
 
-	/** The character that separates adjacent properties of a JSON object. */
-	char	OBJECT_PROPERTY_SEPARATOR_CHAR		= ',';
+	/** The character that separates adjacent members of a JSON object. */
+	char	OBJECT_MEMBER_SEPARATOR_CHAR	= ',';
 
 	/** The types of nodes that represent JSON values. */
-	List<NodeType>	NODE_TYPES	= Arrays.asList
+	List<NodeType>	NODE_TYPES	= List.of
 	(
 		NullNode.TYPE,
 		BooleanNode.TYPE,
@@ -82,8 +81,8 @@ public interface JsonConstants
 		MapNode.TYPE
 	);
 
-	/** The types of nodes that represent JSON values that are not containers. */
-	List<NodeType>	SIMPLE_NODE_TYPES	= Arrays.asList
+	/** The types of nodes that represent simple JSON values. */
+	List<NodeType>	SIMPLE_NODE_TYPES	= List.of
 	(
 		NullNode.TYPE,
 		BooleanNode.TYPE,
@@ -93,11 +92,19 @@ public interface JsonConstants
 		StringNode.TYPE
 	);
 
-	/** The types of nodes that represent JSON values that are containers. */
-	List<NodeType>	CONTAINER_NODE_TYPES	= Arrays.asList
+	/** The types of nodes that represent compound JSON values. */
+	List<NodeType>	COMPOUND_NODE_TYPES	= List.of
 	(
 		ListNode.TYPE,
 		MapNode.TYPE
+	);
+
+	/** The types of nodes that represent JSON numbers. */
+	List<NodeType>	NUMBER_TYPES	= List.of
+	(
+		IntNode.TYPE,
+		LongNode.TYPE,
+		DoubleNode.TYPE
 	);
 }
 

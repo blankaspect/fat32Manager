@@ -223,7 +223,7 @@ public class DoubleNode
 	public boolean equals(
 		Object	obj)
 	{
-		return (obj == this) || ((obj instanceof DoubleNode other) && (value == other.value));
+		return (this == obj) || ((obj instanceof DoubleNode other) && (value == other.value));
 	}
 
 	//------------------------------------------------------------------

@@ -68,6 +68,12 @@ public class AppConfig
 		String	VERSION			= "version";
 	}
 
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
+	{
+		String	APP_NO_CONFIG_FILE	= "blankaspect.app.noConfigFile";
+	}
+
 	/** Error messages. */
 	private interface ErrorMsg
 	{
@@ -98,7 +104,7 @@ public class AppConfig
 	/** The parent directory of the configuration file. */
 	private	Path	directory;
 
-	/** The path of the configuration file. */
+	/** The location of the configuration file. */
 	private	Path	file;
 
 	/** The root node of this configuration. */
@@ -167,8 +173,40 @@ public class AppConfig
 	//------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////
+//  Class methods
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Returns {@code true} if the application should neither read nor write a configuration file.  This method returns
+	 * {@code true} if a system property with the key {@code blankaspect.app.noConfigFile} is defined and the value of
+	 * the property is "true", ignoring letter case.
+	 *
+	 * @return {@code true} if the application should neither read nor write a configuration file.
+	 */
+
+	public static boolean noConfigFile()
+	{
+		return Boolean.getBoolean(SystemPropertyKey.APP_NO_CONFIG_FILE);
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Returns the location of the configuration file.
+	 *
+	 * @return the location of the configuration file.
+	 */
+
+	public Path getFile()
+	{
+		return file;
+	}
+
+	//------------------------------------------------------------------
 
 	/**
 	 * Returns the root node of this configuration.
@@ -190,7 +228,8 @@ public class AppConfig
 	 *          the parent directory of the configuration file; {@code null} for the current directory.
 	 */
 
-	public void setDirectory(Path directory)
+	public void setDirectory(
+		Path	directory)
 	{
 		this.directory = directory;
 	}
@@ -201,7 +240,7 @@ public class AppConfig
 	 * Reads and parses a configuration file, and sets the state of this configuration from it.
 	 *
 	 * @throws FileException
-	 *           if an error occurred when reading or parsing the configuration file.
+	 *           if an error occurs when reading or parsing the configuration file.
 	 */
 
 	public void read()
@@ -226,10 +265,10 @@ public class AppConfig
 			}
 
 			// Read file and parse it as JSON
-			AbstractNode rootNode0 = null;
+			AbstractNode root = null;
 			try
 			{
-				rootNode0 = JsonUtils.readFile(file);
+				root = JsonUtils.readFile(file);
 			}
 			catch (IOException e)
 			{
@@ -241,11 +280,10 @@ public class AppConfig
 			}
 
 			// Test for expected type of JSON value
-			if (!(rootNode0 instanceof MapNode))
+			if (!(root instanceof MapNode rootNode))
 				throw new FileException(ErrorMsg.UNEXPECTED_CONFIG_FILE_FORMAT, file);
 
 			// Test ID
-			MapNode rootNode = (MapNode)rootNode0;
 			if (!rootNode.getString(PropertyKey.ID, "").equals(id))
 				throw new FileException(ErrorMsg.NOT_A_CONFIG_FILE, file, appShortName);
 
@@ -283,7 +321,7 @@ public class AppConfig
 	 * Writes this configuration to a file.
 	 *
 	 * @throws FileException
-	 *           if an error occurred when writing the configuration file.
+	 *           if an error occurs when writing the configuration file.
 	 */
 
 	public void write()
@@ -307,7 +345,7 @@ public class AppConfig
 		// Generate JSON text and write it to file
 		try
 		{
-			JsonUtils.writeFile(file, rootNode, new JsonGenerator(JsonGenerator.Mode.NORMAL, false, 2, 128));
+			JsonUtils.writeFile(file, rootNode, JsonGenerator.builder().maxLineLength(128).build());
 		}
 		catch (IOException e)
 		{

@@ -20,7 +20,6 @@ package uk.blankaspect.ui.jfx.scene;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 
@@ -895,7 +894,7 @@ public class SceneUtils
 		double	width,
 		Side...	sides)
 	{
-		return createSolidBorder(colour, width, Arrays.asList(sides));
+		return createSolidBorder(colour, width, List.of(sides));
 	}
 
 	//------------------------------------------------------------------

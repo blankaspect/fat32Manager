@@ -18,7 +18,7 @@ package uk.blankaspect.ui.jfx.date;
 // IMPORTS
 
 
-import java.io.ByteArrayInputStream;
+import java.lang.invoke.MethodHandles;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
@@ -29,20 +29,20 @@ import javafx.geometry.Pos;
 
 import javafx.scene.control.TextField;
 
-import javafx.scene.image.Image;
-
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
 import javafx.scene.layout.HBox;
 
-import uk.blankaspect.ui.jfx.button.ImageButton;
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
 
 import uk.blankaspect.ui.jfx.dialog.DateSelectionDialog;
 
+import uk.blankaspect.ui.jfx.image.ImageData;
+
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
-import uk.blankaspect.ui.jfx.style.StyleManager;
+import uk.blankaspect.ui.jfx.style.AbstractTheme;
 
 import uk.blankaspect.ui.jfx.textfield.DateField;
 
@@ -85,11 +85,16 @@ public class DateFieldPane
 	/** The horizontal gap between adjacent components of the pane. */
 	private static final	double	H_GAP	= 2.0;
 
-	/** The image that is used for the button that invokes the date-selection dialog. */
-	private static final	Image	CALENDAR_IMAGE	= new Image(new ByteArrayInputStream(ImageData.CALENDAR));
-
 	/** Miscellaneous strings. */
 	private static final	String	SELECT_DATE_STR	= "Select date";
+
+	/** Image identifiers. */
+	private interface ImageId
+	{
+		String	PREFIX = MethodHandles.lookup().lookupClass().getEnclosingClass().getName() + ".";
+
+		String	CALENDAR	= PREFIX + "calendar";
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -97,6 +102,16 @@ public class DateFieldPane
 
 	/** The date field. */
 	private	DateField	dateField;
+
+////////////////////////////////////////////////////////////////////////
+//  Static initialiser
+////////////////////////////////////////////////////////////////////////
+
+	static
+	{
+		// Create images from image data
+		ImageData.add(ImageId.CALENDAR, AbstractTheme.MONO_IMAGE_KEY, ImgData.CALENDAR);
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -136,7 +151,7 @@ public class DateFieldPane
 		if (separators.isEmpty())
 			throw new IllegalArgumentException("No separators");
 
-		// Set attributes
+		// Set properties
 		setSpacing(H_GAP);
 		setAlignment(Pos.CENTER);
 
@@ -145,7 +160,7 @@ public class DateFieldPane
 		getChildren().add(dateField);
 
 		// Create 'select date' button and add it to this pane
-		ImageButton selectDateButton = new ImageButton(themedImage(CALENDAR_IMAGE), SELECT_DATE_STR);
+		ImageDataButton selectDateButton = new ImageDataButton(ImageId.CALENDAR, SELECT_DATE_STR);
 		getChildren().add(selectDateButton);
 
 		// Display date-selection dialog when button is pressed
@@ -186,18 +201,6 @@ public class DateFieldPane
 				event.consume();
 			}
 		});
-	}
-
-	//------------------------------------------------------------------
-
-////////////////////////////////////////////////////////////////////////
-//  Class methods
-////////////////////////////////////////////////////////////////////////
-
-	private static Image themedImage(
-		Image	image)
-	{
-		return StyleManager.INSTANCE.notUsingStyleSheet() ? image : StyleManager.INSTANCE.getTheme().processImage(image);
 	}
 
 	//------------------------------------------------------------------
@@ -288,26 +291,29 @@ public class DateFieldPane
 //  Image data
 ////////////////////////////////////////////////////////////////////////
 
-	private interface ImageData
+	/**
+	 * PNG image data.
+	 */
+
+	private interface ImgData
 	{
+		// File: mono/calendar
 		byte[]	CALENDAR	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x11, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xF0, (byte)0x31, (byte)0x94,
-			(byte)0x5F, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x42, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xD8, (byte)0xB0, (byte)0x61, (byte)0xC3,
-			(byte)0x7F, (byte)0x4A, (byte)0x31, (byte)0x03, (byte)0x88, (byte)0xB8, (byte)0x70, (byte)0xE1,
-			(byte)0x02, (byte)0xD9, (byte)0x18, (byte)0xC5, (byte)0x10, (byte)0x06, (byte)0x06, (byte)0x06,
-			(byte)0xB2, (byte)0x68, (byte)0xEA, (byte)0xBA, (byte)0x84, (byte)0x12, (byte)0x40, (byte)0x94,
-			(byte)0x21, (byte)0x0E, (byte)0x0E, (byte)0x0E, (byte)0x78, (byte)0x69, (byte)0xA2, (byte)0x0C,
-			(byte)0x21, (byte)0x04, (byte)0x50, (byte)0x0C, (byte)0x41, (byte)0xB7, (byte)0x81, (byte)0x58,
-			(byte)0x7A, (byte)0xD4, (byte)0x25, (byte)0x98, (byte)0xF4, (byte)0xC0, (byte)0xB9, (byte)0x04,
-			(byte)0x1D, (byte)0x50, (byte)0xD7, (byte)0x25, (byte)0x94, (byte)0x62, (byte)0x00, (byte)0xC7,
-			(byte)0xA6, (byte)0x95, (byte)0x89, (byte)0x31, (byte)0x86, (byte)0x7B, (byte)0x96, (byte)0x00,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE,
-			(byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x5A, (byte)0x38, (byte)0x5C,
+			(byte)0xD4, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x35, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x98, (byte)0x49, (byte)0x10,
+			(byte)0x02, (byte)0x91, (byte)0x1C, (byte)0x5E, (byte)0x08, (byte)0x55, (byte)0xF2, (byte)0x1F,
+			(byte)0x0F, (byte)0x26, (byte)0xD2, (byte)0x94, (byte)0x7F, (byte)0x0C, (byte)0xF8, (byte)0x20,
+			(byte)0x16, (byte)0x25, (byte)0x0C, (byte)0x57, (byte)0xD0, (byte)0x30, (byte)0xA6, (byte)0x12,
+			(byte)0x74, (byte)0x08, (byte)0x55, (byte)0x82, (byte)0xA1, (byte)0x73, (byte)0x58, (byte)0x9A,
+			(byte)0x82, (byte)0xA6, (byte)0x04, (byte)0x1F, (byte)0x84, (byte)0xC4, (byte)0x11, (byte)0x01,
+			(byte)0x08, (byte)0x00, (byte)0xFE, (byte)0x77, (byte)0xCF, (byte)0x46, (byte)0x52, (byte)0x33,
+			(byte)0xC1, (byte)0xA1, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45,
+			(byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 	}
 

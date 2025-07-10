@@ -46,6 +46,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -59,6 +60,8 @@ import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.function.IFunction1;
 
 import uk.blankaspect.common.tuple.IStrKVPair;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
 
@@ -118,7 +121,8 @@ public class PropertiesPane
 	private static final	Insets	DEFAULT_DIALOG_CLOSE_BUTTON_PADDING	= new Insets(4.0, 16.0, 4.0, 16.0);
 
 	/** The key combination that fires the <i>copy</i> button of a properties dialog. */
-	private static final	KeyCombination	KEY_COMBO_COPY	= new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+	private static final	KeyCombination	KEY_COMBO_COPY	=
+			new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 
 	/** Miscellaneous strings. */
 	private static final	String	EQUALS_STR			= " = ";
@@ -134,35 +138,35 @@ public class PropertiesPane
 			FxProperty.TEXT_FILL,
 			ColourKey.VALUE_LABEL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.PROPERTIES_PANE)
-						.desc(StyleClass.VALUE_LABEL)
-						.build()
+					.cls(StyleClass.PROPERTIES_PANE)
+					.desc(StyleClass.VALUE_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.VALUE_LABEL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.PROPERTIES_PANE)
-						.desc(StyleClass.VALUE_LABEL)
-						.build()
+					.cls(StyleClass.PROPERTIES_PANE)
+					.desc(StyleClass.VALUE_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.VALUE_LABEL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.PROPERTIES_PANE)
-						.desc(StyleClass.VALUE_LABEL)
-						.build()
+					.cls(StyleClass.PROPERTIES_PANE)
+					.desc(StyleClass.VALUE_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.VALUE_LABEL_POPUP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.VALUE_LABEL_POPUP)
-						.build()
+					.cls(StyleClass.VALUE_LABEL_POPUP)
+					.build()
 		)
 	);
 
@@ -243,14 +247,14 @@ public class PropertiesPane
 		getStyleClass().add(StyleClass.PROPERTIES_PANE);
 
 		// Initialise column constraints
-		ColumnConstraints column1 = new ColumnConstraints();
-		column1.setMinWidth(GridPane.USE_PREF_SIZE);
-		column1.setHalignment(HPos.RIGHT);
-		getColumnConstraints().add(column1);
+		ColumnConstraints column = new ColumnConstraints();
+		column.setMinWidth(Region.USE_PREF_SIZE);
+		column.setHalignment(HPos.RIGHT);
+		getColumnConstraints().add(column);
 
-		ColumnConstraints column2 = new ColumnConstraints();
-		column2.setHalignment(HPos.LEFT);
-		getColumnConstraints().add(column2);
+		column = new ColumnConstraints();
+		column.setHalignment(HPos.LEFT);
+		getColumnConstraints().add(column);
 	}
 
 	//------------------------------------------------------------------
@@ -267,12 +271,12 @@ public class PropertiesPane
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -677,7 +681,7 @@ public class PropertiesPane
 				copyButton.getItems().add(menuItem);
 
 				// Create button: close
-				Button closeButton = new Button(CLOSE_STR);
+				Button closeButton = Buttons.hNoShrink(CLOSE_STR);
 				closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 				closeButton.setOnAction(event -> requestClose());
 				addButton(closeButton, HPos.RIGHT);

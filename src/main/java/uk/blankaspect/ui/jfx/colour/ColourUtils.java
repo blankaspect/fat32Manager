@@ -36,6 +36,13 @@ public class ColourUtils
 {
 
 ////////////////////////////////////////////////////////////////////////
+//  Constants
+////////////////////////////////////////////////////////////////////////
+
+	/** Miscellaneous strings. */
+	private static final	String	FRACTION_OUT_OF_BOUNDS_STR	= "Fraction out of bounds: ";
+
+////////////////////////////////////////////////////////////////////////
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
@@ -122,8 +129,8 @@ public class ColourUtils
 		Color	colour,
 		double	delta)
 	{
-		return Color.hsb(colour.getHue(), colour.getSaturation(), Math.min(Math.max(0.0, colour.getBrightness() + delta), 1.0),
-						 colour.getOpacity());
+		return Color.hsb(colour.getHue(), colour.getSaturation(),
+						 Math.min(Math.max(0.0, colour.getBrightness() + delta), 1.0), colour.getOpacity());
 	}
 
 	//------------------------------------------------------------------
@@ -439,7 +446,7 @@ public class ColourUtils
 		String	str)
 	{
 		// Split input string into components
-		String[] strs = str.trim().split(ColourConstants.RGB_SEPARATOR_REGEX, -1);
+		String[] strs = str.strip().split(ColourConstants.RGB_SEPARATOR_REGEX, -1);
 		int numComponents = strs.length;
 		if (numComponents > 4)
 			throw new IllegalArgumentException("Malformed colour");
@@ -456,7 +463,8 @@ public class ColourUtils
 				try
 				{
 					value = Integer.parseInt(str0);
-					if ((value < ColourConstants.MIN_RGB_COMPONENT_VALUE) || (value > ColourConstants.MAX_RGB_COMPONENT_VALUE))
+					if ((value < ColourConstants.MIN_RGB_COMPONENT_VALUE)
+							|| (value > ColourConstants.MAX_RGB_COMPONENT_VALUE))
 						throw new IllegalArgumentException("RGB component out of bounds: " + value);
 				}
 				catch (NumberFormatException e)
@@ -491,6 +499,51 @@ public class ColourUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Performs a linear interpolation of the red, green and blue values of the two specified colours at the specified
+	 * fraction of each value, and returns the resulting colour.
+	 * <p>
+	 * Each value (red, green, blue) is calculated thus:<br>
+	 * <i>v</i> = <i>v1</i> + (<i>v2</i> - <i>v1</i>) * <i>fraction</i>
+	 * </p>
+	 *
+	 * @param  colour1
+	 *           the first colour.
+	 * @param  colour2
+	 *           the second colour.
+	 * @param  fraction
+	 *           the fraction between {@code colour1} and {@code colour2}, in the interval [0, 1].
+	 * @return the colour that results from interpolating the red, green and blue values of {@code colour1} and {@code
+	 *         colour2} at {@code fraction}.
+	 */
+
+	public static Color interpolateRgb(
+		Color	colour1,
+		Color	colour2,
+		double	fraction)
+	{
+		// Validate arguments
+		if ((fraction < 0.0) || (fraction > 1.0))
+			throw new IllegalArgumentException(FRACTION_OUT_OF_BOUNDS_STR + fraction);
+
+		// Calculate red
+		double red1 = colour1.getRed();
+		double red = red1 + (colour2.getRed() - red1) * fraction;
+
+		// Calculate green
+		double green1 = colour1.getGreen();
+		double green = green1 + (colour2.getGreen() - green1) * fraction;
+
+		// Calculate blue
+		double blue1 = colour1.getBlue();
+		double blue = blue1 + (colour2.getBlue() - blue1) * fraction;
+
+		// Return colour
+		return Color.color(red, green, blue);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Performs a linear interpolation of the hue, saturation and brightness values of the two specified colours at the
 	 * specified fraction of each value, and returns the resulting colour.
 	 * <p>
@@ -515,12 +568,11 @@ public class ColourUtils
 	{
 		// Validate arguments
 		if ((fraction < 0.0) || (fraction > 1.0))
-			throw new IllegalArgumentException("Fraction out of bounds: " + fraction);
+			throw new IllegalArgumentException(FRACTION_OUT_OF_BOUNDS_STR + fraction);
 
 		// Calculate hue
 		double hue1 = colour1.getHue();
-		double hue2 = colour2.getHue();
-		double hue = hue1 + (hue2 - hue1) * fraction;
+		double hue = hue1 + (colour2.getHue() - hue1) * fraction;
 		while (hue < 0.0)
 			hue += 360.0;
 		while (hue >= 360.0)
@@ -528,13 +580,11 @@ public class ColourUtils
 
 		// Calculate saturation
 		double saturation1 = colour1.getSaturation();
-		double saturation2 = colour2.getSaturation();
-		double saturation = saturation1 + (saturation2 - saturation1) * fraction;
+		double saturation = saturation1 + (colour2.getSaturation() - saturation1) * fraction;
 
 		// Calculate brightness
 		double brightness1 = colour1.getBrightness();
-		double brightness2 = colour2.getBrightness();
-		double brightness = brightness1 + (brightness2 - brightness1) * fraction;
+		double brightness = brightness1 + (colour2.getBrightness() - brightness1) * fraction;
 
 		// Return colour
 		return Color.hsb(hue, saturation, brightness);

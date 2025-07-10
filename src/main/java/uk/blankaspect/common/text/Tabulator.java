@@ -51,21 +51,21 @@ public class Tabulator
 ////////////////////////////////////////////////////////////////////////
 
 	public static Result tabulate(
-		int							numColumns,
-		boolean[]					rightAligned,
-		int[]						gaps,
-		Iterator<Iterator<String>>	rowSource)
+		int														numColumns,
+		boolean[]												rightAligned,
+		int[]													gaps,
+		Iterator<? extends Iterator<? extends CharSequence>>	rowSource)
 	{
 		// Create list of rows
-		List<String[]> rows = new ArrayList<>();
+		List<CharSequence[]> rows = new ArrayList<>();
 		while (rowSource.hasNext())
 		{
 			// Initialise cell values
-			String[] cellValues = new String[numColumns];
+			CharSequence[] cellValues = new CharSequence[numColumns];
 
 			// Populate cell values
 			int index = 0;
-			Iterator<String> it = rowSource.next();
+			Iterator<? extends CharSequence> it = rowSource.next();
 			while ((index < numColumns) && it.hasNext())
 				cellValues[index++] = it.next();
 
@@ -80,10 +80,10 @@ public class Tabulator
 	//------------------------------------------------------------------
 
 	public static Result tabulate(
-		int					numColumns,
-		boolean[]			rightAligned,
-		int[]				gaps,
-		Iterable<String[]>	rows)
+		int									numColumns,
+		boolean[]							rightAligned,
+		int[]								gaps,
+		Iterable<? extends CharSequence[]>	rows)
 	{
 		// Validate arguments
 		if (numColumns < 0)
@@ -93,14 +93,14 @@ public class Tabulator
 
 		// Calculate maximum widths of columns
 		int[] maxWidths = new int[numColumns];
-		for (String[] cellValues : rows)
+		for (CharSequence[] cellValues : rows)
 		{
 			if (cellValues != null)
 			{
 				int numCellValues = Math.min(cellValues.length, numColumns);
 				for (int i = 0; i < numCellValues; i++)
 				{
-					String cellValue = cellValues[i];
+					CharSequence cellValue = cellValues[i];
 					if (cellValue != null)
 					{
 						int length = cellValue.length();
@@ -139,7 +139,7 @@ public class Tabulator
 
 		// Tabulate text
 		int maxLineLength = 0;
-		for (String[] cellValues : rows)
+		for (CharSequence[] cellValues : rows)
 		{
 			int startIndex = buffer.length();
 			if (cellValues != null)
@@ -155,7 +155,7 @@ public class Tabulator
 						buffer.append(spaces, 0, gap);
 
 					// Get cell value
-					String cellValue = cellValues[i];
+					CharSequence cellValue = cellValues[i];
 					if (cellValue == null)
 						cellValue = "";
 
@@ -166,8 +166,14 @@ public class Tabulator
 
 					// Append cell value
 					buffer.append(cellValue);
-					if (!cellValue.isBlank())
-						endIndex = buffer.length();
+					for (int j = 0; j < cellValue.length(); j++)
+					{
+						if (!Character.isWhitespace(cellValue.charAt(j)))
+						{
+							endIndex = buffer.length();
+							break;
+						}
+					}
 
 					// If column is left-aligned, add padding
 					if (!rightAligned0[i] && (padding > 0))
@@ -192,12 +198,12 @@ public class Tabulator
 	//------------------------------------------------------------------
 
 	public static Result tabulate(
-		int			numColumns,
-		boolean[]	rightAligned,
-		int[]		gaps,
-		String[]...	rows)
+		int					numColumns,
+		boolean[]			rightAligned,
+		int[]				gaps,
+		CharSequence[]...	rows)
 	{
-		return tabulate(numColumns, rightAligned, gaps, Arrays.asList(rows));
+		return tabulate(numColumns, rightAligned, gaps, List.of(rows));
 	}
 
 	//------------------------------------------------------------------

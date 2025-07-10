@@ -47,7 +47,8 @@ public class DiscretisedValue
 	 *          the function that maps a continuous value to a discrete value.
 	 */
 
-	public DiscretisedValue(IDiscretiser discretiser)
+	public DiscretisedValue(
+		IDiscretiser	discretiser)
 	{
 		// Call alternative constructor
 		this(discretiser, 0);
@@ -64,8 +65,9 @@ public class DiscretisedValue
 	 *          the initial discrete value.
 	 */
 
-	public DiscretisedValue(IDiscretiser discretiser,
-							int          value)
+	public DiscretisedValue(
+		IDiscretiser	discretiser,
+		int				value)
 	{
 		// Validate arguments
 		if (discretiser == null)
@@ -106,7 +108,8 @@ public class DiscretisedValue
 	 * @return the result of applying the discretising function to {@code value}.
 	 */
 
-	public int update(double value)
+	public int update(
+		double	value)
 	{
 		// Update discrete value
 		discreteValue = discretiser.discretise(value);
@@ -127,7 +130,8 @@ public class DiscretisedValue
 	 *         previous stored discrete value.
 	 */
 
-	public boolean updateChanged(double value)
+	public boolean updateChanged(
+		double	value)
 	{
 		// Get old discrete value
 		int oldDiscreteValue = discreteValue;

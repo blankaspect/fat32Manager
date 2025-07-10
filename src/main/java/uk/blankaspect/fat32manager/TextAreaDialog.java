@@ -32,6 +32,8 @@ import javafx.scene.input.KeyEvent;
 
 import javafx.stage.Window;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
 //----------------------------------------------------------------------
@@ -51,7 +53,8 @@ public class TextAreaDialog
 	private static final	double	TEXT_AREA_WIDTH		= 480.0;
 	private static final	double	TEXT_AREA_HEIGHT	= 320.0;
 
-	private static final	KeyCombination	KEY_COMBO_COPY	= new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+	private static final	KeyCombination	KEY_COMBO_COPY	=
+			new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 
 	private static final	String	COPY_STR	= "Copy";
 
@@ -80,7 +83,7 @@ public class TextAreaDialog
 		setContent(textArea);
 
 		// Create button: copy
-		Button copyButton = new Button(COPY_STR);
+		Button copyButton = Buttons.hNoShrink(COPY_STR);
 		copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		copyButton.setOnAction(event ->
 		{
@@ -97,7 +100,7 @@ public class TextAreaDialog
 		addButton(copyButton, HPos.LEFT);
 
 		// Create button: close
-		Button closeButton = new Button(CLOSE_STR);
+		Button closeButton = Buttons.hNoShrink(CLOSE_STR);
 		closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		closeButton.setOnAction(event -> requestClose());
 		addButton(closeButton, HPos.RIGHT);

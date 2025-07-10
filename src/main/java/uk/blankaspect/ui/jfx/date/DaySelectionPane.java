@@ -41,6 +41,7 @@ import javafx.scene.input.MouseEvent;
 
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -143,131 +144,131 @@ public class DaySelectionPane
 			FxProperty.BORDER_COLOUR,
 			ColourKey.BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT_INVALID,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL).pseudo(PseudoClassKey.INVALID)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL).pseudo(PseudoClassKey.INVALID)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_EVEN,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.EVEN)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.EVEN)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_ODD,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.ODD)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.ODD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE).pseudo(FxPseudoClass.FOCUSED)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE).pseudo(FxPseudoClass.FOCUSED)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_BORDER_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_BORDER_SELECTED_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE).pseudo(FxPseudoClass.FOCUSED)
-						.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE).pseudo(FxPseudoClass.FOCUSED)
+					.desc(StyleClass.CELL_LABEL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.HEADER_CELL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.HEADER_CELL_LABEL)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.HEADER_CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.HEADER_CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DAY_SELECTION_PANE)
-						.desc(StyleClass.HEADER_CELL_LABEL)
-						.build()
+					.cls(StyleClass.DAY_SELECTION_PANE)
+					.desc(StyleClass.HEADER_CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.POPUP_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.POPUP_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.POPUP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		)
 	);
 
@@ -275,12 +276,12 @@ public class DaySelectionPane
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.DAY_SELECTION_PANE)
-									.desc(StyleClass.HEADER_CELL_LABEL)
-									.build())
-						.borders(Side.RIGHT, Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.DAY_SELECTION_PANE)
+						.desc(StyleClass.HEADER_CELL_LABEL)
+						.build())
+				.borders(Side.RIGHT, Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -453,7 +454,7 @@ public class DaySelectionPane
 
 		// Set column constraints
 		for (int i = 0; i < NUM_COLUMNS; i++)
-			getColumnConstraints().add(new ColumnConstraints(USE_PREF_SIZE, columnWidth, USE_PREF_SIZE));
+			getColumnConstraints().add(new ColumnConstraints(Region.USE_PREF_SIZE, columnWidth, Region.USE_PREF_SIZE));
 
 		// Create header cells and add them to this pane
 		for (int i = 0; i < NUM_COLUMNS; i++)
@@ -469,7 +470,8 @@ public class DaySelectionPane
 			label.setAlignment(Pos.CENTER);
 			label.setPadding(HEADER_CELL_PADDING);
 			label.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.HEADER_CELL_BACKGROUND)));
-			label.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.HEADER_CELL_BORDER), Side.RIGHT, Side.BOTTOM));
+			label.setBorder(SceneUtils.createSolidBorder(
+					getColour(ColourKey.HEADER_CELL_BORDER), Side.RIGHT, Side.BOTTOM));
 			label.getStyleClass().add(StyleClass.HEADER_CELL_LABEL);
 
 			// Add label to this pane
@@ -644,12 +646,12 @@ public class DaySelectionPane
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

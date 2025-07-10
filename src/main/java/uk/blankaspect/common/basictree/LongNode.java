@@ -223,7 +223,7 @@ public class LongNode
 	public boolean equals(
 		Object	obj)
 	{
-		return (obj == this) || ((obj instanceof LongNode other) && (value == other.value));
+		return (this == obj) || ((obj instanceof LongNode other) && (value == other.value));
 	}
 
 	//------------------------------------------------------------------

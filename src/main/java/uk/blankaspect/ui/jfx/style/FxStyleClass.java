@@ -135,6 +135,9 @@ public interface FxStyleClass
 	/** A disclosure node of a {@link TreeView}. */
 	String	TREE_DISCLOSURE_NODE		= "tree-disclosure-node";
 
+	/** The viewport of a {@link ScrollPane}. */
+	String	VIEWPORT					= "viewport";
+
 	/** A {@link VirtualFlow}. */
 	String	VIRTUAL_FLOW				= "virtual-flow";
 

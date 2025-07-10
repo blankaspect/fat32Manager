@@ -48,7 +48,10 @@ import javafx.stage.WindowEvent;
 import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssSelector;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.container.DialogButtonPane;
+import uk.blankaspect.ui.jfx.container.PaneStyle;
 
 import uk.blankaspect.ui.jfx.date.DateSelectionPane;
 
@@ -100,17 +103,17 @@ public class DateSelectionDialog
 			FxProperty.BORDER_COLOUR,
 			ColourKey.BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_DIALOG)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_DIALOG)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.BUTTON_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_DIALOG)
-						.desc(StyleClass.BUTTON_PANE)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_DIALOG)
+					.desc(StyleClass.BUTTON_PANE)
+					.build()
 		)
 	);
 
@@ -118,12 +121,12 @@ public class DateSelectionDialog
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.DATE_SELECTION_DIALOG)
-									.desc(StyleClass.BUTTON_PANE)
-									.build())
-						.borders(Side.TOP)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.DATE_SELECTION_DIALOG)
+						.desc(StyleClass.BUTTON_PANE)
+						.build())
+				.borders(Side.TOP)
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -138,8 +141,7 @@ public class DateSelectionDialog
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	BORDER				= PREFIX + "border";
-		String	BUTTON_PANE_BORDER	= PREFIX + "buttonPane.border";
+		String	BORDER	= PREFIX + "border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -155,8 +157,9 @@ public class DateSelectionDialog
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(DateSelectionDialog.class, COLOUR_PROPERTIES, RULE_SETS);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(DateSelectionDialog.class, COLOUR_PROPERTIES, RULE_SETS,
+									   PaneStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -194,11 +197,11 @@ public class DateSelectionDialog
 		// Create button pane
 		DialogButtonPane buttonPane = new DialogButtonPane(6.0);
 		buttonPane.setPadding(BUTTON_PANE_PADDING);
-		buttonPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.BUTTON_PANE_BORDER), Side.TOP));
+		buttonPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER), Side.TOP));
 		buttonPane.getStyleClass().add(StyleClass.BUTTON_PANE);
 
 		// Create button: OK
-		Button okButton = new Button(OK_STR);
+		Button okButton = Buttons.hNoShrink(OK_STR);
 		okButton.getProperties().put(DialogButtonPane.BUTTON_GROUP_KEY, BUTTON_GROUP);
 		okButton.setPadding(BUTTON_PADDING);
 		okButton.setOnAction(event ->
@@ -209,7 +212,7 @@ public class DateSelectionDialog
 		buttonPane.addButton(okButton, HPos.RIGHT);
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(DialogButtonPane.BUTTON_GROUP_KEY, BUTTON_GROUP);
 		cancelButton.setPadding(BUTTON_PADDING);
 		cancelButton.setOnAction(event -> hide());
@@ -233,7 +236,7 @@ public class DateSelectionDialog
 		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 		{
 			// Equalise widths of groups of buttons
-			double extraWidth = buttonPane.equaliseButtonWidths();
+			double extraWidth = buttonPane.equaliseButtonWidths(true);
 
 			// Increase width of window to accommodate extra width of buttons
 			if (extraWidth > 0.0)
@@ -241,7 +244,7 @@ public class DateSelectionDialog
 		});
 
 		// Fire 'OK' button when mouse is double-clicked on cell in date-selection pane
-		dateSelectionPane.setAcceptAction(() -> okButton.fire());
+		dateSelectionPane.setAcceptAction(okButton::fire);
 
 		// Add handler for 'key pressed' events
 		addEventHandler(KeyEvent.KEY_PRESSED, event ->
@@ -268,12 +271,12 @@ public class DateSelectionDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

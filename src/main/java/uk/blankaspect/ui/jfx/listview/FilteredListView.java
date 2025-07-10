@@ -21,7 +21,6 @@ package uk.blankaspect.ui.jfx.listview;
 import java.lang.invoke.MethodHandles;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -122,7 +121,8 @@ public class FilteredListView<T>
 			SubstringFilterPane.FilterMode.WILDCARD_START;
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
+	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -132,34 +132,34 @@ public class FilteredListView<T>
 			FxProperty.FILL,
 			ListViewStyle.ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TEXT_SPAN)
-						.build()
+					.cls(StyleClass.TEXT_SPAN)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ListViewStyle.ColourKey.CELL_TEXT_SELECTED,
 			CssSelector.builder()
-						.cls(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.TEXT_SPAN)
-						.build()
+					.cls(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.TEXT_SPAN)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_SPAN_HIGHLIGHTED,
 			CssSelector.builder()
-						.cls(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_SPAN_HIGHLIGHTED_SELECTED,
 			CssSelector.builder()
-						.cls(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		)
 	);
 
@@ -167,11 +167,11 @@ public class FilteredListView<T>
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
-									.build())
-						.boldFont()
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.TEXT_SPAN).pseudo(PseudoClassKey.HIGHLIGHTED)
+						.build())
+				.boldFont()
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -321,7 +321,7 @@ public class FilteredListView<T>
 		}
 
 		// Ensure cells are redrawn if scroll bar is hidden
-		widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+		widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 
 		// Update list
 		update();
@@ -350,12 +350,12 @@ public class FilteredListView<T>
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -632,7 +632,7 @@ public class FilteredListView<T>
 	public void setUnfilteredItems(
 		T...	items)
 	{
-		setUnfilteredItems(Arrays.asList(items));
+		setUnfilteredItems(List.of(items));
 	}
 
 	//------------------------------------------------------------------
@@ -734,40 +734,28 @@ public class FilteredListView<T>
 		// ... otherwise, apply filter to items
 		else
 		{
-			switch (filterMode.get())
+			SimpleWildcardPatternMatcher patternMatcher = switch (filterMode.get())
 			{
-				case FRAGMENTED:
-					characterMatcher.setTarget(filter);
-					unfilteredItems.stream()
-									.filter(item -> characterMatcher.setSource(normalise(converter.getText(item))).match())
-									.forEach(item -> filteredItems.add(item));
-					break;
-
-				case WILDCARD_ANYWHERE:
+				case FRAGMENTED        -> null;
+				case WILDCARD_ANYWHERE -> SimpleWildcardPatternMatcher.anywhereIgnoreCase(filter);
+				case WILDCARD_START    -> SimpleWildcardPatternMatcher.startIgnoreCase(filter);
+				case WILDCARD_ALL      -> SimpleWildcardPatternMatcher.allIgnoreCase(filter);
+			};
+			if (patternMatcher == null)
+			{
+				characterMatcher.setTarget(filter);
+				for (T item : unfilteredItems)
 				{
-					SimpleWildcardPatternMatcher matcher = SimpleWildcardPatternMatcher.anywhereIgnoreCase(filter);
-					unfilteredItems.stream()
-									.filter(item -> matcher.match(converter.getText(item)))
-									.forEach(item -> filteredItems.add(item));
-					break;
+					if (characterMatcher.setSource(normalise(converter.getText(item))).match())
+						filteredItems.add(item);
 				}
-
-				case WILDCARD_START:
+			}
+			else
+			{
+				for (T item : unfilteredItems)
 				{
-					SimpleWildcardPatternMatcher matcher = SimpleWildcardPatternMatcher.startIgnoreCase(filter);
-					unfilteredItems.stream()
-									.filter(item -> matcher.match(converter.getText(item)))
-									.forEach(item -> filteredItems.add(item));
-					break;
-				}
-
-				case WILDCARD_ALL:
-				{
-					SimpleWildcardPatternMatcher matcher = SimpleWildcardPatternMatcher.allIgnoreCase(filter);
-					unfilteredItems.stream()
-									.filter(item -> matcher.match(converter.getText(item)))
-									.forEach(item -> filteredItems.add(item));
-					break;
+					if (patternMatcher.match(converter.getText(item)))
+						filteredItems.add(item);
 				}
 			}
 		}
@@ -840,6 +828,9 @@ public class FilteredListView<T>
 	/**
 	 * This interface defines the methods that return a graphical representation and a string representation of an item
 	 * of type {@code T}.
+	 *
+	 * @param <T>
+	 *          the type of the item.
 	 */
 
 	@FunctionalInterface
@@ -943,7 +934,11 @@ public class FilteredListView<T>
 			});
 
 			// When mouse leaves cell, deactivate any cell pop-up
-			addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+			addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+			{
+				if (CellPopUpManager.deactivatePopUpOnMouseExited())
+					cellPopUpManager.deactivate();
+			});
 
 			// When a mouse button is released, deactivate any cell pop-up
 			addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -1063,8 +1058,9 @@ public class FilteredListView<T>
 													: getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_ODD);
 				if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
 				{
-					setBackground(SceneUtils.createColouredBackground(focusedBackgroundColour, new Insets(0.0, 0.0, 1.0, 0.0),
-																	  colour, new Insets(1.0, 1.0, 2.0, 1.0)));
+					setBackground(SceneUtils.createColouredBackground(focusedBackgroundColour,
+																	  new Insets(0.0, 0.0, 1.0, 0.0), colour,
+																	  new Insets(1.0, 1.0, 2.0, 1.0)));
 				}
 				else
 					setBackground(SceneUtils.createColouredBackground(colour));

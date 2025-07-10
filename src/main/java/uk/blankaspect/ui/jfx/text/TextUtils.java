@@ -18,11 +18,17 @@ package uk.blankaspect.ui.jfx.text;
 // IMPORTS
 
 
+import java.util.List;
+
 import javafx.scene.Group;
 
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBoundsType;
+
+import uk.blankaspect.common.css.CssUtils;
+
+import uk.blankaspect.ui.jfx.style.FxProperty;
 
 //----------------------------------------------------------------------
 
@@ -36,6 +42,15 @@ import javafx.scene.text.TextBoundsType;
 
 public class TextUtils
 {
+
+////////////////////////////////////////////////////////////////////////
+//  Constants
+////////////////////////////////////////////////////////////////////////
+
+	/** A style sheet that, when appended to a suitable selector, may be used to apply {@linkplain
+		FontSmoothingType#GRAY <i>gray</i> font smoothing} to a container of {@link Text} nodes. */
+	private static final	String	GRAY_FONT_SMOOTHING_STYLE_SHEET	=
+			".text { " + FxProperty.FONT_SMOOTHING_TYPE.getName() + ": gray; }";
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -78,7 +93,7 @@ public class TextUtils
 	 *
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text}.
+	 * @return the width of a {@code Text} node that was created for {@code text}.
 	 */
 
 	public static double textWidth(
@@ -91,14 +106,14 @@ public class TextUtils
 
 	/**
 	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
-	 * LOGICAL_VERTICAL_CENTER} and whose text has the specified value, and returns the width of the {@linkplain
-	 * Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified font.
+	 * LOGICAL_VERTICAL_CENTER} and whose font and text have the specified values, and returns the width of the
+	 * {@linkplain Text#getLayoutBounds() layout bounds} of the node.
 	 *
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text} when it is rendered in {@code font}.
+	 * @return the width of a {@code Text} node that was created for {@code text} with the specified font.
 	 */
 
 	public static double textWidth(
@@ -111,17 +126,18 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose bounds type and text have the specified values, and returns the width
-	 * of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified font.
+	 * Creates a temporary {@link Text} node whose bounds type, font and text have the specified values, and returns the
+	 * width of the {@linkplain Text#getLayoutBounds() layout bounds} of the node.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text} when it is rendered in {@code font}.
+	 * @return the width of a {@code Text} node that was created for {@code text} with the specified bounds type and
+	 *         font.
 	 */
 
 	public static double textWidth(
@@ -150,7 +166,7 @@ public class TextUtils
 	 *
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text}, rounded up to the nearest integer.
+	 * @return the width, rounded up to the nearest integer, of a {@code Text} node that was created for {@code text}.
 	 */
 
 	public static double textWidthCeil(
@@ -163,15 +179,15 @@ public class TextUtils
 
 	/**
 	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
-	 * LOGICAL_VERTICAL_CENTER} and whose text has the specified value, and returns the width of the {@linkplain
-	 * Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified font, rounded up to the
-	 * nearest integer.
+	 * LOGICAL_VERTICAL_CENTER} and whose font and text have the specified values, and returns the width of the
+	 * {@linkplain Text#getLayoutBounds() layout bounds} of the node, rounded up to the nearest integer.
 	 *
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text} when it is rendered in {@code font}, rounded up to the nearest integer.
+	 * @return the width, rounded up to the nearest integer, of a {@code Text} node that was created for {@code text}
+	 *         with the specified font.
 	 */
 
 	public static double textWidthCeil(
@@ -184,18 +200,18 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose bounds type and text have the specified values, and returns the width
-	 * of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified font,
-	 * rounded up to the nearest integer.
+	 * Creates a temporary {@link Text} node whose bounds type, font and text have the specified values, and returns the
+	 * width of the {@linkplain Text#getLayoutBounds() layout bounds} of the node, rounded up to the nearest integer.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose width is desired.
-	 * @return the width of {@code text} when it is rendered in {@code font}, rounded up to the nearest integer.
+	 * @return the width, rounded up to the nearest integer, of a {@code Text} node that was created for {@code text}
+	 *         with the specified bounds type and font.
 	 */
 
 	public static double textWidthCeil(
@@ -213,7 +229,7 @@ public class TextUtils
 	 * LOGICAL_VERTICAL_CENTER} and whose text is "M", and returns the height of the {@linkplain Text#getLayoutBounds()
 	 * layout bounds} of the node.
 	 *
-	 * @return the height of a {@link Text} node whose text is "M".
+	 * @return the height of a {@link Text} node that was created for the text "M".
 	 */
 
 	public static double textHeight()
@@ -230,7 +246,7 @@ public class TextUtils
 	 *
 	 * @param  text
 	 *           the text whose height is desired.
-	 * @return the height of {@code text}.
+	 * @return the height of a {@code Text} node that was created for {@code text}.
 	 */
 
 	public static double textHeight(
@@ -243,12 +259,12 @@ public class TextUtils
 
 	/**
 	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
-	 * LOGICAL_VERTICAL_CENTER} and whose text is "M", and returns the height of the {@linkplain Text#getLayoutBounds()
-	 * layout bounds} of the node when it is rendered in the specified font.
+	 * LOGICAL_VERTICAL_CENTER}, whose font has the specified value and whose text is "M", and returns the height of the
+	 * {@linkplain Text#getLayoutBounds() layout bounds} of the node.
 	 *
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
-	 * @return the height of {@code text} when it is rendered in {@code font}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
+	 * @return the height of a {@code Text} node that was created for the text "M" with the specified font.
 	 */
 
 	public static double textHeight(
@@ -260,16 +276,16 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose text is "M" and whose bounds type has the specified value, and
-	 * returns the height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in
-	 * the specified font.
+	 * Creates a temporary {@link Text} node whose bounds type and font have the specified values and whose text is "M",
+	 * and returns the height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
-	 * @return the height of {@code text} when it is rendered in {@code font}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
+	 * @return the height of a {@code Text} node that was created for the text "M" with the specified bounds type and
+	 *         font.
 	 */
 
 	public static double textHeight(
@@ -282,18 +298,18 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose text and bounds type have the specified values, and returns the
-	 * height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified
-	 * font.
+	 * Creates a temporary {@link Text} node whose bounds type, font and text have the specified values, and returns the
+	 * height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose height is desired.
-	 * @return the height of {@code text} when it is rendered in {@code font}.
+	 * @return the height of a {@code Text} node that was created for {@code text} with the specified bounds type and
+	 *         font.
 	 */
 
 	public static double textHeight(
@@ -320,7 +336,7 @@ public class TextUtils
 	 * LOGICAL_VERTICAL_CENTER} and whose text is "M", and returns the height of the {@linkplain Text#getLayoutBounds()
 	 * layout bounds} of the node, rounded up to the nearest integer.
 	 *
-	 * @return the height of a {@link Text} node whose text is "M", rounded up to the nearest integer.
+	 * @return the height, rounded up to the nearest integer, of a {@code Text} node that was created for the text "M".
 	 */
 
 	public static double textHeightCeil()
@@ -332,12 +348,31 @@ public class TextUtils
 
 	/**
 	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
+	 * LOGICAL_VERTICAL_CENTER} and whose text is "M", and returns the height of the {@linkplain Text#getLayoutBounds()
+	 * layout bounds} of the node multiplied by the specified factor and rounded up to the nearest integer.
+	 *
+	 * @param  factor
+	 *           the factor by which the height of the prototype text will be multiplied before rounding up.
+	 * @return the height of a {@code Text} node that was created for the text "M", multiplied by {@code factor} and
+	 *         rounded up to the nearest integer.
+	 */
+
+	public static double textHeightCeil(
+		double	factor)
+	{
+		return Math.ceil(factor * textHeight("M"));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
 	 * LOGICAL_VERTICAL_CENTER} and whose text has the specified value, and returns the height of the {@linkplain
 	 * Text#getLayoutBounds() layout bounds} of the node, rounded up to the nearest integer.
 	 *
 	 * @param  text
 	 *           the text whose height is desired.
-	 * @return the height of {@code text}, rounded up to the nearest integer.
+	 * @return the height, rounded up to the nearest integer, of a {@code Text} node that was created for {@code text}.
 	 */
 
 	public static double textHeightCeil(
@@ -350,12 +385,13 @@ public class TextUtils
 
 	/**
 	 * Creates a temporary {@link Text} node whose bounds type is {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER
-	 * LOGICAL_VERTICAL_CENTER} and whose text is "M", and returns the height of the {@linkplain Text#getLayoutBounds()
-	 * layout bounds} of the node when it is rendered in the specified font, rounded up to the nearest integer.
+	 * LOGICAL_VERTICAL_CENTER}, whose font has the specified value and whose text is "M", and returns the height of the
+	 * {@linkplain Text#getLayoutBounds() layout bounds} of the node, rounded up to the nearest integer.
 	 *
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
-	 * @return the height of {@code text} when it is rendered in {@code font}, rounded up to the nearest integer.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
+	 * @return the height, rounded up to the nearest integer, of a {@code Text} node that was created for the text "M"
+	 *         with the specified font.
 	 */
 
 	public static double textHeightCeil(
@@ -367,16 +403,17 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose text is "M" and whose bounds type has the specified value, and
-	 * returns the height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in
-	 * the specified font, rounded up to the nearest integer.
+	 * Creates a temporary {@link Text} node whose bounds type and font have the specified values and whose text is "M",
+	 * and returns the height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node, rounded up to the
+	 * nearest integer.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
-	 * @return the height of {@code text} when it is rendered in {@code font}, rounded up to the nearest integer.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
+	 * @return the height, rounded up to the nearest integer, of a {@code Text} node that was created for the text "M"
+	 *         with the specified bounds type and font.
 	 */
 
 	public static double textHeightCeil(
@@ -389,18 +426,18 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a temporary {@link Text} node whose text and bounds type have the specified values, and returns the
-	 * height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node when it is rendered in the specified
-	 * font, rounded up to the nearest integer.
+	 * Creates a temporary {@link Text} node whose bounds type, font and text have the specified values, and returns the
+	 * height of the {@linkplain Text#getLayoutBounds() layout bounds} of the node, rounded up to the nearest integer.
 	 *
 	 * @param  boundsType
-	 *           the type of the bounds that are returned by the temporary {@code Text} node.  If it is {@code null},
+	 *           the type of the bounds that will be set on the temporary {@code Text} node.  If it is {@code null},
 	 *           the bounds type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
 	 * @param  font
-	 *           the font that will be set on the temporary text node; ignored if it is {@code null}.
+	 *           the font that will be set on the temporary {@code Text} node; ignored if it is {@code null}.
 	 * @param  text
 	 *           the text whose height is desired.
-	 * @return the height of {@code text} when it is rendered in {@code font}, rounded up to the nearest integer.
+	 * @return the height, rounded up to the nearest integer, of a {@code Text} node that was created for {@code text}
+	 *         with the specified bounds type and font.
 	 */
 
 	public static double textHeightCeil(
@@ -414,10 +451,281 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Creates a {@link Text} node for each of the specified strings and returns the width of the widest node.  It is
+	 * equivalent to calling {@link #textWidth(String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @return the width of the widest of the {@code Text} nodes that were created for {@code strs}.
+	 */
+
+	public static double maxWidth(
+		Iterable<String>	strs)
+	{
+		return maxWidth(null, null, strs);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified font for each of the specified strings, and returns the width of
+	 * the widest node.  It is equivalent to calling {@link #textWidth(Font, String)} on each string and returning the
+	 * largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width of the widest of the {@code Text} nodes with the specified font that were created for {@code
+	 *         strs}.
+	 */
+
+	public static double maxWidth(
+		Font				font,
+		Iterable<String>	strs)
+	{
+		return maxWidth(null, font, strs);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified bounds type and font for each of the specified strings, and
+	 * returns the width of the widest node.  It is equivalent to calling {@link #textWidth(TextBoundsType, Font,
+	 * String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  boundsType
+	 *           the type of the bounds that will be set on the {@code Text} nodes.  If it is {@code null}, the bounds
+	 *           type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width of the widest of the {@code Text} nodes with the specified bounds type and font that were
+	 *         created for {@code strs}.
+	 */
+
+	public static double maxWidth(
+		TextBoundsType		boundsType,
+		Font				font,
+		Iterable<String>	strs)
+	{
+		double maxWidth = 0.0;
+		for (String str : strs)
+		{
+			double width = textWidth(boundsType, font, str);
+			if (maxWidth < width)
+				maxWidth = width;
+		}
+		return maxWidth;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node for each of the specified strings and returns the width of the widest node.  It is
+	 * equivalent to calling {@link #textWidth(String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @return the width of the widest of the {@code Text} nodes that were created for {@code strs}.
+	 */
+
+	public static double maxWidth(
+		String...	strs)
+	{
+		return maxWidth(null, null, strs);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified font for each of the specified strings, and returns the width of
+	 * the widest node.  It is equivalent to calling {@link #textWidth(Font, String)} on each string and returning the
+	 * largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width of the widest of the {@code Text} nodes with the specified font that were created for {@code
+	 *         strs}.
+	 */
+
+	public static double maxWidth(
+		Font		font,
+		String...	strs)
+	{
+		return maxWidth(null, font, strs);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified bounds type and font for each of the specified strings, and
+	 * returns the width of the widest node.  It is equivalent to calling {@link #textWidth(TextBoundsType, Font,
+	 * String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  boundsType
+	 *           the type of the bounds that will be set on the {@code Text} nodes.  If it is {@code null}, the bounds
+	 *           type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width of the widest of the {@code Text} nodes with the specified bounds type and font that were
+	 *         created for {@code strs}.
+	 */
+
+	public static double maxWidth(
+		TextBoundsType	boundsType,
+		Font			font,
+		String...		strs)
+	{
+		return maxWidth(boundsType, font, List.of(strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node for each of the specified strings and returns the width of the widest node, rounded
+	 * up to the nearest integer.  It is equivalent to calling {@link #textWidth(String)} on each string and returning
+	 * the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes that were created
+	 *         for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		Iterable<String>	strs)
+	{
+		return Math.ceil(maxWidth(null, null, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified font for each of the specified strings, and returns the width of
+	 * the widest node, rounded up to the nearest integer.  It is equivalent to calling {@link #textWidth(Font, String)}
+	 * on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes with the specified
+	 *         font that were created for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		Font				font,
+		Iterable<String>	strs)
+	{
+		return Math.ceil(maxWidth(null, font, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified bounds type and font for each of the specified strings, and
+	 * returns the width of the widest node, rounded up to the nearest integer.  It is equivalent to calling {@link
+	 * #textWidth(TextBoundsType, Font, String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  boundsType
+	 *           the type of the bounds that will be set on the {@code Text} nodes.  If it is {@code null}, the bounds
+	 *           type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes with the specified
+	 *         bounds type and font that were created for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		TextBoundsType		boundsType,
+		Font				font,
+		Iterable<String>	strs)
+	{
+		return Math.ceil(maxWidth(boundsType, font, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node for each of the specified strings and returns the width of the widest node, rounded
+	 * up to the nearest integer.  It is equivalent to calling {@link #textWidth(String)} on each string and returning
+	 * the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes that were created
+	 *         for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		String...	strs)
+	{
+		return Math.ceil(maxWidth(null, null, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified font for each of the specified strings, and returns the width of
+	 * the widest node, rounded up to the nearest integer.  It is equivalent to calling {@link #textWidth(Font, String)}
+	 * on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes with the specified
+	 *         font that were created for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		Font		font,
+		String...	strs)
+	{
+		return Math.ceil(maxWidth(null, font, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Text} node with the specified bounds type and font for each of the specified strings, and
+	 * returns the width of the widest node, rounded up to the nearest integer.  It is equivalent to calling {@link
+	 * #textWidth(TextBoundsType, Font, String)} on each string and returning the largest width.
+	 *
+	 * @param  strs
+	 *           the strings whose maximum width will be determined.
+	 * @param  boundsType
+	 *           the type of the bounds that will be set on the {@code Text} nodes.  If it is {@code null}, the bounds
+	 *           type will be {@linkplain TextBoundsType#LOGICAL_VERTICAL_CENTER LOGICAL_VERTICAL_CENTER}.
+	 * @param  font
+	 *           the font that will be set on the {@code Text} nodes; ignored if it is {@code null}.
+	 * @return the width, rounded up to the nearest integer, of the widest of the {@code Text} nodes with the specified
+	 *         bounds type and font that were created for {@code strs}.
+	 */
+
+	public static double maxWidthCeil(
+		TextBoundsType	boundsType,
+		Font			font,
+		String...		strs)
+	{
+		return Math.ceil(maxWidth(boundsType, font, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Creates a {@link Group} that contains the specified {@linkplain Text text nodes}, and returns it.
 	 *
 	 * @param  textNodes
-	 *           the text nodes for which a group will be created.
+	 *           the {@code Text} nodes for which a group will be created.
 	 * @return a {@link Group} that contains {@code textNodes}.
 	 */
 
@@ -443,6 +751,25 @@ public class TextUtils
 
 		// Return group
 		return group;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a data-scheme URI that encodes a style sheet that may be used to apply {@linkplain FontSmoothingType#GRAY
+	 * <i>gray</i> font smoothing} to a container of {@link Text} nodes.
+	 *
+	 * @param  selector
+	 *           the CSS selector that will be prefixed to the style sheet.  There will be a space between the prefix
+	 *           and the remainder of the selector ({@code .text}).
+	 * @return a data-scheme URI that encodes a style sheet that may be used to apply <i>gray</i> font smoothing to a
+	 *         container of {@code Text} nodes.
+	 */
+
+	public static String grayFontSmoothingStyleSheet(
+		String	selector)
+	{
+		return CssUtils.styleSheetToDataUri(selector + " " + GRAY_FONT_SMOOTHING_STYLE_SHEET);
 	}
 
 	//------------------------------------------------------------------

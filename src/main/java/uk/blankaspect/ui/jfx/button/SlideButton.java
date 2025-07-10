@@ -45,6 +45,7 @@ import javafx.scene.input.MouseEvent;
 
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Border;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -91,36 +92,36 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.TRACK,
 			CssSelector.builder()
-						.cls(StyleClass.SLIDE_BUTTON)
-						.desc(StyleClass.TRACK)
-						.build()
+					.cls(StyleClass.SLIDE_BUTTON)
+					.desc(StyleClass.TRACK)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TRACK_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.TRACK)
-						.build()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.TRACK)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.SLIDER,
 			CssSelector.builder()
-						.cls(StyleClass.SLIDE_BUTTON)
-						.desc(StyleClass.SLIDER)
-						.build()
+					.cls(StyleClass.SLIDE_BUTTON)
+					.desc(StyleClass.SLIDER)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.SLIDER_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
-						.desc(StyleClass.SLIDER)
-						.build()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.SLIDER)
+					.build()
 		)
 	);
 
@@ -201,8 +202,8 @@ public class SlideButton
 		sliderColourSelected = getColour(ColourKey.SLIDER_SELECTED);
 
 		// Set properties
-		setMinSize(USE_PREF_SIZE, USE_PREF_SIZE);
-		setMaxSize(USE_PREF_SIZE, USE_PREF_SIZE);
+		setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+		setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 		setBackground(Background.EMPTY);
 		setBorder(Border.EMPTY);
 		setPickOnBounds(true);
@@ -271,12 +272,12 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -650,7 +651,7 @@ public class SlideButton
 
 	protected void update()
 	{
-		SceneUtils.runOnFxApplicationThread(() -> view.update());
+		SceneUtils.runOnFxApplicationThread(view::update);
 	}
 
 	//------------------------------------------------------------------

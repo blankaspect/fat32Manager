@@ -31,6 +31,8 @@ import javafx.scene.layout.HBox;
 
 import javafx.stage.Window;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
 //----------------------------------------------------------------------
@@ -93,7 +95,7 @@ public class DefragmentFilesDialog
 		addContent(controlPane);
 
 		// Create button: defragment
-		Button defragmentButton = new Button(DEFRAGMENT_STR);
+		Button defragmentButton = Buttons.hNoShrink(DEFRAGMENT_STR);
 		defragmentButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		defragmentButton.setOnAction(event ->
 		{
@@ -103,7 +105,7 @@ public class DefragmentFilesDialog
 		addButton(defragmentButton, HPos.RIGHT);
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);

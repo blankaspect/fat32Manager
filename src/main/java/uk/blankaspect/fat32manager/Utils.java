@@ -18,8 +18,6 @@ package uk.blankaspect.fat32manager;
 // IMPORTS
 
 
-import java.io.File;
-
 import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
@@ -35,6 +33,8 @@ import javafx.stage.Window;
 import uk.blankaspect.common.exception2.BaseException;
 
 import uk.blankaspect.common.logging.Logger;
+
+import uk.blankaspect.common.os.OsUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
@@ -231,7 +231,7 @@ public class Utils
 		if (name == null)
 			return null;
 
-		if (File.separatorChar == '\\')
+		if (OsUtils.isWindows())
 		{
 			for (FileStore fileStore : FileSystems.getDefault().getFileStores())
 			{
@@ -261,7 +261,7 @@ public class Utils
 							int index = text.lastIndexOf('(');
 							if (index >= 0)
 							{
-								String pathname = text.substring(0, index).trim();
+								String pathname = text.substring(0, index).strip();
 								if (Files.isDirectory(Path.of(pathname), LinkOption.NOFOLLOW_LINKS))
 									return pathname.substring(mediaPathnamePrefix.length()) + " (" + name + ")";
 							}

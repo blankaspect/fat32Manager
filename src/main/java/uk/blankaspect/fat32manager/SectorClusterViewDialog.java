@@ -45,8 +45,6 @@ import javafx.application.Platform;
 
 import javafx.beans.property.SimpleIntegerProperty;
 
-import javafx.collections.FXCollections;
-
 import javafx.concurrent.Task;
 
 import javafx.event.EventType;
@@ -64,7 +62,6 @@ import javafx.scene.Node;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
@@ -74,8 +71,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
-
-import javafx.scene.image.Image;
 
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -106,12 +101,12 @@ import uk.blankaspect.common.bytechannel.ChannelUtils;
 import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssSelector;
 
-import uk.blankaspect.common.exception.UnexpectedRuntimeException;
-
 import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.FileException;
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
 
 import uk.blankaspect.common.filesystem.FilenameUtils;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.function.IFunction0;
 import uk.blankaspect.common.function.IFunction1;
@@ -121,23 +116,26 @@ import uk.blankaspect.common.function.IProcedure1;
 
 import uk.blankaspect.common.logging.Logger;
 
+import uk.blankaspect.common.message.MessageConstants;
+
+import uk.blankaspect.common.misc.SystemUtils;
+
 import uk.blankaspect.common.number.NumberUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
 import uk.blankaspect.driveio.VolumeException;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
 import uk.blankaspect.ui.jfx.button.ButtonUtils;
 import uk.blankaspect.ui.jfx.button.GraphicButton;
-import uk.blankaspect.ui.jfx.button.ImageButton;
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
 import uk.blankaspect.ui.jfx.button.SlideButton;
 
-import uk.blankaspect.ui.jfx.choicebox.ChoiceBoxWidthStabiliser;
-
+import uk.blankaspect.ui.jfx.container.PaneStyle;
 import uk.blankaspect.ui.jfx.container.PathnamePane;
 
 import uk.blankaspect.ui.jfx.dialog.ErrorDialog;
-import uk.blankaspect.ui.jfx.dialog.MessageDialog;
 import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
@@ -150,12 +148,16 @@ import uk.blankaspect.ui.jfx.font.FontUtils;
 
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
+import uk.blankaspect.ui.jfx.io.IOUtils;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 import uk.blankaspect.ui.jfx.label.MultiTextLabeller;
 
 import uk.blankaspect.ui.jfx.locationchooser.LocationChooser;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
+import uk.blankaspect.ui.jfx.spinner.CollectionSpinner;
 import uk.blankaspect.ui.jfx.spinner.SpinnerFactory;
 
 import uk.blankaspect.ui.jfx.style.ColourProperty;
@@ -171,8 +173,6 @@ import uk.blankaspect.ui.jfx.text.TextUtils;
 import uk.blankaspect.ui.jfx.textfield.PathnameField;
 
 import uk.blankaspect.ui.jfx.tooltip.TooltipDecorator;
-
-import uk.blankaspect.ui.jfx.util.IOUtils;
 
 import uk.blankaspect.ui.jfx.window.WindowState;
 
@@ -239,7 +239,8 @@ public class SectorClusterViewDialog
 
 	private static final	Insets	MENU_ITEM_PADDING	= new Insets(1.0, 1.0, 1.0, 6.0);
 
-	private static final	KeyCombination	KEY_COMBO_COPY	= new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+	private static final	KeyCombination	KEY_COMBO_COPY	=
+			new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 
 	/** Miscellaneous strings. */
 	private static final	String	ABS_TITLE_STR				= "[Abs]";
@@ -283,74 +284,74 @@ public class SectorClusterViewDialog
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.LOCATION_PANE_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.LOCATION_PANE)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.LOCATION_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.LOCATION_PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.LOCATION_PANE)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.LOCATION_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BUTTON_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(GraphicButton.PseudoClassKey.INACTIVE)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(GraphicButton.PseudoClassKey.INACTIVE)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.BUTTON_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(GraphicButton.PseudoClassKey.INACTIVE)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(GraphicButton.PseudoClassKey.INACTIVE)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.OFFSET_LABEL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.OFFSET_LABEL)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.OFFSET_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.OFFSET_LABEL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.OFFSET_LABEL)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.OFFSET_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.SAVE_SECTOR_CLUSTER_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.SAVE_SECTOR_CLUSTER_PANE)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.SAVE_SECTOR_CLUSTER_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.CONTENT_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-						.desc(StyleClass.CONTENT_PANE)
-						.build()
+					.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+					.desc(StyleClass.CONTENT_PANE)
+					.build()
 		)
 	);
 
@@ -358,52 +359,54 @@ public class SectorClusterViewDialog
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.id(NodeId.SECTOR_CLUSTER_DATA_AREA)
-									.desc(FxStyleClass.TEXT)
-									.build())
-						.grayFontSmoothing()
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+						.desc(StyleClass.SECTOR_CLUSTER_DATA_AREA)
+						.desc(FxStyleClass.TEXT)
+						.build())
+				.grayFontSmoothing()
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-									.desc(StyleClass.OFFSET_LABEL)
-									.desc(FxStyleClass.TEXT)
-									.build())
-						.grayFontSmoothing()
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+						.desc(StyleClass.OFFSET_LABEL)
+						.desc(FxStyleClass.TEXT)
+						.build())
+				.grayFontSmoothing()
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-									.desc(StyleClass.LOCATION_PANE)
-									.build())
-						.borders(Side.TOP, Side.BOTTOM)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+						.desc(StyleClass.LOCATION_PANE)
+						.build())
+				.borders(Side.TOP, Side.BOTTOM)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-									.desc(StyleClass.SAVE_SECTOR_CLUSTER_PANE)
-									.build())
-						.borders(Side.TOP)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+						.desc(StyleClass.SAVE_SECTOR_CLUSTER_PANE)
+						.build())
+				.borders(Side.TOP)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG)
-									.desc(StyleClass.CONTENT_PANE)
-									.build())
-						.borders(Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT)
+						.desc(StyleClass.CONTENT_PANE)
+						.build())
+				.borders(Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	SECTOR_CLUSTER_VIEW_DIALOG	= StyleConstants.CLASS_PREFIX + "fat32manager-sector-cluster-view-dialog";
+		String	SECTOR_CLUSTER_VIEW_DIALOG_ROOT	= StyleConstants.APP_CLASS_PREFIX + "sector-cluster-view-dialog-root";
 
 		String	CONTENT_PANE				= StyleConstants.CLASS_PREFIX + "content-pane";
 		String	LOCATION_PANE				= StyleConstants.CLASS_PREFIX + "location-pane";
 		String	OFFSET_LABEL				= StyleConstants.CLASS_PREFIX + "offset-label";
 		String	SAVE_SECTOR_CLUSTER_PANE	= StyleConstants.CLASS_PREFIX + "save-sector-cluster-pane";
+		String	SECTOR_CLUSTER_DATA_AREA	= StyleConstants.CLASS_PREFIX + "sector-cluster-data-area";
 	}
 
 	/** Keys of colours that are used in colour properties. */
@@ -411,41 +414,59 @@ public class SectorClusterViewDialog
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	BUTTON_BACKGROUND				= PREFIX + "button.background";
-		String	BUTTON_BORDER					= PREFIX + "button.border";
-		String	CONTENT_PANE_BORDER				= PREFIX + "contentPane.border";
-		String	LOCATION_PANE_BACKGROUND		= PREFIX + "locationPane.background";
-		String	LOCATION_PANE_BORDER			= PREFIX + "locationPane.border";
-		String	OFFSET_LABEL_BACKGROUND			= PREFIX + "offsetLabel.background";
-		String	OFFSET_LABEL_BORDER				= PREFIX + "offsetLabel.border";
-		String	OPERATION_BUTTON_BACKGROUND		= PREFIX + "operationButton.background";
-		String	SAVE_SECTOR_CLUSTER_PANE_BORDER	= PREFIX + "saveSectorClusterPane.border";
-	}
-
-	/** Identifiers of nodes. */
-	private interface NodeId
-	{
-		String	SECTOR_CLUSTER_DATA_AREA	= "sectorClusterDataArea";
+		String	BUTTON_BACKGROUND			= PREFIX + "button.background";
+		String	BUTTON_BORDER				= PREFIX + "button.border";
+		String	LOCATION_PANE_BACKGROUND	= PREFIX + "locationPane.background";
+		String	LOCATION_PANE_BORDER		= PREFIX + "locationPane.border";
+		String	OFFSET_LABEL_BACKGROUND		= PREFIX + "offsetLabel.background";
+		String	OFFSET_LABEL_BORDER			= PREFIX + "offsetLabel.border";
+		String	OPERATION_BUTTON_BACKGROUND	= PREFIX + "operationButton.background";
 	}
 
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_OPEN_FILE				= "Failed to open the file.";
-		String	FAILED_TO_CLOSE_FILE			= "Failed to close the file.";
-		String	FAILED_TO_LOCK_FILE				= "Failed to lock the file.";
-		String	FAILED_TO_READ_FILE_ATTRIBUTES	= "Failed to read the attributes of the file.";
-		String	FAILED_TO_CREATE_DIRECTORY		= "Failed to create the directory.";
-		String	FAILED_TO_CREATE_TEMPORARY_FILE	= "Failed to create a temporary file.";
-		String	FAILED_TO_DELETE_FILE			= "Failed to delete the existing file.";
-		String	FAILED_TO_RENAME_FILE			= "Temporary file: %s\n"
-													+ "Failed to rename the temporary file to the specified filename.";
-		String	ERROR_WRITING_FILE				= "An error occurred when writing the file.";
-		String	NO_DIRECTORY					= "No directory was specified.";
-		String	NO_FILENAME_COMPONENTS			= "No prefix, suffix or index was specified.";
-		String	SECTOR_INDEX_OUT_OF_BOUNDS		= "Sector %d\nA sector index may not be greater than " + Integer.MAX_VALUE + ".";
-		String	NO_CORRESPONDING_CLUSTER		= "No cluster corresponds to sector %d.";
-		String	ERROR_READING_SECTORS			= "An error occurred when reading sectors from the volume.";
+		String	FAILED_TO_OPEN_FILE =
+				"Failed to open the file.";
+
+		String	FAILED_TO_CLOSE_FILE =
+				"Failed to close the file.";
+
+		String	FAILED_TO_LOCK_FILE =
+				"Failed to lock the file.";
+
+		String	FAILED_TO_READ_FILE_ATTRIBUTES =
+				"Failed to read the attributes of the file.";
+
+		String	FAILED_TO_CREATE_DIRECTORY =
+				"Failed to create the directory.";
+
+		String	FAILED_TO_CREATE_TEMPORARY_FILE =
+				"Failed to create a temporary file.";
+
+		String	FAILED_TO_DELETE_FILE =
+				"Failed to delete the existing file.";
+
+		String	FAILED_TO_RENAME_FILE =
+				"Temporary file: %s\nFailed to rename the temporary file to the specified filename.";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred when writing the file.";
+
+		String	NO_DIRECTORY =
+				"No directory was specified.";
+
+		String	NO_FILENAME_COMPONENTS =
+				"No prefix, suffix or index was specified.";
+
+		String	SECTOR_INDEX_OUT_OF_BOUNDS =
+				"Sector %d\nA sector index may not be greater than " + Integer.MAX_VALUE + ".";
+
+		String	NO_CORRESPONDING_CLUSTER =
+				"No cluster corresponds to sector %d.";
+
+		String	ERROR_READING_SECTORS =
+				"An error occurred when reading sectors from the volume.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -477,9 +498,9 @@ public class SectorClusterViewDialog
 	private	boolean					updatingSpinners;
 	private	DataArea				dataArea;
 	private	Spinner<Integer>		sectorIndexSpinner;
-	private	ImageButton				sectorHistoryButton;
+	private	ImageDataButton			sectorHistoryButton;
 	private	Spinner<Integer>		clusterIndexSpinner;
-	private	ImageButton				clusterHistoryButton;
+	private	ImageDataButton			clusterHistoryButton;
 	private	Label					decOffsetLabel;
 	private	Label					hexOffsetLabel;
 
@@ -489,8 +510,9 @@ public class SectorClusterViewDialog
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(SectorClusterViewDialog.class, COLOUR_PROPERTIES, RULE_SETS);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(SectorClusterViewDialog.class, COLOUR_PROPERTIES, RULE_SETS,
+									   PaneStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -525,6 +547,9 @@ public class SectorClusterViewDialog
 		// Call superclass constructor
 		super(owner, Utils.volumeDisplayName(volume), state.getLocator(), state.getSize());
 
+		// Set style class on root node of scene graph
+		getScene().getRoot().getStyleClass().add(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT);
+
 		// Set data unit
 		state.dataUnit = initialDataUnit;
 
@@ -550,18 +575,18 @@ public class SectorClusterViewDialog
 		setResizable(true);
 
 		// Create absolute-location title label
-		Label absLocationTitleLabel = new Label(ABS_TITLE_STR);
+		Label absLocationTitleLabel = Labels.hNoShrink(ABS_TITLE_STR);
 		absLocationTitleLabel.setFont(FontUtils.boldFont());
 
 		// Create absolute location label
-		Label absLocationLabel = new Label();
+		Label absLocationLabel = Labels.hNoShrink();
 
 		// Create chain-location title label
-		Label chainLocationTitleLabel = new Label(CHAIN_TITLE_STR);
+		Label chainLocationTitleLabel = Labels.hNoShrink(CHAIN_TITLE_STR);
 		chainLocationTitleLabel.setFont(FontUtils.boldFont());
 
 		// Create chain location label
-		Label chainLocationLabel = new Label();
+		Label chainLocationLabel = Labels.hNoShrink();
 
 		// Create filler
 		Region locationPaneFiller = FillerUtils.hBoxFiller(4.0);
@@ -571,7 +596,8 @@ public class SectorClusterViewDialog
 		locationPane.setAlignment(Pos.CENTER_LEFT);
 		locationPane.setPadding(LOCATION_PANE_PADDING);
 		locationPane.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.LOCATION_PANE_BACKGROUND)));
-		locationPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.LOCATION_PANE_BORDER), Side.TOP, Side.BOTTOM));
+		locationPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.LOCATION_PANE_BORDER),
+															Side.TOP, Side.BOTTOM));
 		locationPane.getStyleClass().add(StyleClass.LOCATION_PANE);
 
 		// Create text area for sector or cluster data
@@ -605,27 +631,30 @@ public class SectorClusterViewDialog
 				double maxWidth = 0.0;
 				for (MenuItem menuItem : menu.getItems())
 				{
-					Label label = (Label)menuItem.getStyleableNode().lookup(StyleSelector.LABEL);
-					maxWidth = Math.max(label.getWidth(), maxWidth);
+					if (menuItem.getStyleableNode().lookup(StyleSelector.LABEL) instanceof Label label)
+						maxWidth = Math.max(label.getWidth(), maxWidth);
 				}
 
 				// Set width of menu-item labels to that of widest label
 				for (MenuItem menuItem : menu.getItems())
 				{
-					Region container = (Region)menuItem.getStyleableNode();
-					container.setPadding(MENU_ITEM_PADDING);
-
-					Label label = (Label)container.lookup(StyleSelector.LABEL);
-					label.setAlignment(Pos.CENTER_RIGHT);
-					label.setPrefWidth(maxWidth);
+					if (menuItem.getStyleableNode() instanceof Region container)
+					{
+						container.setPadding(MENU_ITEM_PADDING);
+						if (container.lookup(StyleSelector.LABEL) instanceof Label label)
+						{
+							label.setAlignment(Pos.CENTER_RIGHT);
+							label.setPrefWidth(maxWidth);
+						}
+					}
 				}
 			});
 		};
 
 		// Create factory for navigation button
-		IFunction2<ImageButton, Image, String> navigationButtonFactory = (image, text) ->
+		IFunction2<ImageDataButton, String, String> navigationButtonFactory = (id, text) ->
 		{
-			ImageButton button = new ImageButton(image, text);
+			ImageDataButton button = Images.imageButton(id, text);
 			button.setBackgroundColour(getColour(ColourKey.BUTTON_BACKGROUND));
 			button.setBorderColour(getColour(ColourKey.BUTTON_BORDER));
 			button.setPadding(BUTTON_PADDING);
@@ -642,7 +671,7 @@ public class SectorClusterViewDialog
 		});
 
 		// Create button: sector history
-		sectorHistoryButton = navigationButtonFactory.invoke(Images.DOWN_ARROWHEAD, SECTOR_HISTORY_STR);
+		sectorHistoryButton = navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOWN, SECTOR_HISTORY_STR);
 		sectorHistoryButton.setOnAction(event ->
 		{
 			// Create context menu
@@ -666,27 +695,33 @@ public class SectorClusterViewDialog
 		HBox.setMargin(sectorHistoryButton, new Insets(0.0, 0.0, 0.0, 2.0));
 
 		// Create button: first sector
-		ImageButton firstSectorButton = navigationButtonFactory.invoke(Images.LEFT_ARROWHEAD_BAR, FIRST_SECTOR_STR);
+		ImageDataButton firstSectorButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_BAR_LEFT, FIRST_SECTOR_STR);
 		firstSectorButton.setOnAction(event -> goToSector(MIN_SECTOR_INDEX));
 
 		// Create button: sectors back
-		ImageButton sectorsBackButton = navigationButtonFactory.invoke(Images.DOUBLE_LEFT_ARROWHEAD, SECTORS_BACK_STR);
+		ImageDataButton sectorsBackButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOUBLE_LEFT, SECTORS_BACK_STR);
 		sectorsBackButton.setOnAction(event -> goToSector(getSectorIndex() - NAVIGATION_BLOCK_LENGTH));
 
 		// Create button: previous sector
-		ImageButton prevSectorButton = navigationButtonFactory.invoke(Images.LEFT_ARROWHEAD, PREVIOUS_SECTOR_STR);
+		ImageDataButton prevSectorButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_LEFT, PREVIOUS_SECTOR_STR);
 		prevSectorButton.setOnAction(event -> goToSector(getSectorIndex() - 1));
 
 		// Create button: next sector
-		ImageButton nextSectorButton = navigationButtonFactory.invoke(Images.RIGHT_ARROWHEAD, NEXT_SECTOR_STR);
+		ImageDataButton nextSectorButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_RIGHT, NEXT_SECTOR_STR);
 		nextSectorButton.setOnAction(event -> goToSector(getSectorIndex() + 1));
 
 		// Create button: sectors forward
-		ImageButton sectorsForwardButton = navigationButtonFactory.invoke(Images.DOUBLE_RIGHT_ARROWHEAD, SECTORS_FORWARD_STR);
+		ImageDataButton sectorsForwardButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOUBLE_RIGHT, SECTORS_FORWARD_STR);
 		sectorsForwardButton.setOnAction(event -> goToSector(getSectorIndex() + NAVIGATION_BLOCK_LENGTH));
 
 		// Create button: last sector
-		ImageButton lastSectorButton = navigationButtonFactory.invoke(Images.RIGHT_ARROWHEAD_BAR, LAST_SECTOR_STR);
+		ImageDataButton lastSectorButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_BAR_RIGHT, LAST_SECTOR_STR);
 		lastSectorButton.setOnAction(event -> goToSector(maxSectorIndex));
 
 		// Create sector navigation-button pane
@@ -731,7 +766,8 @@ public class SectorClusterViewDialog
 		absSectorIndex.addListener(observable -> updateSector.invoke());
 
 		// Create sector navigation pane
-		HBox sectorNavigationPane = new HBox(NAVIGATION_PANE_GAP, sectorIndexSpinner, sectorHistoryButton, sectorButtonPane);
+		HBox sectorNavigationPane =
+				new HBox(NAVIGATION_PANE_GAP, sectorIndexSpinner, sectorHistoryButton, sectorButtonPane);
 		sectorNavigationPane.setAlignment(Pos.CENTER_LEFT);
 		sectorNavigationPane.setVisible(false);
 
@@ -745,7 +781,7 @@ public class SectorClusterViewDialog
 		});
 
 		// Create button: cluster history
-		clusterHistoryButton = navigationButtonFactory.invoke(Images.DOWN_ARROWHEAD, CLUSTER_HISTORY_STR);
+		clusterHistoryButton = navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOWN, CLUSTER_HISTORY_STR);
 		clusterHistoryButton.setOnAction(event ->
 		{
 			// Create context menu
@@ -769,27 +805,33 @@ public class SectorClusterViewDialog
 		HBox.setMargin(clusterHistoryButton, new Insets(0.0, 0.0, 0.0, 2.0));
 
 		// Create button: first cluster
-		ImageButton firstClusterButton = navigationButtonFactory.invoke(Images.LEFT_ARROWHEAD_BAR, FIRST_CLUSTER_STR);
+		ImageDataButton firstClusterButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_BAR_LEFT, FIRST_CLUSTER_STR);
 		firstClusterButton.setOnAction(event -> goToCluster(minClusterIndex));
 
 		// Create button: clusters back
-		ImageButton clustersBackButton = navigationButtonFactory.invoke(Images.DOUBLE_LEFT_ARROWHEAD, CLUSTERS_BACK_STR);
+		ImageDataButton clustersBackButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOUBLE_LEFT, CLUSTERS_BACK_STR);
 		clustersBackButton.setOnAction(event -> goToCluster(getClusterIndex() - NAVIGATION_BLOCK_LENGTH));
 
 		// Create button: previous cluster
-		ImageButton prevClusterButton = navigationButtonFactory.invoke(Images.LEFT_ARROWHEAD, PREVIOUS_CLUSTER_STR);
+		ImageDataButton prevClusterButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_LEFT, PREVIOUS_CLUSTER_STR);
 		prevClusterButton.setOnAction(event -> goToCluster(getClusterIndex() - 1));
 
 		// Create button: next cluster
-		ImageButton nextClusterButton = navigationButtonFactory.invoke(Images.RIGHT_ARROWHEAD, NEXT_CLUSTER_STR);
+		ImageDataButton nextClusterButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_RIGHT, NEXT_CLUSTER_STR);
 		nextClusterButton.setOnAction(event -> goToCluster(getClusterIndex() + 1));
 
 		// Create button: clusters forward
-		ImageButton clustersForwardButton = navigationButtonFactory.invoke(Images.DOUBLE_RIGHT_ARROWHEAD, CLUSTERS_FORWARD_STR);
+		ImageDataButton clustersForwardButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_DOUBLE_RIGHT, CLUSTERS_FORWARD_STR);
 		clustersForwardButton.setOnAction(event -> goToCluster(getClusterIndex() + NAVIGATION_BLOCK_LENGTH));
 
 		// Create button: last cluster
-		ImageButton lastClusterButton = navigationButtonFactory.invoke(Images.RIGHT_ARROWHEAD_BAR, LAST_CLUSTER_STR);
+		ImageDataButton lastClusterButton =
+				navigationButtonFactory.invoke(Images.ImageId.ARROWHEAD_BAR_RIGHT, LAST_CLUSTER_STR);
 		lastClusterButton.setOnAction(event -> goToCluster(maxClusterIndex));
 
 		// Create cluster navigation-button pane
@@ -804,7 +846,8 @@ public class SectorClusterViewDialog
 			// Create function to create location text
 			IFunction2<String, Integer, Boolean> createLocationText = (index, chain) ->
 			{
-				long sectorIndex = chain ? index * volume.getSectorsPerCluster() : volume.clusterIndexToSectorIndex(index);
+				long sectorIndex = chain ? index * volume.getSectorsPerCluster()
+										 : volume.clusterIndexToSectorIndex(index);
 				return CLUSTER_STR + " " + index + "  \u2022  " + SECTORS_STR + " " + sectorIndex + "\u2013"
 						+ (sectorIndex + volume.getSectorsPerCluster() - 1);
 			};
@@ -848,6 +891,7 @@ public class SectorClusterViewDialog
 		// Initialise column constraints
 		ColumnConstraints column = new ColumnConstraints();
 		column.setHalignment(HPos.RIGHT);
+		column.setMinWidth(Region.USE_PREF_SIZE);
 		column.setFillWidth(false);
 		slideButtonPane.getColumnConstraints().add(column);
 
@@ -875,7 +919,8 @@ public class SectorClusterViewDialog
 		MultiTextLabeller<DataUnit> saveSectorClusterLabeller =
 				new MultiTextLabeller<>(saveSectorClusterLabel,
 										Stream.of(DataUnit.values())
-												.collect(Collectors.toMap(unit -> unit, unit -> SAVE_STR + " " + unit.lcText)));
+												.collect(Collectors.toMap(unit -> unit,
+																		  unit -> SAVE_STR + " " + unit.lcText)));
 
 		// Create 'save' button
 		SlideButton saveButton = new SlideButton();
@@ -887,13 +932,14 @@ public class SectorClusterViewDialog
 				String.format(SWITCH_SECTOR_CLUSTER_STR, state.dataUnit.next().lcText);
 
 		// Create data-unit button
-		ImageButton dataUnitButton = new ImageButton(Images.SECTOR_OR_CLUSTER, dataUnitButtonTooltipText.invoke());
+		ImageDataButton dataUnitButton =
+				Images.imageButton(Images.ImageId.SECTOR_OR_CLUSTER, dataUnitButtonTooltipText.invoke());
 		dataUnitButton.setBackgroundColour(getColour(ColourKey.BUTTON_BACKGROUND));
 		dataUnitButton.setBorderColour(getColour(ColourKey.BUTTON_BORDER));
 		dataUnitButton.setPadding(BUTTON_PADDING);
 
 		// Create data-unit label
-		Label dataUnitLabel = new Label();
+		Label dataUnitLabel = Labels.hNoShrink();
 		MultiTextLabeller<DataUnit> sectorClusterLabeller =
 				new MultiTextLabeller<>(dataUnitLabel,
 										Stream.of(DataUnit.values())
@@ -910,7 +956,7 @@ public class SectorClusterViewDialog
 		// Create pane for saving a sector or cluster
 		SaveSectorClusterPane saveSectorClusterPane = new SaveSectorClusterPane();
 		saveSectorClusterPane.setPadding(SAVE_SECTOR_CLUSTER_PANE_PADDING);
-		saveSectorClusterPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.SAVE_SECTOR_CLUSTER_PANE_BORDER),
+		saveSectorClusterPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER),
 																	 Side.TOP));
 		saveSectorClusterPane.getStyleClass().add(StyleClass.SAVE_SECTOR_CLUSTER_PANE);
 
@@ -1065,7 +1111,8 @@ public class SectorClusterViewDialog
 						long index0 = volume.clusterIndexToSectorIndex(getAbsClusterIndex());
 						if (index0 > Integer.MAX_VALUE)
 						{
-							WarningDialog.show(getWindow(), title, String.format(ErrorMsg.SECTOR_INDEX_OUT_OF_BOUNDS, index0));
+							WarningDialog.show(getWindow(), title,
+											   String.format(ErrorMsg.SECTOR_INDEX_OUT_OF_BOUNDS, index0));
 							index0 = MIN_SECTOR_INDEX;
 						}
 						index = (int)index0;
@@ -1106,6 +1153,7 @@ public class SectorClusterViewDialog
 		IFunction1<Label, String> offsetLabelFactory = tooltipText ->
 		{
 			Label label = new Label();
+			label.setMinWidth(Region.USE_PREF_SIZE);
 			label.setMaxWidth(Double.MAX_VALUE);
 			label.setAlignment(Pos.CENTER_RIGHT);
 			label.setFont(Fonts.monoFont());
@@ -1137,7 +1185,7 @@ public class SectorClusterViewDialog
 		if (!state.savePaneHidden)
 			contentPane.getChildren().add(saveSectorClusterPane);
 		contentPane.setAlignment(Pos.TOP_CENTER);
-		contentPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.CONTENT_PANE_BORDER), Side.BOTTOM));
+		contentPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER), Side.BOTTOM));
 		contentPane.getStyleClass().add(StyleClass.CONTENT_PANE);
 
 		// Show or hide 'save' pane when 'selected' state of 'save' button changes
@@ -1162,7 +1210,7 @@ public class SectorClusterViewDialog
 		setContent(contentPane);
 
 		// Create button: copy
-		Button copyButton = new Button(COPY_STR);
+		Button copyButton = Buttons.hNoShrink(COPY_STR);
 		copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		copyButton.setOnAction(event ->
 		{
@@ -1179,19 +1227,13 @@ public class SectorClusterViewDialog
 		addButton(copyButton, HPos.LEFT);
 
 		// Create button: close
-		Button closeButton = new Button(CLOSE_STR);
+		Button closeButton = Buttons.hNoShrink(CLOSE_STR);
 		closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		closeButton.setOnAction(event -> requestClose());
 		addButton(closeButton, HPos.RIGHT);
 
 		// Fire 'close' button if Escape key is pressed
 		setKeyFireButton(closeButton, null);
-
-		// Set style class on main pane
-		getMainPane().getStyleClass().add(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG);
-
-		// Update images of image buttons
-		Images.updateImageButtons(getScene());
 
 		// Save state of window when dialog is closed
 		setOnHiding(event ->
@@ -1369,12 +1411,12 @@ public class SectorClusterViewDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -1435,7 +1477,8 @@ public class SectorClusterViewDialog
 		try
 		{
 			Fat32Volume.ClusterIndex clusterIndex = chainSectorIndexToClusterIndex(index);
-			return volume.clusterIndexToSectorIndex(indexFinder.find(clusterIndex.clusterIndex())) + clusterIndex.sectorIndex();
+			return volume.clusterIndexToSectorIndex(
+					indexFinder.find(clusterIndex.clusterIndex())) + clusterIndex.sectorIndex();
 		}
 		catch (VolumeException e)
 		{
@@ -1496,7 +1539,8 @@ public class SectorClusterViewDialog
 		long index0 = chainMode ? chainSectorIndexToAbs(index) : index;
 		if (index0 > Integer.MAX_VALUE)
 		{
-			WarningDialog.show(getWindow(), READ_SECTOR_STR, String.format(ErrorMsg.SECTOR_INDEX_OUT_OF_BOUNDS, index0));
+			WarningDialog.show(getWindow(), READ_SECTOR_STR,
+							   String.format(ErrorMsg.SECTOR_INDEX_OUT_OF_BOUNDS, index0));
 			index0 = MIN_SECTOR_INDEX;
 		}
 		int absIndex = (int)index0;
@@ -1700,7 +1744,7 @@ public class SectorClusterViewDialog
 				}
 
 				// Write or append data to file
-				updateMessage(WRITING_STR + SimpleProgressDialog.SPACE_MESSAGE_SEPARATOR + file);
+				updateMessage(WRITING_STR + MessageConstants.SPACE_SEPARATOR + file);
 				if (append || !Files.exists(file, LinkOption.NOFOLLOW_LINKS))
 					appendData(file, data, length);
 				else
@@ -1718,7 +1762,7 @@ public class SectorClusterViewDialog
 
 				// Notify success
 				NotificationDialog.show(getWindow(), getTitle(), MessageIcon32.INFORMATION.get(),
-										file + MessageDialog.MESSAGE_SEPARATOR + FILE_WRITTEN_STR);
+										file + MessageConstants.LABEL_SEPARATOR + FILE_WRITTEN_STR);
 			}
 
 			@Override
@@ -1773,7 +1817,7 @@ public class SectorClusterViewDialog
 			}
 
 			// Create parent directory
-			Path directory = file.toAbsolutePath().getParent();
+			Path directory = PathUtils.absParent(file);
 			try
 			{
 				Files.createDirectories(directory);
@@ -1857,8 +1901,7 @@ public class SectorClusterViewDialog
 			}
 			catch (Exception e)
 			{
-				String pathname = tempFile.toAbsolutePath().toString();
-				throw new FileException(ErrorMsg.FAILED_TO_RENAME_FILE, e, file, pathname);
+				throw new FileException(ErrorMsg.FAILED_TO_RENAME_FILE, e, file, PathUtils.abs(tempFile));
 			}
 		}
 		catch (FileException e)
@@ -1906,7 +1949,7 @@ public class SectorClusterViewDialog
 		try
 		{
 			// Create parent directory
-			Path directory = file.toAbsolutePath().getParent();
+			Path directory = PathUtils.absParent(file);
 			try
 			{
 				Files.createDirectories(directory);
@@ -2095,8 +2138,8 @@ public class SectorClusterViewDialog
 			"Append cluster"
 		);
 
-		private static final	Operation[]	SECTOR_OPERATIONS	= { WRITE_SECTOR, APPEND_SECTOR };
-		private static final	Operation[]	CLUSTER_OPERATIONS	= { WRITE_CLUSTER, APPEND_CLUSTER };
+		private static final	List<Operation>	SECTOR_OPERATIONS	= List.of(WRITE_SECTOR, APPEND_SECTOR);
+		private static final	List<Operation>	CLUSTER_OPERATIONS	= List.of(WRITE_CLUSTER, APPEND_CLUSTER);
 
 	////////////////////////////////////////////////////////////////////
 	//  Instance variables
@@ -2299,7 +2342,8 @@ public class SectorClusterViewDialog
 			super.decodeTree(rootNode);
 
 			// Decode data unit
-			dataUnit = rootNode.getEnumValue(DataUnit.class, PropertyKey.DATA_UNIT, DataUnit::getKey, DEFAULT_DATA_UNIT);
+			dataUnit = rootNode.getEnumValue(DataUnit.class, PropertyKey.DATA_UNIT, DataUnit::getKey,
+											 DEFAULT_DATA_UNIT);
 
 			// Decode view properties
 			String key = PropertyKey.VIEW;
@@ -2429,96 +2473,90 @@ public class SectorClusterViewDialog
 			int numColumns = numOffsetDigitsHex + BYTES_PER_LINE * (3 + 1) + 7;
 
 			// Set properties
-			setId(NodeId.SECTOR_CLUSTER_DATA_AREA);
 			setPrefColumnCount(numColumns);
 			setEditable(false);
 			setFont(Fonts.monoFont());
+			getStyleClass().add(StyleClass.SECTOR_CLUSTER_DATA_AREA);
 
 			// Display offset of character under mouse cursor when primary mouse button is held down with Ctrl over data
 			// area
 			addEventFilter(MouseEvent.MOUSE_PRESSED, event ->
 			{
-				if ((event.getButton() == MouseButton.PRIMARY) && event.isControlDown())
+				if ((event.getButton() == MouseButton.PRIMARY) && event.isControlDown()
+						&& lookup(StyleSelector.TEXT) instanceof Text text)
 				{
-					// Get text node
-					Text text = (Text)lookup(StyleSelector.TEXT);
+					// Get location of mouse cursor in text
+					Point2D location = text.sceneToLocal(event.getSceneX(), event.getSceneY());
 
-					// If there's a text node ...
-					if (text != null)
+					// If text node contains mouse cursor ...
+					if (text.contains(location))
 					{
-						// Get location of mouse cursor in text
-						Point2D location = text.sceneToLocal(event.getSceneX(), event.getSceneY());
+						// Get index of character at mouse cursor
+						int index = text.hitTest(location).getCharIndex();
 
-						// If text node contains mouse cursor ...
-						if (text.contains(location))
+						// Get index of line of text
+						int lineLength = numColumns + 1;
+						int lineIndex = index / lineLength;
+
+						// Get offset of character within line
+						int offset = index % lineLength;
+
+						// Initialise selection indices and byte offset
+						int selectionStart = 0;
+						int selectionEnd = 0;
+						int byteOffset = -1;
+
+						// Get start and end offsets of hex region
+						int startOffset = numOffsetDigitsHex + 3;
+						int endOffset = startOffset + BYTES_PER_LINE * 3 + 2;
+
+						// If character is in hex region ...
+						if ((offset >= startOffset) && (offset < endOffset))
 						{
-							// Get index of character at mouse cursor
-							int index = text.hitTest(location).getCharIndex();
+							// Get offset of character within block
+							offset -= startOffset;
+							int blockIndex = offset / GROUP_WIDTH;
+							offset %= GROUP_WIDTH;
 
-							// Get index of line of text
-							int lineLength = numColumns + 1;
-							int lineIndex = index / lineLength;
+							// If character is hex digit, calculate selection indices and byte offset
+							if ((offset < BYTES_PER_GROUP * 3 - 1) && (offset % 3 < 2))
+							{
+								offset /= 3;
+								selectionStart = startOffset + blockIndex * GROUP_WIDTH + offset * 3;
+								selectionEnd = selectionStart + 2;
+								byteOffset = lineIndex * BYTES_PER_LINE + blockIndex * BYTES_PER_GROUP + offset;
+							}
+						}
 
-							// Get offset of character within line
-							int offset = index % lineLength;
+						// ... otherwise, test for character in character region
+						else
+						{
+							// Get start and end offsets of character region
+							startOffset = endOffset + 2;
+							endOffset = startOffset + BYTES_PER_LINE;
 
-							// Initialise selection indices and byte offset
-							int selectionStart = 0;
-							int selectionEnd = 0;
-							int byteOffset = -1;
-
-							// Get start and end offsets of hex region
-							int startOffset = numOffsetDigitsHex + 3;
-							int endOffset = startOffset + BYTES_PER_LINE * 3 + 2;
-
-							// If character is in hex region ...
+							// If character is in character region, calculate selection indices and byte offset
 							if ((offset >= startOffset) && (offset < endOffset))
 							{
-								// Get offset of character within block
-								offset -= startOffset;
-								int blockIndex = offset / GROUP_WIDTH;
-								offset %= GROUP_WIDTH;
-
-								// If character is hex digit, calculate selection indices and byte offset
-								if ((offset < BYTES_PER_GROUP * 3 - 1) && (offset % 3 < 2))
-								{
-									offset /= 3;
-									selectionStart = startOffset + blockIndex * GROUP_WIDTH + offset * 3;
-									selectionEnd = selectionStart + 2;
-									byteOffset = lineIndex * BYTES_PER_LINE + blockIndex * BYTES_PER_GROUP + offset;
-								}
+								selectionStart = offset;
+								selectionEnd = selectionStart + 1;
+								byteOffset = lineIndex * BYTES_PER_LINE + offset - startOffset;
 							}
+						}
 
-							// ... otherwise, test for character in character region
-							else
-							{
-								// Get start and end offsets of character region
-								startOffset = endOffset + 2;
-								endOffset = startOffset + BYTES_PER_LINE;
+						// If there was a hit, select text and update offset label
+						if ((byteOffset >= 0) && (byteOffset < dataLength))
+						{
+							// Select text
+							int lineOffset = lineIndex * lineLength;
+							selectionStart += lineOffset;
+							selectionEnd += lineOffset;
+							selectedRange = new int[] { selectionStart, selectionEnd };
+							selectRange(selectionStart, selectionEnd);
 
-								// If character is in character region, calculate selection indices and byte offset
-								if ((offset >= startOffset) && (offset < endOffset))
-								{
-									selectionStart = offset;
-									selectionEnd = selectionStart + 1;
-									byteOffset = lineIndex * BYTES_PER_LINE + offset - startOffset;
-								}
-							}
-
-							// If there was a hit, select text and update offset label
-							if ((byteOffset >= 0) && (byteOffset < dataLength))
-							{
-								// Select text
-								int lineOffset = lineIndex * lineLength;
-								selectionStart += lineOffset;
-								selectionEnd += lineOffset;
-								selectedRange = new int[] { selectionStart, selectionEnd };
-								selectRange(selectionStart, selectionEnd);
-
-								// Update offset labels
-								decOffsetLabel.setText(Integer.toString(byteOffset));
-								hexOffsetLabel.setText(Integer.toHexString(byteOffset).toUpperCase());
-							}
+							// Update offset labels
+							decOffsetLabel.setText(Integer.toString(byteOffset));
+							hexOffsetLabel.setText(Integer.toHexString(byteOffset).toUpperCase());
 						}
 					}
 				}
@@ -2654,7 +2692,7 @@ public class SectorClusterViewDialog
 		private static final	int		MIN_DATA_LENGTH	= 1;
 
 		/** The default initial directory of a file chooser. */
-		private static final	Path	DEFAULT_DIRECTORY	= Path.of(System.getProperty("user.dir", "."));
+		private static final	Path	DEFAULT_DIRECTORY	= SystemUtils.workingDirectory();
 
 		/** Miscellaneous strings. */
 		private static final	String	DIRECTORY_STR			= "Directory";
@@ -2671,14 +2709,14 @@ public class SectorClusterViewDialog
 	//  Instance variables
 	////////////////////////////////////////////////////////////////////
 
-		private	ChoiceBox<Operation>	operationChoiceBox;
-		private	PathnameField			directoryField;
-		private	TextField				filenamePrefixField;
-		private	TextField				filenameSuffixField;
-		private	CheckBox				fileIndexCheckBox;
-		private	Spinner<Integer>		fileIndexSpinner;
-		private	Spinner<Integer>		numIndexDigitsSpinner;
-		private	CheckBox				autoincrementIndexCheckBox;
+		private	CollectionSpinner<Operation>	operationSpinner;
+		private	PathnameField					directoryField;
+		private	TextField						filenamePrefixField;
+		private	TextField						filenameSuffixField;
+		private	CheckBox						fileIndexCheckBox;
+		private	Spinner<Integer>				fileIndexSpinner;
+		private	Spinner<Integer>				numIndexDigitsSpinner;
+		private	CheckBox						autoincrementIndexCheckBox;
 
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
@@ -2692,24 +2730,23 @@ public class SectorClusterViewDialog
 			setAlignment(Pos.CENTER);
 
 			// Initialise column constraints
-			ColumnConstraints column1 = new ColumnConstraints();
-			column1.setMinWidth(GridPane.USE_PREF_SIZE);
-			column1.setHalignment(HPos.RIGHT);
-			column1.setFillWidth(false);
-			getColumnConstraints().add(column1);
+			ColumnConstraints column = new ColumnConstraints();
+			column.setMinWidth(Region.USE_PREF_SIZE);
+			column.setHalignment(HPos.RIGHT);
+			column.setFillWidth(false);
+			getColumnConstraints().add(column);
 
-			ColumnConstraints column2 = new ColumnConstraints();
-			column2.setHalignment(HPos.LEFT);
-			column2.setHgrow(Priority.ALWAYS);
-			getColumnConstraints().add(column2);
+			column = new ColumnConstraints();
+			column.setHalignment(HPos.LEFT);
+			column.setHgrow(Priority.ALWAYS);
+			getColumnConstraints().add(column);
 
 			// Initialise row index
 			int row = 0;
 
-			// Choice box: operation
-			operationChoiceBox = new ChoiceBox<>(FXCollections.observableArrayList(Operation.values()));
-			ChoiceBoxWidthStabiliser.apply(operationChoiceBox);
-			addRow(row++, new Label(OPERATION_STR), operationChoiceBox);
+			// Spinner: operation
+			operationSpinner = CollectionSpinner.leftRightH(HPos.CENTER, true, Operation.class, null, null, null);
+			addRow(row++, new Label(OPERATION_STR), operationSpinner);
 
 			// Directory chooser: directory
 			LocationChooser directoryChooser = LocationChooser.forDirectories();
@@ -2719,6 +2756,7 @@ public class SectorClusterViewDialog
 			// Pathname field: directory
 			directoryField = new PathnameField(state.saveDirectory, DIRECTORY_FIELD_NUM_COLUMNS);
 			directoryField.setShowInvalidPathnameError(true);
+			directoryField.setLocationMatcher(PathnameField.DIRECTORY_MATCHER);
 
 			// Pathname pane: directory
 			PathnamePane directoryPane = new PathnamePane(directoryField, event ->
@@ -2779,7 +2817,7 @@ public class SectorClusterViewDialog
 			autoincrementIndexCheckBox.setSelected(state.saveFileIndexAutoincrement);
 
 			// Pane: file index
-			HBox fileIndexPane = new HBox(CONTROL_H_GAP, fileIndexSpinner, new Label(NUMBER_OF_DIGITS_STR),
+			HBox fileIndexPane = new HBox(CONTROL_H_GAP, fileIndexSpinner, Labels.hNoShrink(NUMBER_OF_DIGITS_STR),
 										  numIndexDigitsSpinner, autoincrementIndexCheckBox);
 			fileIndexPane.setAlignment(Pos.CENTER_LEFT);
 			fileIndexPane.disableProperty().bind(fileIndexCheckBox.selectedProperty().not());
@@ -2823,7 +2861,7 @@ public class SectorClusterViewDialog
 					}
 
 					// Return absolute location of file
-					return directory.resolve(filename).toAbsolutePath();
+					return PathUtils.abs(directory.resolve(filename));
 				}
 				catch (BaseException e)
 				{
@@ -2849,10 +2887,11 @@ public class SectorClusterViewDialog
 												  NumberUtils.getNumDecDigitsInt(sectorsPerCluster * bytesPerSector));
 
 			// Button: operation
-			Button operationButton = new Button();
+			Button operationButton = Buttons.hNoShrink();
 			MultiTextLabeller<Operation> operationLabeller =
 					new MultiTextLabeller<>(operationButton,
-											Stream.of(Operation.values()).collect(Collectors.toMap(op -> op, op -> op.text)));
+											Stream.of(Operation.values())
+													.collect(Collectors.toMap(op -> op, op -> op.text)));
 			operationButton.setPadding(OPERATION_BUTTON_PADDING);
 			ButtonUtils.setBackgroundColour(operationButton, getColour(ColourKey.OPERATION_BUTTON_BACKGROUND));
 
@@ -2865,7 +2904,7 @@ public class SectorClusterViewDialog
 			IProcedure0 updateOperation = () ->
 			{
 				// Update operation button
-				operationLabeller.selectText(operationChoiceBox.getValue());
+				operationLabeller.selectText(operationSpinner.getItem());
 
 				// Update data length and maximum data length
 				int length = switch (state.dataUnit)
@@ -2882,12 +2921,12 @@ public class SectorClusterViewDialog
 			updateOperation.invoke();
 
 			// Update components when operation changes
-			operationChoiceBox.valueProperty().addListener(observable -> updateOperation.invoke());
+			operationSpinner.itemProperty().addListener(observable -> updateOperation.invoke());
 
 			// Set action of operation button
 			operationButton.setOnAction(event ->
 			{
-				Operation operation = operationChoiceBox.getValue();
+				Operation operation = operationSpinner.getItem();
 				long index = switch (state.dataUnit)
 				{
 					case SECTOR ->
@@ -2925,13 +2964,13 @@ public class SectorClusterViewDialog
 
 		private void updateDataUnit()
 		{
-			Operation[] operations = switch (state.dataUnit)
+			List<Operation> operations = switch (state.dataUnit)
 			{
 				case SECTOR  -> Operation.SECTOR_OPERATIONS;
 				case CLUSTER -> Operation.CLUSTER_OPERATIONS;
 			};
-			operationChoiceBox.getItems().setAll(operations);
-			operationChoiceBox.setValue(operations[0]);
+			operationSpinner.setItems(operations);
+			operationSpinner.setItem(operations.get(0));
 		}
 
 		//--------------------------------------------------------------

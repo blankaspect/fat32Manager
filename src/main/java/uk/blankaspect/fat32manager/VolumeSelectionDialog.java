@@ -33,7 +33,11 @@ import javafx.scene.layout.HBox;
 
 import javafx.stage.Window;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.spinner.CollectionSpinner;
 
@@ -94,11 +98,12 @@ public class VolumeSelectionDialog
 		super(owner, MethodHandles.lookup().lookupClass().getName(), null, title);
 
 		// Create label for choice box
-		Label label = new Label(VOLUME_STR);
+		Label label = Labels.hNoShrink(VOLUME_STR);
 
 		// Create spinner
 		CollectionSpinner<String> volumeSpinner =
-				CollectionSpinner.leftRightH(HPos.CENTER, true, volumeNames, volumeName, null, Utils::volumeDisplayName);
+				CollectionSpinner.leftRightH(HPos.CENTER, true, volumeNames, volumeName, null,
+											 Utils::volumeDisplayName);
 
 		// Create control pane
 		HBox controlPane = new HBox(6.0, label, volumeSpinner);
@@ -109,7 +114,7 @@ public class VolumeSelectionDialog
 		addContent(controlPane);
 
 		// Create button: OK
-		Button okButton = new Button(OK_STR);
+		Button okButton = Buttons.hNoShrink(OK_STR);
 		okButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		okButton.setOnAction(event ->
 		{
@@ -119,7 +124,7 @@ public class VolumeSelectionDialog
 		addButton(okButton, HPos.RIGHT);
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);

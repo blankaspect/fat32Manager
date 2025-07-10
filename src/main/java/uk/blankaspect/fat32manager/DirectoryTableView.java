@@ -101,13 +101,15 @@ import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.LocationException;
 
 import uk.blankaspect.common.function.IFunction0;
-import uk.blankaspect.common.function.IFunction1;
+import uk.blankaspect.common.function.IFunction2;
 import uk.blankaspect.common.function.IProcedure0;
 import uk.blankaspect.common.function.IProcedure1;
 
 import uk.blankaspect.common.geometry.VHPos;
 
 import uk.blankaspect.common.logging.Logger;
+
+import uk.blankaspect.common.message.MessageConstants;
 
 import uk.blankaspect.common.string.StringUtils;
 
@@ -117,11 +119,14 @@ import uk.blankaspect.common.text.Tabulator;
 
 import uk.blankaspect.driveio.VolumeException;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
+
+import uk.blankaspect.ui.jfx.colour.ColourUtils;
 
 import uk.blankaspect.ui.jfx.container.LabelTitledPane;
 
-import uk.blankaspect.ui.jfx.dialog.MessageDialog;
 import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
@@ -130,6 +135,8 @@ import uk.blankaspect.ui.jfx.font.FontUtils;
 
 import uk.blankaspect.ui.jfx.image.HatchedImageFactory;
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.math.FxGeomUtils;
 
@@ -190,7 +197,7 @@ public class DirectoryTableView
 
 	/** The factor by which the size of the default font is multiplied to give the size of the font of the placeholder
 		label. */
-	private static final	double	PLACEHOLDER_LABEL_FONT_FACTOR	= 1.25;
+	private static final	double	PLACEHOLDER_LABEL_FONT_SIZE_FACTOR	= 1.25;
 
 	/** The modes that determine the background colour of header cells. */
 	public enum HeaderMode
@@ -227,39 +234,48 @@ public class DirectoryTableView
 			FxProperty.BORDER_COLOUR,
 			ColourKey.HEADER_CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.COLUMN_HEADER)
-						.build(),
+					.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+					.desc(FxStyleClass.COLUMN_HEADER)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.FILLER)
-						.build()
+					.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+					.desc(FxStyleClass.FILLER)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.CELL_ATTRIBUTE_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TABLE_VIEW)
-						.desc(TableViewStyle.StyleClass.CELL_LABEL)
-						.desc(StyleClass.ATTRIBUTE)
-						.build()
+					.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+					.desc(TableViewStyle.StyleClass.CELL_LABEL)
+					.desc(StyleClass.ATTRIBUTE)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			TableViewStyle.ColourKey.CELL_BACKGROUND_EMPTY,
+			CssSelector.builder()
+					.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+					.desc(StyleClass.PLACEHOLDER_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.PLACEHOLDER_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TABLE_VIEW)
-						.desc(StyleClass.PLACEHOLDER_LABEL)
-						.build()
+					.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+					.desc(StyleClass.PLACEHOLDER_LABEL)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	TABLE_VIEW			= StyleConstants.CLASS_PREFIX + "fat32manager-directory-table-view";
+		String	DIRECTORY_TABLE_VIEW	= StyleConstants.APP_CLASS_PREFIX + "directory-table-view";
 
 		String	ATTRIBUTE			= StyleConstants.CLASS_PREFIX + "attribute";
 		String	PLACEHOLDER_LABEL	= StyleConstants.CLASS_PREFIX + "placeholder-label";
@@ -278,9 +294,12 @@ public class DirectoryTableView
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
 		String	CELL_ATTRIBUTE_TEXT				= PREFIX + "cell.attribute.text";
-		String	HEADER_CELL_BACKGROUND			= PREFIX + "header.cell.background";
-		String	HEADER_CELL_BACKGROUND_DELETED	= PREFIX + "header.cell.background.deleted";
-		String	HEADER_CELL_BACKGROUND_PREVIEW	= PREFIX + "header.cell.background.preview";
+		String	HEADER_CELL_BACKGROUND1			= PREFIX + "header.cell.background1";
+		String	HEADER_CELL_BACKGROUND2			= PREFIX + "header.cell.background2";
+		String	HEADER_CELL_BACKGROUND1_DELETED	= PREFIX + "header.cell.background1.deleted";
+		String	HEADER_CELL_BACKGROUND2_DELETED	= PREFIX + "header.cell.background2.deleted";
+		String	HEADER_CELL_BACKGROUND1_PREVIEW	= PREFIX + "header.cell.background1.preview";
+		String	HEADER_CELL_BACKGROUND2_PREVIEW	= PREFIX + "header.cell.background2.preview";
 		String	HEADER_CELL_BORDER				= PREFIX + "header.cell.border";
 		String	PLACEHOLDER_TEXT				= PREFIX + "placeholder.text";
 	}
@@ -288,9 +307,9 @@ public class DirectoryTableView
 	/** Keys of images that are used in CSS rule sets. */
 	private interface ImageKey
 	{
-		String	HEADER_CELL_BACKGROUND			= ColourKey.HEADER_CELL_BACKGROUND;
-		String	HEADER_CELL_BACKGROUND_DELETED	= ColourKey.HEADER_CELL_BACKGROUND_DELETED;
-		String	HEADER_CELL_BACKGROUND_PREVIEW	= ColourKey.HEADER_CELL_BACKGROUND_PREVIEW;
+		String	HEADER_CELL_BACKGROUND			= ColourKey.HEADER_CELL_BACKGROUND1;
+		String	HEADER_CELL_BACKGROUND_DELETED	= ColourKey.HEADER_CELL_BACKGROUND1_DELETED;
+		String	HEADER_CELL_BACKGROUND_PREVIEW	= ColourKey.HEADER_CELL_BACKGROUND1_PREVIEW;
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -368,7 +387,7 @@ public class DirectoryTableView
 		headerMode = HeaderMode.NONE;
 
 		// Set properties
-		getStyleClass().addAll(StyleClass.TABLE_VIEW, TableViewStyle.StyleClass.TABLE_VIEW);
+		getStyleClass().addAll(StyleClass.DIRECTORY_TABLE_VIEW, TableViewStyle.StyleClass.TABLE_VIEW);
 
 		// Create procedure to create rule sets
 		IFunction0<List<CssRuleSet>> createRuleSets = () ->
@@ -377,20 +396,22 @@ public class DirectoryTableView
 			try
 			{
 				// Create function to create hatched image
-				IFunction1<Image, String> createImage = colourKey ->
+				IFunction2<Image, String, String> createImage = (colour1Key, colour2Key) ->
 				{
 					return HatchedImageFactory.diagonal(HEADER_IMAGE_WIDTH, HEADER_IMAGE_HEIGHT, HEADER_IMAGE_SPACING,
-														getColour(colourKey),
-														StyleManager.INSTANCE.getTheme().getBrightnessDelta1());
+														getColour(colour1Key), getColour(colour2Key));
 				};
 
 				// Create hatched images and add them to data-scheme URI map
 				DataUriImageMap.INSTANCE.put(ImageKey.HEADER_CELL_BACKGROUND,
-											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND));
+											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND1,
+																ColourKey.HEADER_CELL_BACKGROUND2));
 				DataUriImageMap.INSTANCE.put(ImageKey.HEADER_CELL_BACKGROUND_DELETED,
-											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND_DELETED));
+											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND1_DELETED,
+																ColourKey.HEADER_CELL_BACKGROUND2_DELETED));
 				DataUriImageMap.INSTANCE.put(ImageKey.HEADER_CELL_BACKGROUND_PREVIEW,
-											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND_PREVIEW));
+											 createImage.invoke(ColourKey.HEADER_CELL_BACKGROUND1_PREVIEW,
+																ColourKey.HEADER_CELL_BACKGROUND2_PREVIEW));
 			}
 			catch (BaseException e)
 			{
@@ -401,52 +422,52 @@ public class DirectoryTableView
 			return List.of
 			(
 				RuleSetBuilder.create()
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.COLUMN_HEADER)
-											.build())
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.FILLER)
-											.build())
-								.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND)
-								.build(),
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.COLUMN_HEADER)
+								.build())
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.FILLER)
+								.build())
+						.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND)
+						.build(),
 				RuleSetBuilder.create()
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.COLUMN_HEADER).pseudo(PseudoClassKey.DELETED)
-											.build())
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.FILLER).pseudo(PseudoClassKey.DELETED)
-											.build())
-								.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND_DELETED)
-								.build(),
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.COLUMN_HEADER).pseudo(PseudoClassKey.DELETED)
+								.build())
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.FILLER).pseudo(PseudoClassKey.DELETED)
+								.build())
+						.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND_DELETED)
+						.build(),
 				RuleSetBuilder.create()
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.COLUMN_HEADER).pseudo(PseudoClassKey.PREVIEW)
-											.build())
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.FILLER).pseudo(PseudoClassKey.PREVIEW)
-											.build())
-								.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND_PREVIEW)
-								.build(),
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.COLUMN_HEADER).pseudo(PseudoClassKey.PREVIEW)
+								.build())
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.FILLER).pseudo(PseudoClassKey.PREVIEW)
+								.build())
+						.repeatingImageBackground(ImageKey.HEADER_CELL_BACKGROUND_PREVIEW)
+						.build(),
 				RuleSetBuilder.create()
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.COLUMN_HEADER)
-											.build())
-								.borders(Side.RIGHT, Side.BOTTOM)
-								.build(),
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.COLUMN_HEADER)
+								.build())
+						.borders(Side.RIGHT, Side.BOTTOM)
+						.build(),
 				RuleSetBuilder.create()
-								.selector(CssSelector.builder()
-											.cls(StyleClass.TABLE_VIEW)
-											.desc(FxStyleClass.FILLER)
-											.build())
-								.borders(Side.BOTTOM)
-								.build()
+						.selector(CssSelector.builder()
+								.cls(StyleClass.DIRECTORY_TABLE_VIEW)
+								.desc(FxStyleClass.FILLER)
+								.build())
+						.borders(Side.BOTTOM)
+						.build()
 			);
 		};
 
@@ -479,9 +500,9 @@ public class DirectoryTableView
 		}
 
 		// Set placeholder
-		Label placeholderLabel = new Label(NO_ENTRIES_STR);
-		placeholderLabel.setFont(FontUtils.defaultFont(PLACEHOLDER_LABEL_FONT_FACTOR));
-		placeholderLabel.setTextFill(getColour(ColourKey.PLACEHOLDER_TEXT));
+		Label placeholderLabel = Labels.expansive(NO_ENTRIES_STR, PLACEHOLDER_LABEL_FONT_SIZE_FACTOR,
+												  getColour(ColourKey.PLACEHOLDER_TEXT),
+												  getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EMPTY));
 		placeholderLabel.getStyleClass().add(StyleClass.PLACEHOLDER_LABEL);
 		setPlaceholder(placeholderLabel);
 
@@ -505,7 +526,7 @@ public class DirectoryTableView
 		}
 
 		// Ensure cells are redrawn if scroll bar is hidden
-		widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+		widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 
 		// Display context menu in response to request
 		addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event ->
@@ -534,15 +555,16 @@ public class DirectoryTableView
 					menu.getItems().add(new SeparatorMenuItem());
 
 				// Add menu item: view sector
-				MenuItem menuItem = new MenuItem(VIEW_SECTOR_STR, Images.icon(Images.VIEW_SECTOR));
+				MenuItem menuItem = new MenuItem(VIEW_SECTOR_STR, Images.icon(Images.ImageId.VIEW_SECTOR));
 				menuItem.setDisable(entry.getSectorIndex() > Integer.MAX_VALUE);
 				menuItem.setOnAction(event0 ->
 				{
 					try
 					{
-						Fat32Fat.IndexFinder indexFinder = (headerMode == HeaderMode.DELETED)
-																? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
-																: volume.getFat().indexFinder(entry);
+						Fat32Fat.IndexFinder indexFinder =
+								(headerMode == HeaderMode.DELETED)
+												? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
+												: volume.getFat().indexFinder(entry);
 						SectorClusterViewDialog.showSector(getWindow(), volume, indexFinder);
 					}
 					catch (VolumeException e)
@@ -553,14 +575,15 @@ public class DirectoryTableView
 				menu.getItems().add(menuItem);
 
 				// Add menu item: view cluster
-				menuItem = new MenuItem(VIEW_CLUSTER_STR, Images.icon(Images.VIEW_CLUSTER));
+				menuItem = new MenuItem(VIEW_CLUSTER_STR, Images.icon(Images.ImageId.VIEW_CLUSTER));
 				menuItem.setOnAction(event0 ->
 				{
 					try
 					{
-						Fat32Fat.IndexFinder indexFinder = (headerMode == HeaderMode.DELETED)
-																? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
-																: volume.getFat().indexFinder(entry);
+						Fat32Fat.IndexFinder indexFinder =
+								(headerMode == HeaderMode.DELETED)
+												? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
+												: volume.getFat().indexFinder(entry);
 						SectorClusterViewDialog.showCluster(getWindow(), volume, indexFinder);
 					}
 					catch (VolumeException e)
@@ -583,7 +606,7 @@ public class DirectoryTableView
 					menu.getItems().add(new SeparatorMenuItem());
 
 				// Add menu item
-				MenuItem menuItem = new MenuItem(COPY_ENTRY_STR, Images.icon(Images.COPY));
+				MenuItem menuItem = new MenuItem(COPY_ENTRY_STR, Images.icon(Images.ImageId.COPY));
 				menuItem.setOnAction(event0 -> Utils.copyToClipboard(getWindow(), COPY_ENTRY_STR, entry.toString()));
 				menu.getItems().add(menuItem);
 				hasCopy = true;
@@ -598,7 +621,8 @@ public class DirectoryTableView
 					menu.getItems().add(new SeparatorMenuItem());
 
 				// Add menu item
-				MenuItem menuItem = new MenuItem(COPY_ALL_ENTRIES_STR + ELLIPSIS_STR, Images.icon(Images.COPY_LINES));
+				MenuItem menuItem = new MenuItem(COPY_ALL_ENTRIES_STR + ELLIPSIS_STR,
+												 Images.icon(Images.ImageId.COPY_LINES));
 				menuItem.setOnAction(event0 -> onCopyEntryText());
 				menu.getItems().add(menuItem);
 			}
@@ -611,7 +635,7 @@ public class DirectoryTableView
 					menu.getItems().add(new SeparatorMenuItem());
 
 				// Add menu item
-				MenuItem menuItem = new MenuItem(DEFRAGMENT_FILE_STR, Images.icon(Images.DEFRAGMENT));
+				MenuItem menuItem = new MenuItem(DEFRAGMENT_FILE_STR, Images.icon(Images.ImageId.DEFRAGMENT));
 				try
 				{
 					menuItem.setDisable(!volume.isEntryFragmented(entry));
@@ -637,12 +661,12 @@ public class DirectoryTableView
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -664,14 +688,21 @@ public class DirectoryTableView
 		// Call superclass method
 		super.layoutChildren();
 
+		// Create function to create background colour
+		IFunction2<Color, String, String> createColour = (colour1Key, colour2Key) ->
+				ColourUtils.interpolateRgb(getColour(colour1Key), getColour(colour2Key), 0.5);
+
 		// Get colours of background and border of column headers
 		boolean deleted = (headerMode == HeaderMode.DELETED);
 		boolean preview = (headerMode == HeaderMode.PREVIEW);
 		Color backgroundColour = switch (headerMode)
 		{
-			case NONE    -> getColour(ColourKey.HEADER_CELL_BACKGROUND);
-			case DELETED -> getColour(ColourKey.HEADER_CELL_BACKGROUND_DELETED);
-			case PREVIEW -> getColour(ColourKey.HEADER_CELL_BACKGROUND_PREVIEW);
+			case NONE    -> createColour.invoke(ColourKey.HEADER_CELL_BACKGROUND1,
+												ColourKey.HEADER_CELL_BACKGROUND2);
+			case DELETED -> createColour.invoke(ColourKey.HEADER_CELL_BACKGROUND1_DELETED,
+												ColourKey.HEADER_CELL_BACKGROUND2_DELETED);
+			case PREVIEW -> createColour.invoke(ColourKey.HEADER_CELL_BACKGROUND1_PREVIEW,
+												ColourKey.HEADER_CELL_BACKGROUND2_PREVIEW);
 		};
 		Color borderColour = getColour(ColourKey.HEADER_CELL_BORDER);
 
@@ -691,8 +722,7 @@ public class DirectoryTableView
 		}
 
 		// Set background and border of filler
-		Node node0 = lookup(StyleSelector.FILLER);
-		if (node0 instanceof Region filler)
+		if (lookup(StyleSelector.FILLER) instanceof Region filler)
 		{
 			if (StyleManager.INSTANCE.notUsingStyleSheet())
 			{
@@ -799,7 +829,7 @@ public class DirectoryTableView
 		headerInitialised = false;
 
 		// Update UI
-		layout();
+		setNeedsLayout(true);
 	}
 
 	//------------------------------------------------------------------
@@ -1148,14 +1178,17 @@ public class DirectoryTableView
 							case SUCCESS          -> MessageIcon32.INFORMATION;
 							case CANCEL           -> null;
 						};
-						String message = entry.getPathname() + MessageDialog.MESSAGE_SEPARATOR + text;
+						String message = entry.getPathname() + MessageConstants.LABEL_SEPARATOR + text;
 						NotificationDialog.show(getWindow(), DEFRAGMENT_FILE_STR, icon.get(), message);
 					}
 				}
 
 				// Case: invalid clusters
 				else
-					InvalidClusterDialog.show(getWindow(), getTitle() + " : " + INVALID_CLUSTERS_STR, result.invalidClusters);
+				{
+					InvalidClusterDialog.show(getWindow(), getTitle() + " : " + INVALID_CLUSTERS_STR,
+											  result.invalidClusters);
+				}
 			}
 
 			@Override
@@ -1237,7 +1270,7 @@ public class DirectoryTableView
 			"Name",
 			null,
 			HPos.LEFT,
-			TextUtils.textWidth("M".repeat(25))
+			TextUtils.textHeightCeil(16.0)
 		)
 		{
 			@Override
@@ -1335,15 +1368,15 @@ public class DirectoryTableView
 			"Modified",
 			"Date/time of last modification",
 			HPos.LEFT,
-			TextUtils.textWidth(Fat32Directory.MODIFICATION_TIME_FORMATTER.format(LocalDateTime.now()))
+			TextUtils.textWidth(Fat32Directory.LAST_MODIFICATION_TIME_FORMATTER.format(LocalDateTime.now()))
 		)
 		{
 			@Override
 			protected String getValueString(
 				Fat32Directory.Entry	entry)
 			{
-				LocalDateTime time = entry.getModificationTime();
-				return (time == null) ? "" : Fat32Directory.MODIFICATION_TIME_FORMATTER.format(time);
+				LocalDateTime time = entry.getLastModificationTime();
+				return (time == null) ? "" : Fat32Directory.LAST_MODIFICATION_TIME_FORMATTER.format(time);
 			}
 
 			//----------------------------------------------------------
@@ -1354,9 +1387,9 @@ public class DirectoryTableView
 			{
 				TableColumn<Fat32Directory.Entry, LocalDateTime> column = new TableColumn<>(toString());
 				column.setCellFactory(column0 ->
-						tableView.new DateTimeCell(this, Fat32Directory.MODIFICATION_TIME_FORMATTER));
+						tableView.new DateTimeCell(this, Fat32Directory.LAST_MODIFICATION_TIME_FORMATTER));
 				column.setCellValueFactory(features ->
-						new ReadOnlyObjectWrapper<>(features.getValue().getModificationTime()));
+						new ReadOnlyObjectWrapper<>(features.getValue().getLastModificationTime()));
 				return column;
 			}
 
@@ -1422,7 +1455,7 @@ public class DirectoryTableView
 				column.setCellValueFactory(features ->
 				{
 					int value = features.getValue().getClusterIndex();
-					return new ReadOnlyObjectWrapper<>((value == 0) ? null : (long)value);
+					return new ReadOnlyObjectWrapper<>((value == 0) ? null : Long.valueOf(value));
 				});
 				return column;
 			}
@@ -1457,7 +1490,7 @@ public class DirectoryTableView
 				column.setCellValueFactory(features ->
 				{
 					int value = features.getValue().getNumClusters();
-					return new ReadOnlyObjectWrapper<>((value == 0) ? null : (long)value);
+					return new ReadOnlyObjectWrapper<>((value == 0) ? null : Long.valueOf(value));
 				});
 				return column;
 			}
@@ -1492,7 +1525,7 @@ public class DirectoryTableView
 				column.setCellValueFactory(features ->
 				{
 					long value = features.getValue().getSectorIndex();
-					return new ReadOnlyObjectWrapper<>((value == 0) ? null : value);
+					return new ReadOnlyObjectWrapper<>((value == 0) ? null : Long.valueOf(value));
 				});
 				return column;
 			}
@@ -1517,13 +1550,13 @@ public class DirectoryTableView
 			String	text,
 			String	longText,
 			HPos	hAlignment,
-			double	prefWidth)
+			double	textWidth)
 		{
 			// Initialise instance variables
 			this.text = text;
 			this.longText = (longText == null) ? text : longText;
 			this.hAlignment = hAlignment;
-			this.prefWidth = Math.ceil(prefWidth + Cell.LABEL_PADDING.getLeft() + Cell.LABEL_PADDING.getRight() + 1.0);
+			prefWidth = Math.ceil(textWidth + Cell.LABEL_PADDING.getLeft() + Cell.LABEL_PADDING.getRight() + 1.0);
 		}
 
 		//--------------------------------------------------------------
@@ -1544,9 +1577,9 @@ public class DirectoryTableView
 			String	key)
 		{
 			return Stream.of(values())
-							.filter(value -> value.getKey().equals(key))
-							.findFirst()
-							.orElse(null);
+					.filter(value -> value.getKey().equals(key))
+					.findFirst()
+					.orElse(null);
 		}
 
 		//--------------------------------------------------------------
@@ -1662,7 +1695,11 @@ public class DirectoryTableView
 			});
 
 			// When mouse leaves cell, deactivate any cell pop-up
-			addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+			addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+			{
+				if (CellPopUpManager.deactivatePopUpOnMouseExited())
+					cellPopUpManager.deactivate();
+			});
 
 			// When a mouse button is released, deactivate any cell pop-up
 			addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -1803,30 +1840,30 @@ public class DirectoryTableView
 
 		protected void updateBackground()
 		{
-			if (StyleManager.INSTANCE.notUsingStyleSheet())
-			{
-				int index = getIndex();
-				boolean selected = (getSelectionModel().getSelectedIndex() == index);
+			if (!StyleManager.INSTANCE.notUsingStyleSheet())
+				return;
+
+			int index = getIndex();
+			boolean selected = (getSelectionModel().getSelectedIndex() == index);
 // WORKAROUND
-//				boolean focused = getTableView().isFocused();
-				Color colour = isEmpty()
-									? null
-									: selected
+//			boolean focused = getTableView().isFocused();
+			Color colour = isEmpty()
+								? null
+								: selected
 										? focused
-											? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
-											: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
+												? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
+												: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
 										: (index % 2 == 0)
-											? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
-											: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_ODD);
-				if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
-				{
-					setBackground(SceneUtils.createColouredBackground(
-							getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED), new Insets(0.0, 1.0, 1.0, 0.0),
-							colour, new Insets(1.0, 1.0, 2.0, 0.0)));
-				}
-				else
-					setBackground(SceneUtils.createColouredBackground(colour));
+												? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
+												: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_ODD);
+			if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
+			{
+				setBackground(SceneUtils.createColouredBackground(
+						getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED), new Insets(0.0, 1.0, 1.0, 0.0),
+						colour, new Insets(1.0, 1.0, 2.0, 0.0)));
 			}
+			else
+				setBackground(SceneUtils.createColouredBackground(colour));
 		}
 
 		//--------------------------------------------------------------
@@ -2007,14 +2044,14 @@ public class DirectoryTableView
 			Fat32Directory.Entry entry = getEntry();
 			if (entry != null)
 			{
-				Image image = null;
+				String imageId = null;
 				if (entry.isVolumeLabel())
-					image = Images.VOLUME_LABEL;
+					imageId = Images.ImageId.VOLUME_LABEL;
 				else if (entry.isDirectory())
-					image = Images.DIRECTORY;
+					imageId = Images.ImageId.DIRECTORY;
 				else
-					image = Images.FILE;
-				graphic = Images.icon(image);
+					imageId = Images.ImageId.FILE;
+				graphic = Images.icon(imageId);
 			}
 			return graphic;
 		}
@@ -2214,7 +2251,7 @@ public class DirectoryTableView
 
 			// Create pane: columns
 			VBox columnsPane = new VBox(COLUMNS_PANE_GAP);
-			columnsPane.setMaxWidth(VBox.USE_PREF_SIZE);
+			columnsPane.setMaxWidth(Region.USE_PREF_SIZE);
 			columnsPane.setPadding(COLUMNS_PANE_PADDING);
 
 			// Create check boxes for columns
@@ -2248,17 +2285,17 @@ public class DirectoryTableView
 			rowsPane.setPadding(ROWS_PANE_PADDING);
 
 			// Initialise column constraints
-			ColumnConstraints column1 = new ColumnConstraints();
-			column1.setMinWidth(GridPane.USE_PREF_SIZE);
-			column1.setHalignment(HPos.RIGHT);
-			column1.setHgrow(Priority.NEVER);
-			rowsPane.getColumnConstraints().add(column1);
+			ColumnConstraints column = new ColumnConstraints();
+			column.setMinWidth(Region.USE_PREF_SIZE);
+			column.setHalignment(HPos.RIGHT);
+			column.setHgrow(Priority.NEVER);
+			rowsPane.getColumnConstraints().add(column);
 
-			ColumnConstraints column2 = new ColumnConstraints();
-			column2.setHalignment(HPos.LEFT);
-			column2.setHgrow(Priority.NEVER);
-			column2.setFillWidth(false);
-			rowsPane.getColumnConstraints().add(column2);
+			column = new ColumnConstraints();
+			column.setHalignment(HPos.LEFT);
+			column.setHgrow(Priority.NEVER);
+			column.setFillWidth(false);
+			rowsPane.getColumnConstraints().add(column);
 
 			// Initialise row index
 			int row = 0;
@@ -2271,7 +2308,8 @@ public class DirectoryTableView
 
 			// Create spinner: field separator
 			CollectionSpinner<FieldSeparator> fieldSeparatorSpinner =
-					CollectionSpinner.leftRightH(HPos.CENTER, true, FieldSeparator.class, state.fieldSeparator, null, null);
+					CollectionSpinner.leftRightH(HPos.CENTER, true, FieldSeparator.class, state.fieldSeparator, null,
+												 null);
 			rowsPane.addRow(row++, new Label(FIELD_SEPARATOR_STR), fieldSeparatorSpinner);
 
 			// Create titled pane: rows
@@ -2286,11 +2324,12 @@ public class DirectoryTableView
 			setContent(outerPane);
 
 			// Create function to get state from components of user interface
-			IFunction0<State> getState = () -> new State(EnumSet.copyOf(columns), includeHeaderCheckBox.isSelected(),
-														 fieldSeparatorSpinner.getItem());
+			IFunction0<State> getState = () ->
+					new State(EnumSet.copyOf(columns), includeHeaderCheckBox.isSelected(),
+							  fieldSeparatorSpinner.getItem());
 
 			// Create button: copy
-			Button copyButton = new Button(COPY_STR);
+			Button copyButton = Buttons.hNoShrink(COPY_STR);
 			copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			copyButton.setOnAction(event ->
 			{
@@ -2309,7 +2348,7 @@ public class DirectoryTableView
 			updateCopyButton.invoke();
 
 			// Create button: cancel
-			Button cancelButton = new Button(CANCEL_STR);
+			Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 			cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			cancelButton.setOnAction(event -> requestClose());
 			addButton(cancelButton, HPos.RIGHT);

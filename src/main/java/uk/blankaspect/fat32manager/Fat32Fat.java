@@ -52,8 +52,11 @@ public class Fat32Fat
 
 	private interface ErrorMsg
 	{
-		String	INVALID_CLUSTER_INDEX	= "The cluster chain that starts at index %d includes an invalid cluster index at %s.";
-		String	BAD_CLUSTER				= "The cluster chain includes a bad cluster at %s.";
+		String	INVALID_CLUSTER_INDEX =
+				"The cluster chain that starts at index %d includes an invalid cluster index at %s.";
+
+		String	BAD_CLUSTER =
+				"The cluster chain includes a bad cluster at %s.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

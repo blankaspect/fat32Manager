@@ -19,7 +19,6 @@ package uk.blankaspect.ui.jfx.dialog;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -48,7 +47,11 @@ import javafx.stage.Window;
 
 import uk.blankaspect.common.function.IProcedure0;
 
+import uk.blankaspect.common.message.MessageConstants;
+
 import uk.blankaspect.common.string.StringUtils;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
 
@@ -77,10 +80,6 @@ public class MessageListDialog
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The regular expression that is used to split the message into parts that have a {@linkplain #MESSAGE_GAP
-		vertical gap} between their labels. */
-	public static final		String	MESSAGE_SEPARATOR	= "\u000B";		// vertical tab
-
 	/** The vertical gap between adjacent message labels. */
 	private static final	double	MESSAGE_GAP	= 4.0;
 
@@ -91,7 +90,7 @@ public class MessageListDialog
 	private static final	double	MESSAGE_LIST_VIEW_GAP	= 10.0;
 
 	/** The preferred width of the list view. */
-	private static final	double	LIST_VIEW_WIDTH		= 240.0;
+	private static final	double	LIST_VIEW_WIDTH		= 320.0;
 
 	/** The preferred height of the list view. */
 	private static final	double	LIST_VIEW_HEIGHT	= 120.0;
@@ -112,7 +111,8 @@ public class MessageListDialog
 	private static final	Insets	CONTENT_PANE_PADDING_LIST_VIEW_NO_ICON	= new Insets(12.0, 12.0, 6.0, 12.0);
 
 	/** The key combination that causes the items of the list view to be copied to the system clipboard. */
-	private static final	KeyCombination	KEY_COMBO_COPY	= new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+	private static final	KeyCombination	KEY_COMBO_COPY	=
+			new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 
 	/** Miscellaneous strings. */
 	private static final	String	COPY_STR		= "Copy";
@@ -183,11 +183,8 @@ public class MessageListDialog
 
 		// Create labels for messages
 		messageLabels = new ArrayList<>();
-		for (String message0 : message.split(MESSAGE_SEPARATOR))
-		{
-			Label label = new Label(message0);
-			messageLabels.add(label);
-		}
+		for (String message0 : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
+			messageLabels.add(new Label(message0));
 
 		// Create pane for message labels
 		VBox messagePane = new VBox(MESSAGE_GAP);
@@ -265,7 +262,7 @@ public class MessageListDialog
 		if (hasCopyButton)
 		{
 			// Create button
-			Button button = new Button(COPY_STR);
+			Button button = Buttons.hNoShrink(COPY_STR);
 			button.setOnAction(event -> copyItems.invoke());
 
 			// Add button to button pane
@@ -278,7 +275,7 @@ public class MessageListDialog
 		for (ButtonInfo buttonInfo : buttons)
 		{
 			// Create button
-			Button button = new Button(buttonInfo.getText());
+			Button button = Buttons.hNoShrink(buttonInfo.getText());
 			button.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			button.setOnAction(event ->
 			{
@@ -349,7 +346,7 @@ public class MessageListDialog
 		ButtonInfo...		buttons)
 	{
 		// Call alternative constructor
-		this(owner, title, icon, message, items, locator, hasCopyButton, Arrays.asList(buttons));
+		this(owner, title, icon, message, items, locator, hasCopyButton, List.of(buttons));
 	}
 
 	//------------------------------------------------------------------

@@ -74,8 +74,8 @@ public abstract class AbstractHeaderPane
 			FxProperty.BORDER_COLOUR,
 			ColourKey.BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.HEADER_PANE)
-						.build()
+					.cls(StyleClass.HEADER_PANE)
+					.build()
 		)
 	);
 
@@ -92,7 +92,7 @@ public abstract class AbstractHeaderPane
 	}
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	HEADER_PANE	= StyleConstants.CLASS_PREFIX + "header-pane";
 	}
@@ -186,12 +186,12 @@ public abstract class AbstractHeaderPane
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

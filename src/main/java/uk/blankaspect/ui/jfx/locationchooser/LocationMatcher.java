@@ -21,7 +21,6 @@ package uk.blankaspect.ui.jfx.locationchooser;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -111,7 +110,7 @@ public class LocationMatcher
 		String...	filenameSuffixes)
 	{
 		// Call alternative constructor
-		this(description, Arrays.asList(filenameSuffixes));
+		this(description, List.of(filenameSuffixes));
 	}
 
 	//------------------------------------------------------------------

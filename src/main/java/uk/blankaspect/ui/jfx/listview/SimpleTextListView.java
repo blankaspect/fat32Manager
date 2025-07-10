@@ -58,6 +58,8 @@ import uk.blankaspect.common.function.IFunction1;
 
 import uk.blankaspect.common.geometry.VHPos;
 
+import uk.blankaspect.ui.jfx.control.ControlUtils;
+
 import uk.blankaspect.ui.jfx.popup.CellPopUpManager;
 import uk.blankaspect.ui.jfx.popup.PopUpUtils;
 
@@ -105,40 +107,40 @@ public class SimpleTextListView<T>
 			FxProperty.TEXT_FILL,
 			ColourKey.UNIFORM_CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL)
-						.build()
+					.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.UNIFORM_CELL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL)
-						.build(),
+					.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ListViewStyle.ColourKey.CELL_BACKGROUND_EMPTY,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
-						.build()
+					.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.UNIFORM_CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL)
-						.build()
+					.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL)
+					.build()
 		)
 	);
 
@@ -146,23 +148,23 @@ public class SimpleTextListView<T>
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-									.desc(FxStyleClass.LIST_CELL)
-									.build())
-						.borders(Side.BOTTOM)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+						.desc(FxStyleClass.LIST_CELL)
+						.build())
+				.borders(Side.BOTTOM)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
-									.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
-									.build())
-						.emptyBorder()
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SIMPLE_TEXT_LIST_VIEW)
+						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
+						.build())
+				.emptyBorder()
+				.build()
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	SIMPLE_TEXT_LIST_VIEW	= StyleConstants.CLASS_PREFIX + "simple-text-list-view";
 	}
@@ -280,21 +282,17 @@ public class SimpleTextListView<T>
 		}
 
 		// Ensure cells are redrawn if scroll bar is hidden
-		widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+		widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 
 		// Set background of empty cells
 		if (StyleManager.INSTANCE.notUsingStyleSheet())
 		{
-			skinProperty().addListener((observable, oldSkin, skin) ->
+			ControlUtils.onSkin(this, () ->
 			{
-				if (skin != null)
+				if (lookup(StyleSelector.VIRTUAL_FLOW) instanceof Region region)
 				{
-					Node node = lookup(StyleSelector.VIRTUAL_FLOW);
-					if (node instanceof Region region)
-					{
-						region.setBackground(SceneUtils.createColouredBackground(
-								getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_EMPTY)));
-					}
+					region.setBackground(SceneUtils.createColouredBackground(
+							getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_EMPTY)));
 				}
 			});
 		}
@@ -311,12 +309,12 @@ public class SimpleTextListView<T>
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -519,7 +517,11 @@ public class SimpleTextListView<T>
 			});
 
 			// When mouse leaves cell, deactivate any cell pop-up
-			addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+			addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+			{
+				if (CellPopUpManager.deactivatePopUpOnMouseExited())
+					cellPopUpManager.deactivate();
+			});
 
 			// When a mouse button is released, deactivate any cell pop-up
 			addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -644,19 +646,19 @@ public class SimpleTextListView<T>
 					boolean selected = getSelectionModel().getSelectedIndices().contains(index);
 					boolean focused = getListView().isFocused();
 					Color colour = isEmpty()
-										? null
-										: selected
-												? focused
-														? getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
-														: getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
-												: (index % 2 == 0)
-														? getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
-														: getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_ODD);
+								? null
+								: selected
+										? focused
+												? getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
+												: getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
+										: (index % 2 == 0)
+												? getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
+												: getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_ODD);
 					if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
 					{
 						setBackground(SceneUtils.createColouredBackground(
-								getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED), new Insets(0.0, 0.0, 1.0, 0.0),
-								colour, new Insets(1.0, 1.0, 2.0, 1.0)));
+								getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED),
+								new Insets(0.0, 0.0, 1.0, 0.0), colour, new Insets(1.0, 1.0, 2.0, 1.0)));
 					}
 					else
 						setBackground(SceneUtils.createColouredBackground(colour));

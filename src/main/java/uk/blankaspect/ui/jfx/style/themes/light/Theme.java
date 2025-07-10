@@ -18,7 +18,7 @@ package uk.blankaspect.ui.jfx.style.themes.light;
 // IMPORTS
 
 
-import javafx.scene.image.Image;
+import javafx.scene.paint.Color;
 
 import uk.blankaspect.ui.jfx.style.AbstractTheme;
 
@@ -36,11 +36,11 @@ public class Theme
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	private static final	String	ID	= "light";
+	public static final		String	ID	= "light";
 
 	private static final	String	NAME	= "Light";
 
-	private static final	double	BRIGHTNESS_DELTA	= -0.035;
+	private static final	Color	DEFAULT_MONO_IMAGE_COLOUR	= Color.grayRgb(48);
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -48,6 +48,8 @@ public class Theme
 
 	public Theme()
 	{
+		// Set properties
+		setMonoImageColour(DEFAULT_MONO_IMAGE_COLOUR);
 	}
 
 	//------------------------------------------------------------------
@@ -57,7 +59,7 @@ public class Theme
 ////////////////////////////////////////////////////////////////////////
 
 	@Override
-	public String getId()
+	public String id()
 	{
 		return ID;
 	}
@@ -65,26 +67,9 @@ public class Theme
 	//------------------------------------------------------------------
 
 	@Override
-	public String getName()
+	public String name()
 	{
 		return NAME;
-	}
-
-	//------------------------------------------------------------------
-
-	@Override
-	public double getBrightnessDelta1()
-	{
-		return BRIGHTNESS_DELTA;
-	}
-
-	//------------------------------------------------------------------
-
-	@Override
-	public Image processImage(
-		Image	image)
-	{
-		return image;
 	}
 
 	//------------------------------------------------------------------

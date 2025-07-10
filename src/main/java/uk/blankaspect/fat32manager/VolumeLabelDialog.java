@@ -35,16 +35,20 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 
 import javafx.stage.Window;
 
 import uk.blankaspect.common.function.IProcedure0;
 
-import uk.blankaspect.ui.jfx.button.ImageButton;
+import uk.blankaspect.ui.jfx.button.Buttons;
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
 
 import uk.blankaspect.ui.jfx.date.DateFieldPane;
 
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.textfield.FilterFactory;
 import uk.blankaspect.ui.jfx.textfield.TimeField;
@@ -132,16 +136,16 @@ public class VolumeLabelDialog
 		controlPane.setVgap(CONTROL_PANE_V_GAP);
 
 		// Initialise column constraints
-		ColumnConstraints column1 = new ColumnConstraints();
-		column1.setMinWidth(GridPane.USE_PREF_SIZE);
-		column1.setHalignment(HPos.RIGHT);
-		column1.setFillWidth(false);
-		controlPane.getColumnConstraints().add(column1);
+		ColumnConstraints column = new ColumnConstraints();
+		column.setMinWidth(Region.USE_PREF_SIZE);
+		column.setHalignment(HPos.RIGHT);
+		column.setFillWidth(false);
+		controlPane.getColumnConstraints().add(column);
 
-		ColumnConstraints column2 = new ColumnConstraints();
-		column2.setHalignment(HPos.LEFT);
-		column2.setFillWidth(false);
-		controlPane.getColumnConstraints().add(column2);
+		column = new ColumnConstraints();
+		column.setHalignment(HPos.LEFT);
+		column.setFillWidth(false);
+		controlPane.getColumnConstraints().add(column);
 
 		// Initialise row index
 		int row = 0;
@@ -174,17 +178,17 @@ public class VolumeLabelDialog
 			timeField.setTime(modTime.toLocalTime());
 
 		// Create button: set to zero
-		ImageButton setToZeroButton = new ImageButton(Images.SET_TO_ZERO, SET_TO_ZERO_STR);
+		ImageDataButton setToZeroButton = Images.imageButton(Images.ImageId.SET_TO_ZERO, SET_TO_ZERO_STR);
 		HBox.setMargin(setToZeroButton, new Insets(0.0, 0.0, 0.0, -6.0));
 		setToZeroButton.setOnAction(event ->
 		{
 			char separator = TIME_SEPARATORS.charAt(0);
 			timeField.setText(String.format(ZERO_TIME_PATTERN, separator, separator));
 		});
-		Images.updateImageButton(setToZeroButton);
+		setToZeroButton.updateImage();
 
 		// Create pane: time
-		HBox timePane = new HBox(CONTROL_PANE_H_GAP, new Label(TIME_STR), timeField, setToZeroButton);
+		HBox timePane = new HBox(CONTROL_PANE_H_GAP, Labels.hNoShrink(TIME_STR), timeField, setToZeroButton);
 		timePane.setAlignment(Pos.CENTER_LEFT);
 
 		// Create pane: date and time
@@ -196,7 +200,7 @@ public class VolumeLabelDialog
 		addContent(controlPane);
 
 		// Create button: OK
-		Button okButton = new Button(OK_STR);
+		Button okButton = Buttons.hNoShrink(OK_STR);
 		okButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		okButton.setOnAction(event ->
 		{
@@ -243,7 +247,7 @@ public class VolumeLabelDialog
 		updateOkButton.invoke();
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);

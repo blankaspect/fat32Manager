@@ -74,7 +74,7 @@ public class Themes
 	 *
 	 * @return a list containing a new instance of each available theme.
 	 * @throws BaseException
-	 *           if an error occurred when instantiating a theme.
+	 *           if an error occurs when instantiating a theme.
 	 */
 
 	public static List<AbstractTheme> instances()
@@ -90,7 +90,7 @@ public class Themes
 			AbstractTheme theme = null;
 			try
 			{
-				theme = (AbstractTheme)cls.getConstructor().newInstance();
+				theme = (AbstractTheme)cls.getDeclaredConstructor().newInstance();
 			}
 			catch (Throwable e)
 			{

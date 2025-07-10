@@ -18,8 +18,6 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
-import javafx.application.Platform;
-
 import javafx.concurrent.Task;
 
 import javafx.event.ActionEvent;
@@ -39,9 +37,13 @@ import uk.blankaspect.common.function.IProcedure0;
 
 import uk.blankaspect.common.string.StringUtils;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.label.CompoundPathnameLabel;
 
 import uk.blankaspect.ui.jfx.progress.SimpleProgressBar;
+
+import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.StyleUtils;
@@ -66,14 +68,6 @@ public class SimpleProgressDialog
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
-
-	/** The regular expression that is used to split the text of a message label into parts (for example, a prefix and a
-		pathname) */
-	public static final		String	MESSAGE_SEPARATOR		= CompoundPathnameLabel.DEFAULT_SEPARATOR;
-
-	/** A space followed by the regular expression that is used to split the text of a message label into parts (for
-		example, a prefix and a pathname). */
-	public static final		String	SPACE_MESSAGE_SEPARATOR	= " " + MESSAGE_SEPARATOR;
 
 	/** The default width of the control pane. */
 	private static final	double	DEFAULT_CONTROL_PANE_WIDTH	= 480.0;
@@ -275,7 +269,9 @@ public class SimpleProgressDialog
 			if (isShowing())
 			{
 				// Count number of lines of message
-				int numLines = StringUtils.isNullOrEmpty(text) ? 0 : (int)text.chars().filter(ch -> ch == '\n').count() + 1;
+				int numLines = StringUtils.isNullOrEmpty(text)
+											? 0
+											: (int)text.chars().filter(ch -> ch == '\n').count() + 1;
 
 				// If number of lines has increased, resize dialog
 				if (maxNumMessageLines < numLines)
@@ -314,14 +310,14 @@ public class SimpleProgressDialog
 			getButtonPane(0).setPadding(Insets.EMPTY);
 
 			// Ignore dialog's 'close' button
-			addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, event -> event.consume());
+			addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, WindowEvent::consume);
 		}
 
 		// Case: 'cancel' button
 		else
 		{
 			// Create 'cancel' button
-			cancelButton = new Button(CANCEL_STR);
+			cancelButton = Buttons.hNoShrink(CANCEL_STR);
 			addButton(cancelButton, HPos.RIGHT);
 
 			// Create procedure to cancel task
@@ -344,7 +340,7 @@ public class SimpleProgressDialog
 		// Resize dialog to scene
 		sizeToScene();
 
-		// Show and hide this dialog when state of task changes
+		// Show and hide dialog when state of task changes
 		task.stateProperty().addListener((observable, oldState, state) ->
 		{
 			switch (state)
@@ -353,18 +349,24 @@ public class SimpleProgressDialog
 				case FAILED:
 				case SUCCEEDED:
 					showDialog = false;
-					hide();
+					SceneUtils.runOnFxApplicationThread(() ->
+					{
+						// Unbind UI components from task
+						titleProperty().unbind();
+						messageLabel.textProperty().unbind();
+						progressBar.progressProperty().unbind();
+
+						// Hide dialog
+						hide();
+					});
 					break;
 
 				case SCHEDULED:
-					Platform.runLater(() ->
+					if (showDialog)
 					{
-						if (showDialog)
-						{
-							showDialog = false;
-							show();
-						}
-					});
+						showDialog = false;
+						SceneUtils.runOnFxApplicationThread(this::show);
+					}
 					break;
 
 				default:
@@ -374,6 +376,9 @@ public class SimpleProgressDialog
 
 		// When dialog is shown, prevent its height from changing
 		addEventHandler(WindowEvent.WINDOW_SHOWN, event -> WindowUtils.preventHeightChange(this));
+
+		// When dialog is closed, disable progress bar to stop indeterminate-progress timer
+		addEventHandler(WindowEvent.WINDOW_HIDING, event -> progressBar.setDisable(true));
 	}
 
 	//------------------------------------------------------------------

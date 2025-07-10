@@ -61,16 +61,17 @@ import uk.blankaspect.common.css.CssConstants;
 import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssUtils;
 
-import uk.blankaspect.common.exception.UnexpectedRuntimeException;
-
 import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.FileException;
 import uk.blankaspect.common.exception2.LocationException;
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
 
 import uk.blankaspect.common.filesystem.DirectoryUtils;
 import uk.blankaspect.common.filesystem.FileSystemUtils;
 
 import uk.blankaspect.common.logging.Logger;
+
+import uk.blankaspect.common.misc.SystemUtils;
 
 import uk.blankaspect.common.resource.ResourceUtils;
 
@@ -103,12 +104,13 @@ public class StyleManager
 	private static final	String	LOAD_DEPENDENCY_STR			= "Load dependency";
 	private static final	String	APPLY_STYLE_SHEET_STR		= "Apply style sheet";
 	private static final	String	WRITE_STYLE_SHEET_STR		= "Write style sheet";
+	private static final	String	NULL_ID_STR					= "Null ID";
 
 	private static final	char	CLASS_NAME_LIST_COMMENT_CHAR	= '#';
 
 	private static final	char	STYLE_SHEET_ID_DELIMITER	= '~';
-	private static final	String	STYLE_SHEET_ID	= STYLE_SHEET_ID_DELIMITER + StyleManager.class.getName()
-														+ STYLE_SHEET_ID_DELIMITER;
+	private static final	String	STYLE_SHEET_ID	=
+			STYLE_SHEET_ID_DELIMITER + StyleManager.class.getName() + STYLE_SHEET_ID_DELIMITER;
 
 	private static final	String	DEFAULT_COLOURS_FILENAME	= "colours.properties";
 	private static final	String	BASE_STYLE_SHEET_FILENAME	= "base.css";
@@ -127,23 +129,44 @@ public class StyleManager
 	/** Keys of system properties. */
 	public interface SystemPropertyKey
 	{
-		String	TEMP_DIRECTORY	= "java.io.tmpdir";
-		String	THEME			= "blankaspect.ui.jfx.theme";
+		String	THEME	= "blankaspect.ui.jfx.theme";
 	}
 
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_CREATE_TEMPORARY_DIRECTORY	= "Failed to create a temporary directory.";
-		String	NO_DEFAULT_THEME						= "The file does not contain the default theme.";
-		String	NO_COLOUR_FOR_PROPERTY1					= "Colour key: %s\nThere is no colour for the property.";
-		String	NO_COLOUR_FOR_PROPERTY2					= "Selector(s): %s\nProperty: %s\n" + NO_COLOUR_FOR_PROPERTY1;
-		String	FAILED_TO_READ_DEFAULT_COLOUR_PROVIDERS	= "Failed to read the list of default-colour providers.";
-		String	CANNOT_FIND_DEFAULT_COLOUR_PROVIDER		= "Class: %s\nCannot find the default-colour provider.";
-		String	FAILED_TO_CONVERT_URI					= "Failed to convert the URI to a file-system location.";
-		String	ERROR_READING_FILE						= "An error occurred when reading the file.";
-		String	FAILED_TO_LOAD_CLASS					= "Class: %s\nFailed to load the class.";
-		String	DEPENDENCY_CYCLE						= "Class: %s\nA cycle of dependencies was detected when registering the class.";
+		String	FAILED_TO_CREATE_TEMPORARY_DIRECTORY =
+				"Failed to create a temporary directory.";
+
+		String	NO_DEFAULT_THEME =
+				"There is no default theme.";
+
+		String	UNSUPPORTED_THEME =
+				"The theme with ID '%s' is not supported.";
+
+		String	NO_COLOUR_FOR_PROPERTY1 =
+				"Colour key: %s\nThere is no colour for the property.";
+
+		String	NO_COLOUR_FOR_PROPERTY2 =
+				"Selector(s): %s\nProperty: %s\n" + NO_COLOUR_FOR_PROPERTY1;
+
+		String	FAILED_TO_READ_DEFAULT_COLOUR_PROVIDERS =
+				"Failed to read the list of default-colour providers.";
+
+		String	CANNOT_FIND_DEFAULT_COLOUR_PROVIDER =
+				"Class: %s\nCannot find the default-colour provider.";
+
+		String	FAILED_TO_CONVERT_URI =
+				"Failed to convert the URI to a file-system location.";
+
+		String	ERROR_READING_FILE =
+				"An error occurred when reading the file.";
+
+		String	FAILED_TO_LOAD_CLASS =
+				"Class: %s\nFailed to load the class.";
+
+		String	DEPENDENCY_CYCLE =
+				"Class: %s\nA cycle of dependencies was detected when registering the class.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -201,6 +224,9 @@ public class StyleManager
 		// Initialise themes
 		try
 		{
+			// Initialise base class of themes
+			AbstractTheme.init(this);
+
 			// Create themes
 			themes = Themes.instances();
 
@@ -225,7 +251,7 @@ public class StyleManager
 		}
 
 		// Set default theme
-		AbstractTheme defaultTheme = findTheme(DEFAULT_THEME_ID);
+		AbstractTheme defaultTheme = findDefaultTheme();
 		if (defaultTheme == null)
 			Logger.INSTANCE.error(getClass().getSimpleName() + " : " + ErrorMsg.NO_DEFAULT_THEME);
 		else
@@ -350,7 +376,7 @@ public class StyleManager
 	{
 		// Validate argument
 		if (id == null)
-			throw new IllegalArgumentException("Null ID");
+			throw new IllegalArgumentException(NULL_ID_STR);
 
 		// Update instance variable
 		this.id = id;
@@ -388,14 +414,14 @@ public class StyleManager
 	public String getThemeId()
 	{
 		AbstractTheme theme = getTheme();
-		return (theme == null) ? null : theme.getId();
+		return (theme == null) ? null : theme.id();
 	}
 
 	//------------------------------------------------------------------
 
 	public List<String> getThemeIds()
 	{
-		return themes.stream().map(theme -> theme.getId()).toList();
+		return themes.stream().map(theme -> theme.id()).toList();
 	}
 
 	//------------------------------------------------------------------
@@ -420,15 +446,22 @@ public class StyleManager
 	{
 		// Validate argument
 		if (id == null)
-			throw new IllegalArgumentException("Null ID");
+			throw new IllegalArgumentException(NULL_ID_STR);
 
 		// Search for theme with target ID
 		for (AbstractTheme theme : themes)
 		{
-			if (theme.getId().equals(id))
+			if (theme.id().equals(id))
 				return theme;
 		}
 		return null;
+	}
+
+	//------------------------------------------------------------------
+
+	public AbstractTheme findDefaultTheme()
+	{
+		return findTheme(DEFAULT_THEME_ID);
 	}
 
 	//------------------------------------------------------------------
@@ -438,16 +471,54 @@ public class StyleManager
 	{
 		// Validate argument
 		if (id == null)
-			throw new IllegalArgumentException("Null ID");
+			throw new IllegalArgumentException(NULL_ID_STR);
 
 		// If theme is different from current theme, update theme and invalidate style sheet
 		if (!id.equals(getThemeId()))
 		{
+			// Find theme for ID
+			AbstractTheme theme = findTheme(id);
+			if (theme == null)
+				throw new UnsupportedThemeException();
+
 			// Update theme
-			theme.set(findTheme(id));
+			this.theme.set(theme);
 
 			// Invalidate style sheet
 			invalidateStyleSheet();
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	public void selectThemeOrDefault(
+		String	id)
+	{
+		// Validate argument
+		if (id == null)
+			throw new IllegalArgumentException(NULL_ID_STR);
+
+		// If theme is different from current theme, update theme and invalidate style sheet
+		if (!id.equals(getThemeId()))
+		{
+			// Find theme for ID
+			AbstractTheme theme = findTheme(id);
+			if (theme == null)
+			{
+				Logger.INSTANCE.error(getClass().getSimpleName() + " : "
+										+ String.format(ErrorMsg.UNSUPPORTED_THEME, id));
+				theme = findDefaultTheme();
+			}
+
+			// Update theme and invalidate style sheet
+			if (theme != null)
+			{
+				// Update theme
+				this.theme.set(theme);
+
+				// Invalidate style sheet
+				invalidateStyleSheet();
+			}
 		}
 	}
 
@@ -458,7 +529,7 @@ public class StyleManager
 	{
 		AbstractTheme theme = getTheme();
 		if (theme == null)
-			theme = findTheme(DEFAULT_THEME_ID);
+			theme = findDefaultTheme();
 		return (theme == null) ? null : theme.getColour(key);
 	}
 
@@ -479,11 +550,20 @@ public class StyleManager
 	//------------------------------------------------------------------
 
 	public void register(
+		Class<?>	cls,
+		Class<?>...	dependencies)
+	{
+		register(cls, List.of(), List.of(), dependencies);
+	}
+
+	//------------------------------------------------------------------
+
+	public void register(
 		Class<?>				cls,
 		List<ColourProperty>	colourProperties,
 		Class<?>...				dependencies)
 	{
-		register(cls, colourProperties, Collections.emptyList(), dependencies);
+		register(cls, colourProperties, List.of(), dependencies);
 	}
 
 	//------------------------------------------------------------------
@@ -533,6 +613,16 @@ public class StyleManager
 			// Remove class from list
 			registeringClasses.remove(cls);
 		}
+	}
+
+	//------------------------------------------------------------------
+
+	public void registerRuleSets(
+		Class<?>			cls,
+		List<CssRuleSet>	ruleSets,
+		Class<?>...			dependencies)
+	{
+		register(cls, List.of(), ruleSets, dependencies);
 	}
 
 	//------------------------------------------------------------------
@@ -721,7 +811,7 @@ public class StyleManager
 				line = line.substring(0, index);
 
 			// Remove leading and trailing whitespace
-			String className = line.trim();
+			String className = line.strip();
 
 			// Skip empty line
 			if (className.isEmpty())
@@ -751,7 +841,7 @@ public class StyleManager
 	{
 		for (AbstractTheme theme : themes)
 		{
-			String pathname = coloursResourcePathname(cls, theme.getId());
+			String pathname = coloursResourcePathname(cls, theme.id());
 			if (ResourceUtils.hasResource(cls, pathname))
 				theme.loadDefaultColours(pathname, colourKeyPrefix(cls));
 		}
@@ -768,7 +858,7 @@ public class StyleManager
 		for (AbstractTheme theme : themes)
 		{
 			String pathname = ColourPropertyConstants.THEMES_DIRECTORY_NAME + File.separator
-								+ theme.getId() + File.separator
+								+ theme.id() + File.separator
 								+ filenamePrefix + ColourPropertyConstants.COLOUR_PROPERTIES_FILENAME_SUFFIX;
 			Path location = directory.resolve(pathname);
 			if (Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS))
@@ -806,7 +896,7 @@ public class StyleManager
 		buffer.append(CssConstants.COMMENT_SUFFIX);
 		buffer.append("\n\n");
 
-		// Get selected theme
+		// Get current theme
 		AbstractTheme theme = getTheme();
 
 		// Append base style sheet
@@ -825,6 +915,15 @@ public class StyleManager
 		// Populate list of all rule sets
 		for (Class<?> cls : classes)
 		{
+			// Add rule sets
+			for (CssRuleSet ruleSet : ruleSets.get(cls))
+			{
+				CssRuleSet ruleSetCopy = ruleSet.clone();
+				if (theme != null)
+					theme.resolveColourProperties(ruleSetCopy);
+				allRuleSets.add(ruleSetCopy);
+			}
+
 			// Add rule sets for colour properties
 			if (theme != null)
 			{
@@ -842,15 +941,6 @@ public class StyleManager
 					else
 						allRuleSets.add(ruleSet);
 				}
-			}
-
-			// Add rule sets
-			for (CssRuleSet ruleSet : ruleSets.get(cls))
-			{
-				CssRuleSet ruleSetCopy = ruleSet.clone();
-				if (theme != null)
-					theme.resolveColourProperties(ruleSetCopy);
-				allRuleSets.add(ruleSetCopy);
 			}
 		}
 
@@ -943,7 +1033,7 @@ public class StyleManager
 		if (tempDirectory == null)
 		{
 			// Get pathname of system temporary directory
-			Path sysTempDirectory = Path.of(System.getProperty(SystemPropertyKey.TEMP_DIRECTORY, "."));
+			Path sysTempDirectory = SystemUtils.tempDirectory();
 
 			// Find available subdirectory of system temporary directory
 			String namePrefix = ((id == null) ? getClass().getSimpleName() + "-" + randomId() : id) + "-";
@@ -989,6 +1079,32 @@ public class StyleManager
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: 'UNSUPPORTED THEME' EXCEPTION
+
+
+	public static class UnsupportedThemeException
+		extends RuntimeException
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		private UnsupportedThemeException()
+		{
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

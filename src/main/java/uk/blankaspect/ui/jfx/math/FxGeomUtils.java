@@ -68,8 +68,9 @@ public class FxGeomUtils
 	 *         input polar coordinates.
 	 */
 
-	public static Point2D polarToCartesian(double radius,
-										   double angle)
+	public static Point2D polarToCartesian(
+		double	radius,
+		double	angle)
 	{
 		return new Point2D(radius * Math.cos(angle), radius * Math.sin(angle));
 	}
@@ -84,17 +85,18 @@ public class FxGeomUtils
 	 *           the vertical alignment.
 	 * @param  horizontalAlignment
 	 *           the horizontal alignment.
-	 * @return the combined vertical and horizontal position that corresponds to <i>verticalAlignment</i> and
-	 *         <i>horizontalAlignment</i>.
+	 * @return the combined vertical and horizontal position that corresponds to {@code verticalAlignment} and {@code
+	 *         horizontalAlignment}.
 	 */
 
-	public static Pos getPos(VPos verticalAlignment,
-							 HPos horizontalAlignment)
+	public static Pos getPos(
+		VPos	verticalAlignment,
+		HPos	horizontalAlignment)
 	{
 		return Stream.of(Pos.values())
-						.filter(pos -> (pos.getVpos() == verticalAlignment) && (pos.getHpos() == horizontalAlignment))
-						.findFirst()
-						.orElse(null);
+				.filter(pos -> (pos.getVpos() == verticalAlignment) && (pos.getHpos() == horizontalAlignment))
+				.findFirst()
+				.orElse(null);
 	}
 
 	//------------------------------------------------------------------

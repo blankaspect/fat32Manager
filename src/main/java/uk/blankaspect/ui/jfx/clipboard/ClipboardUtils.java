@@ -23,7 +23,6 @@ import java.io.File;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,6 +53,9 @@ public class ClipboardUtils
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
+
+	/** A function that matches all file-system locations. */
+	private static final	Predicate<Path>	MATCH_ALL	= location -> true;
 
 	/** Error messages. */
 	private interface ErrorMsg
@@ -139,6 +141,19 @@ public class ClipboardUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns the first file-system location from the system clipboard.
+	 *
+	 * @return the first file-system location from the system clipboard, or {@code null} if there was no such location.
+	 */
+
+	public static Path firstLocation()
+	{
+		return firstLocation(Clipboard.getSystemClipboard());
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns the first file-system location from the specified clipboard.
 	 *
 	 * @param  clipboard
@@ -161,13 +176,32 @@ public class ClipboardUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns {@code true} if any of the file-system locations from the system clipboard matches the specified
+	 * function.
+	 *
+	 * @param  matcher
+	 *           the function that will be applied to the file-system locations from the system clipboard.  If it is
+	 *           {@code null}, all locations will match.
+	 * @return {@code true} if any of the file-system locations from the system clipboard matches {@code matcher}.
+	 */
+
+	public static boolean locationMatches(
+		Predicate<Path>	matcher)
+	{
+		return locationMatches(Clipboard.getSystemClipboard(), matcher);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns {@code true} if any of the file-system locations from the specified clipboard matches the specified
 	 * function.
 	 *
 	 * @param  clipboard
 	 *           the clipboard whose file-system locations will be tested against {@code matcher}.
 	 * @param  matcher
-	 *           the function that will be applied to the file-system locations from {@code clipboard}.
+	 *           the function that will be applied to the file-system locations from {@code clipboard}.  If it is {@code
+	 *           null}, all locations will match.
 	 * @return {@code true} if any of the file-system locations from {@code clipboard} matches {@code matcher}.
 	 */
 
@@ -175,8 +209,30 @@ public class ClipboardUtils
 		Clipboard		clipboard,
 		Predicate<Path>	matcher)
 	{
+		// Replace null matcher with 'match all'
+		if (matcher == null)
+			matcher = MATCH_ALL;
+
+		// Test for match against locations from clipboard
 		List<File> files = clipboard.getFiles();
 		return (files == null) ? false : files.stream().map(File::toPath).anyMatch(matcher);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a list of the file-system locations from the system clipboard that match the specified function.
+	 *
+	 * @param  matcher
+	 *           the function that will be applied to the file-system locations from the system clipboard.  If it is
+	 *           {@code null}, all locations will match.
+	 * @return a list of the file-system locations from the system clipboard that match {@code matcher}.
+	 */
+
+	public static List<Path> matchingLocations(
+		Predicate<Path>	matcher)
+	{
+		return matchingLocations(Clipboard.getSystemClipboard(), matcher);
 	}
 
 	//------------------------------------------------------------------
@@ -198,12 +254,30 @@ public class ClipboardUtils
 	{
 		// Replace null matcher with 'match all'
 		if (matcher == null)
-			matcher = location -> true;
+			matcher = MATCH_ALL;
 
 		// Create and return list of matching locations from clipboard
 		List<File> files = clipboard.getFiles();
 		return (files == null) ? Collections.emptyList()
 							   : files.stream().map(File::toPath).filter(matcher).toList();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the first file-system location from the system clipboard that matches the specified function.
+	 *
+	 * @param  matcher
+	 *           the function that will be applied to the file-system locations from the system clipboard.  If it is
+	 *           {@code null}, all locations will match.
+	 * @return the first file-system location from the system clipboard that matches {@code matcher}, or {@code null} if
+	 *         there was no such location.
+	 */
+
+	public static Path firstMatchingLocation(
+		Predicate<Path>	matcher)
+	{
+		return firstMatchingLocation(Clipboard.getSystemClipboard(), matcher);
 	}
 
 	//------------------------------------------------------------------
@@ -226,7 +300,7 @@ public class ClipboardUtils
 	{
 		// Replace null matcher with 'match all'
 		if (matcher == null)
-			matcher = location -> true;
+			matcher = MATCH_ALL;
 
 		// Return first matching location from clipboard
 		List<File> files = clipboard.getFiles();
@@ -345,7 +419,7 @@ public class ClipboardUtils
 	public static boolean putLocations(
 		Path...	locations)
 	{
-		return putLocations(Arrays.asList(locations));
+		return putLocations(List.of(locations));
 	}
 
 	//------------------------------------------------------------------
@@ -384,7 +458,7 @@ public class ClipboardUtils
 		Path...	locations)
 		throws BaseException
 	{
-		putLocationsThrow(Arrays.asList(locations));
+		putLocationsThrow(List.of(locations));
 	}
 
 	//------------------------------------------------------------------
@@ -441,7 +515,7 @@ public class ClipboardUtils
 	public static boolean putLocationsAndText(
 		Path...	locations)
 	{
-		return putLocationsAndText(Arrays.asList(locations));
+		return putLocationsAndText(List.of(locations));
 	}
 
 	//------------------------------------------------------------------
@@ -480,7 +554,7 @@ public class ClipboardUtils
 		Path...	locations)
 		throws BaseException
 	{
-		putLocationsAndTextThrow(Arrays.asList(locations));
+		putLocationsAndTextThrow(List.of(locations));
 	}
 
 	//------------------------------------------------------------------

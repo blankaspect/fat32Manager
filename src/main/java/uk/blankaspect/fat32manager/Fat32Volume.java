@@ -314,6 +314,7 @@ public class Fat32Volume
 	private	int				rootDirNumClusters;
 	private	Fat32Fat		fat;
 	private	Fat32Directory	rootDir;
+	private	boolean			fixDirEntryDatesTimes;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -367,7 +368,8 @@ public class Fat32Volume
 	public static boolean isValidVolumeLabelChar(
 		char	ch)
 	{
-		return (ch >= MIN_VOLUME_LABEL_CHAR) && (ch <= MAX_VOLUME_LABEL_CHAR) && (INVALID_VOLUME_LABEL_CHARS.indexOf(ch) < 0);
+		return (ch >= MIN_VOLUME_LABEL_CHAR) && (ch <= MAX_VOLUME_LABEL_CHAR)
+				&& (INVALID_VOLUME_LABEL_CHARS.indexOf(ch) < 0);
 	}
 
 	//------------------------------------------------------------------
@@ -426,7 +428,10 @@ public class Fat32Volume
 
 			// Check that bytes per sector is power of two
 			if (Integer.bitCount(bytesPerSector) != 1)
-				throw new VolumeException(getErrorMessage(ErrorMsg.INVALID_BYTES_PER_SECTOR, volumeName), bytesPerSector);
+			{
+				throw new VolumeException(getErrorMessage(ErrorMsg.INVALID_BYTES_PER_SECTOR, volumeName),
+										  bytesPerSector);
+			}
 
 			// Decode sectors per cluster
 			int sectorsPerCluster = NumberCodec.bytesToUIntLE(paramBlock, BPB_SECTORS_PER_CLUSTER_OFFSET,
@@ -443,7 +448,8 @@ public class Fat32Volume
 			// Decode number of sectors
 			long numSectors = NumberCodec.bytesToULongLE(paramBlock, BPB_NUM_SECTORS_OFFSET, BPB_NUM_SECTORS_LENGTH);
 			if (numSectors == 0)
-				numSectors = NumberCodec.bytesToULongLE(paramBlock, BPB_NUM_SECTORS_EX_OFFSET, BPB_NUM_SECTORS_EX_LENGTH);
+				numSectors = NumberCodec.bytesToULongLE(paramBlock, BPB_NUM_SECTORS_EX_OFFSET,
+														BPB_NUM_SECTORS_EX_LENGTH);
 
 			// Decode number of FATs
 			int numFats = NumberCodec.bytesToUIntLE(paramBlock, BPB_NUM_FATS_OFFSET, BPB_NUM_FATS_LENGTH);
@@ -562,8 +568,9 @@ public class Fat32Volume
 			case POWER_OF_TWO_MULTIPLE:
 			{
 				// Adjust minimum number of reserved sectors to align FATs
-				int minNumReservedSectors0 = alignFats ? NumberUtils.roundUpInt(minNumReservedSectors, sectorsPerCluster)
-													   : minNumReservedSectors;
+				int minNumReservedSectors0 = alignFats
+												? NumberUtils.roundUpInt(minNumReservedSectors, sectorsPerCluster)
+												: minNumReservedSectors;
 
 				// Create a function to calculate the number of FAT entries
 				IFunction1<Integer, Integer> getNumEntries = numHeaderSectors ->
@@ -691,8 +698,9 @@ public class Fat32Volume
 				{
 					// Create boot sectors
 					int offset = 0;
-					createBootSector1(bytesPerSector, startSector, numAvailableSectors, numReservedSectors, sectorsPerCluster,
-									  sectorsPerFat, volumeId, volumeLabel, formatterName, buffer, offset);
+					createBootSector1(bytesPerSector, startSector, numAvailableSectors, numReservedSectors,
+									  sectorsPerCluster, sectorsPerFat, volumeId, volumeLabel, formatterName, buffer,
+									  offset);
 					offset += bytesPerSector;
 					createBootSector2(buffer, offset);
 					offset += bytesPerSector;
@@ -951,7 +959,8 @@ public class Fat32Volume
 		NumberCodec.uIntToBytesLE(numSectors, buffer, offset + BPB_NUM_SECTORS_EX_OFFSET, BPB_NUM_SECTORS_EX_LENGTH);
 
 		// Sectors per FAT
-		NumberCodec.uIntToBytesLE(sectorsPerFat, buffer, offset + EBPB_SECTORS_PER_FAT_OFFSET, EBPB_SECTORS_PER_FAT_LENGTH);
+		NumberCodec.uIntToBytesLE(sectorsPerFat, buffer, offset + EBPB_SECTORS_PER_FAT_OFFSET,
+								  EBPB_SECTORS_PER_FAT_LENGTH);
 
 		// Index of first root-directory cluster
 		NumberCodec.uIntToBytesLE(FORMAT_ROOT_DIR_CLUSTER_INDEX, buffer, offset + EBPB_ROOT_DIR_CLUSTER_INDEX_OFFSET,
@@ -1002,10 +1011,12 @@ public class Fat32Volume
 		Utils.stringToBytes(FS_INFO_SIGNATURE2, buffer, offset + FS_INFO_SIGNATURE2_OFFSET, FS_INFO_SIGNATURE2_LENGTH);
 
 		// Number of free clusters
-		NumberCodec.intToBytesLE(-1, buffer, offset + FS_INFO_NUM_FREE_CLUSTERS_OFFSET, FS_INFO_NUM_FREE_CLUSTERS_LENGTH);
+		NumberCodec.intToBytesLE(-1, buffer, offset + FS_INFO_NUM_FREE_CLUSTERS_OFFSET,
+								 FS_INFO_NUM_FREE_CLUSTERS_LENGTH);
 
 		// Last allocated cluster
-		NumberCodec.intToBytesLE(-1, buffer, offset + FS_INFO_LAST_ALLOC_CLUSTER_OFFSET, FS_INFO_LAST_ALLOC_CLUSTER_LENGTH);
+		NumberCodec.intToBytesLE(-1, buffer, offset + FS_INFO_LAST_ALLOC_CLUSTER_OFFSET,
+								 FS_INFO_LAST_ALLOC_CLUSTER_LENGTH);
 
 		// Boot-sector signature
 		NumberCodec.uIntToBytesLE(BOOT_SECTOR_SIGNATURE, buffer, offset + BOOT_SECTOR_SIGNATURE_OFFSET,
@@ -1048,7 +1059,7 @@ public class Fat32Volume
 		Fat32Directory.setAttributes(EnumSet.of(Fat32Directory.Attr.VOLUME_LABEL), buffer, offset);
 
 		// Modification time
-		Fat32Directory.setModificationTime(LocalDateTime.now(), buffer, offset);
+		Fat32Directory.setLastModificationTime(LocalDateTime.now(), buffer, offset);
 	}
 
 	//------------------------------------------------------------------
@@ -1224,6 +1235,21 @@ public class Fat32Volume
 	public Fat32Directory getRootDir()
 	{
 		return rootDir;
+	}
+
+	//------------------------------------------------------------------
+
+	public boolean isFixDirEntryDatesTimes()
+	{
+		return fixDirEntryDatesTimes;
+	}
+
+	//------------------------------------------------------------------
+
+	public void setFixDirEntryDatesTimes(
+		boolean	fixDirEntryDatesTimes)
+	{
+		this.fixDirEntryDatesTimes = fixDirEntryDatesTimes;
 	}
 
 	//------------------------------------------------------------------
@@ -1557,7 +1583,7 @@ public class Fat32Volume
 				String pathname = entry.getPathname();
 
 				// Update message with pathname of file or directory
-				taskStatus.setMessage(VALIDATING_STR + ITaskStatus.SPACE_MESSAGE_SEPARATOR + pathname);
+				taskStatus.setSpacedMessage(VALIDATING_STR, pathname);
 
 				// Get index of first cluster of file or directory
 				int index = entry.getClusterIndex();
@@ -1779,7 +1805,8 @@ public class Fat32Volume
 		IProcedure1<Integer> updateProgress = deltaSectors ->
 		{
 			numRWSectors[0] += deltaSectors;
-			taskStatus.setProgress(startProgress + ((double)numRWSectors[0] / (double)totalNumRWSectors) * deltaProgress);
+			taskStatus.setProgress(startProgress + ((double)numRWSectors[0] / (double)totalNumRWSectors)
+					* deltaProgress);
 		};
 
 		// Update task message and progress

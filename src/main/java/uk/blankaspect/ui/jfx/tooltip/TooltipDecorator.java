@@ -83,24 +83,24 @@ public class TooltipDecorator
 			FxProperty.TEXT_FILL,
 			ColourKey.TOOLTIP_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
-						.build()
+					.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.TOOLTIP_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
-						.build()
+					.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.TOOLTIP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
-						.build()
+					.cls(StyleClass.TOOLTIP_DECORATOR_TOOLTIP)
+					.build()
 		)
 	);
 
@@ -248,12 +248,12 @@ public class TooltipDecorator
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

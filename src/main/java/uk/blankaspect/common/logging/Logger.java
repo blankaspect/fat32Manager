@@ -39,12 +39,16 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import uk.blankaspect.common.exception.UnexpectedRuntimeException;
-
 import uk.blankaspect.common.exception2.ExceptionUtils;
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
+
+import uk.blankaspect.common.filesystem.PathUtils;
+
+import uk.blankaspect.common.stack.StackUtils;
+
+import uk.blankaspect.common.string.StringUtils;
 
 //----------------------------------------------------------------------
 
@@ -119,9 +123,6 @@ public class Logger
 	/** The single instance of {@code Logger}. */
 	public static final		Logger	INSTANCE	= new Logger();
 
-	/** The default logging threshold. */
-	private static final	LogLevel	DEFAULT_THRESHOLD	= LogLevel.INFO;
-
 	/** The pattern with which a timestamp field is formatted. */
 	private static final	DateTimeFormatter	TIMESTAMP_FORMATTER	=
 			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
@@ -191,7 +192,7 @@ public class Logger
 	private Logger()
 	{
 		// Initialise instance variables
-		threshold = DEFAULT_THRESHOLD;
+		threshold = LogLevel.INFO;
 		params = new Params(null, null, EnumSet.noneOf(Field.class), true);
 		stack = new ArrayDeque<>();
 	}
@@ -590,7 +591,7 @@ public class Logger
 				// Write remaining lines to file
 				try
 				{
-					Files.writeString(location, lines.stream().collect(Collectors.joining("\n", "", "\n")));
+					Files.writeString(location, StringUtils.join('\n', true, lines));
 				}
 				catch (IOException e)
 				{
@@ -628,7 +629,7 @@ public class Logger
 	 * Closes an open log file.  If no log file is open, this method has no effect.
 	 *
 	 * @throws LoggerException
-	 *           if an error occurred when closing the log file.
+	 *           if an error occurs when closing the log file.
 	 */
 
 	public void close()
@@ -663,7 +664,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void trace(
@@ -681,7 +682,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void trace(
@@ -701,7 +702,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void trace(
@@ -720,7 +721,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void debug(
@@ -738,7 +739,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void debug(
@@ -758,7 +759,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void debug(
@@ -777,7 +778,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void info(
@@ -795,7 +796,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void info(
@@ -815,7 +816,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void info(
@@ -834,7 +835,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void warning(
@@ -852,7 +853,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void warning(
@@ -872,7 +873,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 	public void warning(
 		CharSequence	text,
@@ -890,7 +891,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void error(
@@ -908,7 +909,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void error(
@@ -928,7 +929,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void error(
@@ -949,7 +950,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void log(
@@ -970,7 +971,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void log(
@@ -993,7 +994,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void log(
@@ -1012,7 +1013,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void write(
@@ -1039,7 +1040,7 @@ public class Logger
 	 * @param  text
 	 *           the text of the message that will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void writeLine(
@@ -1055,7 +1056,7 @@ public class Logger
 	 * Writes a line feed (U+000A) to the log and flushes the output stream.
 	 *
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	public void writeEol()
@@ -1107,7 +1108,7 @@ public class Logger
 	 * @param  exception
 	 *           the exception for which a stack trace will be written to the log.
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	private void write(
@@ -1146,10 +1147,10 @@ public class Logger
 
 						case SOURCE_LOCATION:
 						{
-							StackTraceElement ste = Thread.currentThread().getStackTrace()[3];
+							StackWalker.StackFrame sf = StackUtils.stackFrame(2);
 							buffer.append('(');
-							buffer.append(ste.getFileName());
-							int lineNumber = ste.getLineNumber();
+							buffer.append(sf.getFileName());
+							int lineNumber = sf.getLineNumber();
 							if (lineNumber >= 0)
 							{
 								buffer.append(':');
@@ -1195,7 +1196,7 @@ public class Logger
 	 * Flushes the buffered output stream.
 	 *
 	 * @throws LoggerException
-	 *           if an error occurred when writing to the log file.
+	 *           if an error occurs when writing to the log file.
 	 */
 
 	private void flush()
@@ -1301,9 +1302,9 @@ public class Logger
 			String	key)
 		{
 			return Stream.of(values())
-							.filter(value -> value.getKey().equals(key))
-							.findFirst()
-							.orElse(null);
+					.filter(value -> value.getKey().equals(key))
+					.findFirst()
+					.orElse(null);
 		}
 
 		//--------------------------------------------------------------
@@ -1519,7 +1520,7 @@ public class Logger
 		 * @param message
 		 *          the detail message of the exception.
 		 * @param replacements
-		 *          the objects whose string representations will replace placeholders in {@code message}.
+		 *          the items whose string representations will replace placeholders in {@code message}.
 		 */
 
 		private LoggerException(
@@ -1549,7 +1550,7 @@ public class Logger
 			Path		file)
 		{
 			// Call superclass constructor
-			super(((file == null) ? "" : LOCATION_STR + file.toAbsolutePath() + "\n")
+			super(((file == null) ? "" : LOCATION_STR + PathUtils.abs(file) + "\n")
 						+ message + ExceptionUtils.getCompositeCauseString(cause, "- "));
 
 			// Initialise instance variables

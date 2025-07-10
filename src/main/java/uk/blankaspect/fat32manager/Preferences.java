@@ -15,14 +15,6 @@ package uk.blankaspect.fat32manager;
 //----------------------------------------------------------------------
 
 
-// IMPORTS
-
-
-import uk.blankaspect.ui.jfx.style.StyleManager;
-
-//----------------------------------------------------------------------
-
-
 // CLASS: USER PREFERENCES
 
 
@@ -33,9 +25,9 @@ public class Preferences
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
-	private	String	themeId;
 	private	int		columnHeaderPopUpDelay;
 	private	boolean	showSpecialDirectories;
+	private	boolean	fixDirEntryDatesTimes;
 	private	int		formatMinNumSectors;
 	private	boolean	formatRemovableMediaOnly;
 
@@ -46,7 +38,6 @@ public class Preferences
 	public Preferences()
 	{
 		// Initialise instance variables
-		themeId = StyleManager.DEFAULT_THEME_ID;
 		columnHeaderPopUpDelay = DirectoryTableView.DEFAULT_HEADER_CELL_POP_UP_DELAY;
 		formatMinNumSectors = FormatParams.DEFAULT_MIN_NUM_SECTORS;
 	}
@@ -54,16 +45,16 @@ public class Preferences
 	//------------------------------------------------------------------
 
 	public Preferences(
-		String	themeId,
 		int		columnHeaderPopUpDelay,
 		boolean	showSpecialDirectories,
+		boolean	fixDirEntryDatesTimes,
 		int		formatMinNumSectors,
 		boolean	formatRemovableMediaOnly)
 	{
 		// Initialise instance variables
-		this.themeId = themeId;
 		this.columnHeaderPopUpDelay = columnHeaderPopUpDelay;
 		this.showSpecialDirectories = showSpecialDirectories;
+		this.fixDirEntryDatesTimes = fixDirEntryDatesTimes;
 		this.formatMinNumSectors = formatMinNumSectors;
 		this.formatRemovableMediaOnly = formatRemovableMediaOnly;
 	}
@@ -73,21 +64,6 @@ public class Preferences
 ////////////////////////////////////////////////////////////////////////
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
-
-	public String getThemeId()
-	{
-		return themeId;
-	}
-
-	//------------------------------------------------------------------
-
-	public void setThemeId(
-		String	id)
-	{
-		themeId = id;
-	}
-
-	//------------------------------------------------------------------
 
 	public int getColumnHeaderPopUpDelay()
 	{
@@ -115,6 +91,21 @@ public class Preferences
 		boolean	showSpecialDirectories)
 	{
 		this.showSpecialDirectories = showSpecialDirectories;
+	}
+
+	//------------------------------------------------------------------
+
+	public boolean isFixDirEntryDatesTimes()
+	{
+		return fixDirEntryDatesTimes;
+	}
+
+	//------------------------------------------------------------------
+
+	public void setFixDirEntryDatesTimes(
+		boolean	fixDirEntryDatesTimes)
+	{
+		this.fixDirEntryDatesTimes = fixDirEntryDatesTimes;
 	}
 
 	//------------------------------------------------------------------

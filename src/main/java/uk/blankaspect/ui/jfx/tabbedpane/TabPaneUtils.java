@@ -73,13 +73,15 @@ public class TabPaneUtils
 	 * @param tabPane
 	 *          the tabbed pane on whose header area the padding will be set.
 	 * @param padding
-	 *          the padding that will be set on the header area of <i>tabPane</i>.
+	 *          the padding that will be set on the header area of {@code tabPane}.
 	 */
 
-	public static void setHeaderAreaPadding(TabPane tabPane,
-											Insets  padding)
+	public static void setHeaderAreaPadding(
+		TabPane	tabPane,
+		Insets	padding)
 	{
-		((Region)tabPane.lookup(StyleSelector.TAB_HEADER_AREA)).setPadding(padding);
+		if (tabPane.lookup(StyleSelector.TAB_HEADER_AREA) instanceof Region headerArea)
+			headerArea.setPadding(padding);
 	}
 
 	//------------------------------------------------------------------
@@ -96,11 +98,14 @@ public class TabPaneUtils
 	 *          the tabbed pane whose header area will have its top padding removed.
 	 */
 
-	public static void removeHeaderAreaTopPadding(TabPane tabPane)
+	public static void removeHeaderAreaTopPadding(
+		TabPane	tabPane)
 	{
-		Region headerArea = (Region)tabPane.lookup(StyleSelector.TAB_HEADER_AREA);
-		Insets padding = headerArea.getPadding();
-		headerArea.setPadding(new Insets(0.0, padding.getRight(), padding.getBottom(), padding.getLeft()));
+		if (tabPane.lookup(StyleSelector.TAB_HEADER_AREA) instanceof Region headerArea)
+		{
+			Insets padding = headerArea.getPadding();
+			headerArea.setPadding(new Insets(0.0, padding.getRight(), padding.getBottom(), padding.getLeft()));
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -116,14 +121,15 @@ public class TabPaneUtils
 	 * @param tabPane
 	 *          the tabbed pane whose header area will have its background colour set.
 	 * @param colour
-	 *          the colour to which the background of the header area of <i>tabPane</i> will be set.
+	 *          the colour to which the background of the header area of {@code tabPane} will be set.
 	 */
 
-	public static void setHeaderBackground(TabPane tabPane,
-										   Color   colour)
+	public static void setHeaderBackground(
+		TabPane	tabPane,
+		Color	colour)
 	{
-		((Region)tabPane.lookup(StyleSelector.TAB_HEADER_BACKGROUND))
-															.setBackground(SceneUtils.createColouredBackground(colour));
+		if (tabPane.lookup(StyleSelector.TAB_HEADER_BACKGROUND) instanceof Region headerBackground)
+			headerBackground.setBackground(SceneUtils.createColouredBackground(colour));
 	}
 
 	//------------------------------------------------------------------
@@ -142,11 +148,12 @@ public class TabPaneUtils
 	 *          the colour to which the bottom border of the header area of {@code tabPane} will be set.
 	 */
 
-	public static void setHeaderBottomBorder(TabPane tabPane,
-											 Color   colour)
+	public static void setHeaderBottomBorder(
+		TabPane	tabPane,
+		Color	colour)
 	{
-		((Region)tabPane.lookup(StyleSelector.TAB_HEADER_BACKGROUND))
-														.setBorder(SceneUtils.createSolidBorder(colour, Side.BOTTOM));
+		if (tabPane.lookup(StyleSelector.TAB_HEADER_BACKGROUND) instanceof Region headerBackground)
+			headerBackground.setBorder(SceneUtils.createSolidBorder(colour, Side.BOTTOM));
 	}
 
 	//------------------------------------------------------------------

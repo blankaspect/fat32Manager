@@ -18,8 +18,6 @@ package uk.blankaspect.ui.jfx.locationchooser;
 // IMPORTS
 
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 
 import java.lang.invoke.MethodHandles;
@@ -91,7 +89,6 @@ import javafx.scene.Parent;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
@@ -110,7 +107,6 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 import javafx.scene.input.ContextMenuEvent;
@@ -132,13 +128,10 @@ import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
 
-import javafx.scene.shape.Polygon;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
-
-import javafx.util.StringConverter;
 
 import uk.blankaspect.common.collection.CollectionUtils;
 
@@ -149,6 +142,7 @@ import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.FileException;
 
 import uk.blankaspect.common.filesystem.DirectoryUtils;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.function.IFunction0;
 import uk.blankaspect.common.function.IFunction1;
@@ -156,16 +150,22 @@ import uk.blankaspect.common.function.IFunction2;
 import uk.blankaspect.common.function.IProcedure0;
 import uk.blankaspect.common.function.IProcedure1;
 
+import uk.blankaspect.common.geometry.VHDirection;
 import uk.blankaspect.common.geometry.VHPos;
 
 import uk.blankaspect.common.logging.Logger;
+
+import uk.blankaspect.common.misc.SystemUtils;
+
+import uk.blankaspect.common.os.OsUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
 import uk.blankaspect.common.text.Tabulator;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
 import uk.blankaspect.ui.jfx.button.GraphicButton;
-import uk.blankaspect.ui.jfx.button.ImageButton;
+import uk.blankaspect.ui.jfx.button.ImageDataButton;
 
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
 
@@ -183,10 +183,11 @@ import uk.blankaspect.ui.jfx.filler.FillerUtils;
 import uk.blankaspect.ui.jfx.filter.SubstringFilterPane;
 import uk.blankaspect.ui.jfx.filter.SuggestionFilterPane;
 
-import uk.blankaspect.ui.jfx.font.FontUtils;
-
+import uk.blankaspect.ui.jfx.image.ImageData;
 import uk.blankaspect.ui.jfx.image.ImageUtils;
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.listview.FilteredListView;
 import uk.blankaspect.ui.jfx.listview.ListViewStyle;
@@ -197,10 +198,17 @@ import uk.blankaspect.ui.jfx.observer.ChangeNotifier;
 
 import uk.blankaspect.ui.jfx.popup.CellPopUpManager;
 import uk.blankaspect.ui.jfx.popup.LabelPopUpManager;
+import uk.blankaspect.ui.jfx.popup.PopUpEvent;
+import uk.blankaspect.ui.jfx.popup.PopUpManager;
 import uk.blankaspect.ui.jfx.popup.PopUpUtils;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
+import uk.blankaspect.ui.jfx.shape.Shapes;
+
+import uk.blankaspect.ui.jfx.spinner.CollectionSpinner;
+
+import uk.blankaspect.ui.jfx.style.AbstractTheme;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.FxPseudoClass;
@@ -278,7 +286,7 @@ public class LocationChooserPane
 	private static final	String	DEFAULT_ROOT_DIR_DISPLAY_NAME	= "\u00ABROOT\u00BB";
 
 	/** The default initial directory. */
-	private static final	Path	DEFAULT_INITIAL_DIRECTORY	= Path.of(System.getProperty("user.dir", "."));
+	private static final	Path	DEFAULT_INITIAL_DIRECTORY	= SystemUtils.workingDirectory();
 
 	/** The initial part of the pathname of the root directory of a removable medium under Linux. */
 	private static final	String	LINUX_MEDIA_PATHNAME_PREFIX	= "/media/%s/";
@@ -331,7 +339,8 @@ public class LocationChooserPane
 	private static final	String	READING_DIRECTORY_STR			= "Reading directory";
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
+	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -341,144 +350,154 @@ public class LocationChooserPane
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.NON_EDITABLE_FIELD_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.NON_EDITABLE_FIELD)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.NON_EDITABLE_FIELD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.NON_EDITABLE_FIELD_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.NON_EDITABLE_FIELD)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.NON_EDITABLE_FIELD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.DIRECTORY_BAR)
-						.desc(StyleClass.DIRECTORY_BAR_TEXT)
-						.build()
+					.cls(StyleClass.DIRECTORY_BAR)
+					.desc(StyleClass.DIRECTORY_BAR_TEXT)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.DIRECTORY_BAR_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.DIRECTORY_BAR)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.DIRECTORY_BAR_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.DIRECTORY_BAR)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.DIRECTORY_BAR)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.DIRECTORY_BAR)
-						.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVER)
-						.desc(GraphicButton.StyleClass.INNER_VIEW)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(GraphicButton.StyleClass.GRAPHIC_BUTTON).pseudo(FxPseudoClass.HOVERED)
+					.desc(GraphicButton.StyleClass.INNER_VIEW)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DIRECTORY_BAR_ARROWHEAD,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.DIRECTORY_BAR)
-						.desc(StyleClass.ARROWHEAD)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.DIRECTORY_BAR)
+					.desc(StyleClass.ARROWHEAD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.FOCUS_INDICATOR_PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.FOCUS_INDICATOR_PANE)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.FOCUS_INDICATOR_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			Color.TRANSPARENT,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.FOCUS_INDICATOR)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.FOCUS_INDICATOR)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.FOCUS_INDICATOR,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(StyleClass.FOCUS_INDICATOR).pseudo(PseudoClassKey.HIGHLIGHTED)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(StyleClass.FOCUS_INDICATOR).pseudo(PseudoClassKey.HIGHLIGHTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.TABLE_VIEW_HEADER_CELL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.COLUMN_HEADER)
-						.build(),
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(FxStyleClass.COLUMN_HEADER)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.FILLER)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(FxStyleClass.FILLER)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.TABLE_VIEW_HEADER_CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.COLUMN_HEADER)
-						.build(),
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(FxStyleClass.COLUMN_HEADER)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-						.desc(FxStyleClass.FILLER)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(FxStyleClass.FILLER)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			TableViewStyle.ColourKey.CELL_BACKGROUND_EMPTY,
+			CssSelector.builder()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(StyleClass.PLACEHOLDER_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.TABLE_VIEW_PLACEHOLDER_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_PANE)
-						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-						.desc(StyleClass.PLACEHOLDER_LABEL)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_PANE)
+					.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+					.desc(StyleClass.PLACEHOLDER_LABEL)
+					.build()
 		)
 	);
 
@@ -486,32 +505,32 @@ public class LocationChooserPane
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LOCATION_CHOOSER_PANE)
-									.desc(StyleClass.FOCUS_INDICATOR_PANE)
-									.build())
-						.borders(Side.TOP)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LOCATION_CHOOSER_PANE)
+						.desc(StyleClass.FOCUS_INDICATOR_PANE)
+						.build())
+				.borders(Side.TOP)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LOCATION_CHOOSER_PANE)
-									.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-									.desc(FxStyleClass.COLUMN_HEADER)
-									.build())
-						.borders(Side.RIGHT, Side.BOTTOM)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LOCATION_CHOOSER_PANE)
+						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+						.desc(FxStyleClass.COLUMN_HEADER)
+						.build())
+				.borders(Side.RIGHT, Side.BOTTOM)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LOCATION_CHOOSER_PANE)
-									.desc(TableViewStyle.StyleClass.TABLE_VIEW)
-									.desc(FxStyleClass.FILLER)
-									.build())
-						.borders(Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LOCATION_CHOOSER_PANE)
+						.desc(TableViewStyle.StyleClass.TABLE_VIEW)
+						.desc(FxStyleClass.FILLER)
+						.build())
+				.borders(Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	LOCATION_CHOOSER_PANE	= StyleConstants.CLASS_PREFIX + "location-chooser-pane";
 
@@ -550,36 +569,44 @@ public class LocationChooserPane
 		String	TABLE_VIEW_PLACEHOLDER_TEXT				= PREFIX + "tableView.placeholder.text";
 	}
 
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
+	{
+		String	USER_HOME_DIR	= "user.home";
+	}
+
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_CREATE_DIRECTORY			= "Failed to create the directory.";
-		String	FAILED_TO_DETERMINE_HIDDEN_STATUS	= "Failed to determine the 'hidden' status of the following directories:";
+		String	FAILED_TO_CREATE_DIRECTORY =
+				"Failed to create the directory.";
+
+		String	FAILED_TO_DETERMINE_HIDDEN_STATUS =
+				"Failed to determine the 'hidden' status of the following directories:";
 	}
 
-	/** Images. */
-	private interface Images
+	/** Image identifiers. */
+	private interface ImageId
 	{
-		Image	DIRECTORY		= img(ImageData.DIRECTORY);
-		Image	FILE			= img(ImageData.FILE);
-		Image	UP_ARROW		= img(ImageData.UP_ARROW);
-		Image	DOWN_ARROW		= img(ImageData.DOWN_ARROW);
-		Image	LEFT_ARROW		= img(ImageData.LEFT_ARROW);
-		Image	RIGHT_ARROW		= img(ImageData.RIGHT_ARROW);
-		Image	HOME			= img(ImageData.HOME);
-		Image	NEW_DIRECTORY	= img(ImageData.NEW_DIRECTORY);
-		Image	REFRESH			= img(ImageData.REFRESH);
-		Image	BUTTON_BAR		= img(ImageData.BUTTON_BAR);
-		Image	PENCIL			= img(ImageData.PENCIL);
-		Image	EXPAND			= img(ImageData.EXPAND);
-		Image	COLLAPSE		= img(ImageData.COLLAPSE);
-		Image	SELECT			= img(ImageData.SELECT);
-		Image	COPY			= img(ImageData.COPY);
-		Image	COPY_LINES		= img(ImageData.COPY_LINES);
-	}
+		String	PREFIX = MethodHandles.lookup().lookupClass().getEnclosingClass().getName() + ".";
 
-	/** A list of images that should not be inverted. */
-	private static final	List<Image>	NON_INVERTIBLE_IMAGES	= List.of(Images.DIRECTORY);
+		String	DIRECTORY		= PREFIX + "directory";
+		String	FILE			= PREFIX + "file";
+		String	ARROW_UP		= PREFIX + "arrowUp";
+		String	ARROW_DOWN		= PREFIX + "arrowDown";
+		String	ARROW_LEFT		= PREFIX + "arrowLeft";
+		String	ARROW_RIGHT		= PREFIX + "arrowRight";
+		String	HOME			= PREFIX + "home";
+		String	NEW_DIRECTORY	= PREFIX + "newDirectory";
+		String	REFRESH			= PREFIX + "refresh";
+		String	BUTTON_BAR		= PREFIX + "buttonBar";
+		String	PENCIL			= PREFIX + "pencil";
+		String	EXPAND			= PREFIX + "expand";
+		String	COLLAPSE		= PREFIX + "collapse";
+		String	SELECT			= PREFIX + "select";
+		String	COPY			= PREFIX + "copy";
+		String	COPY_LINES		= PREFIX + "copyLines";
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Class variables
@@ -595,17 +622,17 @@ public class LocationChooserPane
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
-	private	ObservableList<Path>		selectedLocations;
-	private	DirectoryTreeView			treeView;
-	private	DirectoryTableView			tableView;
-	private	SplitPane2					splitPane;
-	private	Double						splitPaneDividerPosition;
-	private	StackPane					bottomLeftPane;
-	private	TextField					nameField;
-	private	SuggestionFilterPane<Path>	nameFilterPane;
-	private	ChoiceBox<LocationMatcher>	filterChoiceBox;
-	private	GridPane					namePane;
-	private	StackPane					bottomRightPane;
+	private	ObservableList<Path>				selectedLocations;
+	private	DirectoryTreeView					treeView;
+	private	DirectoryTableView					tableView;
+	private	SplitPane2							splitPane;
+	private	Double								splitPaneDividerPosition;
+	private	StackPane							bottomLeftPane;
+	private	TextField							nameField;
+	private	SuggestionFilterPane<Path>			nameFilterPane;
+	private	CollectionSpinner<LocationMatcher>	filterSpinner;
+	private	GridPane							namePane;
+	private	StackPane							bottomRightPane;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -616,6 +643,24 @@ public class LocationChooserPane
 		// Register the style properties of this class and its dependencies with the style manager
 		StyleManager.INSTANCE.register(LocationChooserPane.class, COLOUR_PROPERTIES, RULE_SETS,
 									   ListViewStyle.class, TableViewStyle.class, TreeViewStyle.class);
+
+		// Create images from image data
+		ImageData.add(ImageId.DIRECTORY,                                   ImgData.DIRECTORY);
+		ImageData.add(ImageId.FILE,          AbstractTheme.MONO_IMAGE_KEY, ImgData.FILE);
+		ImageData.add(ImageId.ARROW_UP,      AbstractTheme.MONO_IMAGE_KEY, ImgData.ARROW_UP);
+		ImageData.add(ImageId.ARROW_DOWN,    AbstractTheme.MONO_IMAGE_KEY, ImgData.ARROW_DOWN);
+		ImageData.add(ImageId.ARROW_LEFT,    AbstractTheme.MONO_IMAGE_KEY, ImgData.ARROW_LEFT);
+		ImageData.add(ImageId.ARROW_RIGHT,   AbstractTheme.MONO_IMAGE_KEY, ImgData.ARROW_RIGHT);
+		ImageData.add(ImageId.HOME,          AbstractTheme.MONO_IMAGE_KEY, ImgData.HOME);
+		ImageData.add(ImageId.NEW_DIRECTORY, AbstractTheme.MONO_IMAGE_KEY, ImgData.NEW_DIRECTORY);
+		ImageData.add(ImageId.REFRESH,       AbstractTheme.MONO_IMAGE_KEY, ImgData.REFRESH);
+		ImageData.add(ImageId.BUTTON_BAR,    AbstractTheme.MONO_IMAGE_KEY, ImgData.BUTTON_BAR);
+		ImageData.add(ImageId.PENCIL,        AbstractTheme.MONO_IMAGE_KEY, ImgData.PENCIL);
+		ImageData.add(ImageId.EXPAND,        AbstractTheme.MONO_IMAGE_KEY, ImgData.EXPAND);
+		ImageData.add(ImageId.COLLAPSE,      AbstractTheme.MONO_IMAGE_KEY, ImgData.COLLAPSE);
+		ImageData.add(ImageId.SELECT,        AbstractTheme.MONO_IMAGE_KEY, ImgData.SELECT);
+		ImageData.add(ImageId.COPY,          AbstractTheme.MONO_IMAGE_KEY, ImgData.COPY);
+		ImageData.add(ImageId.COPY_LINES,    AbstractTheme.MONO_IMAGE_KEY, ImgData.COPY_LINES);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -627,14 +672,12 @@ public class LocationChooserPane
 		SelectionMode	selectionMode,
 		Path			initialDirectory,
 		String			initialFilename,
-		Window			window,
 		boolean			ignoreFilenameCase,
 		boolean			showHiddenEntries,
 		boolean			addAccelerators)
 	{
 		// Call alternative constructor
-		this(scope, selectionMode, initialDirectory, initialFilename, window, ignoreFilenameCase, showHiddenEntries,
-			 addAccelerators, 0, Collections.emptyList());
+		this(scope, selectionMode, ignoreFilenameCase, showHiddenEntries, addAccelerators, 0, Collections.emptyList());
 	}
 
 	//------------------------------------------------------------------
@@ -642,9 +685,6 @@ public class LocationChooserPane
 	public LocationChooserPane(
 		MatcherScope		scope,
 		SelectionMode		selectionMode,
-		Path				initialDirectory,
-		String				initialFilename,
-		Window				window,
 		boolean				ignoreFilenameCase,
 		boolean				showHiddenEntries,
 		boolean				addAccelerators,
@@ -652,8 +692,8 @@ public class LocationChooserPane
 		LocationMatcher...	filters)
 	{
 		// Call alternative constructor
-		this(scope, selectionMode, initialDirectory, initialFilename, window, ignoreFilenameCase, showHiddenEntries,
-			 addAccelerators, filterIndex, Arrays.asList(filters));
+		this(scope, selectionMode, ignoreFilenameCase, showHiddenEntries, addAccelerators, filterIndex,
+			 List.of(filters));
 	}
 
 	//------------------------------------------------------------------
@@ -661,9 +701,6 @@ public class LocationChooserPane
 	public LocationChooserPane(
 		MatcherScope							scope,
 		SelectionMode							selectionMode,
-		Path									initialDirectory,
-		String									initialFilename,
-		Window									window,
 		boolean									ignoreFilenameCase,
 		boolean									showHiddenEntries,
 		boolean									addAccelerators,
@@ -685,23 +722,23 @@ public class LocationChooserPane
 		getStyleClass().add(StyleClass.LOCATION_CHOOSER_PANE);
 
 		// Button: previous directory
-		ImageButton previousButton = new ImageButton(Images.LEFT_ARROW);
+		ImageDataButton previousButton = new ImageDataButton(ImageId.ARROW_LEFT);
 		previousButton.setDisable(true);
 		previousButton.setOnAction(event -> tableView.openPreviousDirectory());
 
 		// Button: next directory
-		ImageButton nextButton = new ImageButton(Images.RIGHT_ARROW);
+		ImageDataButton nextButton = new ImageDataButton(ImageId.ARROW_RIGHT);
 		nextButton.setDisable(true);
 		nextButton.setOnAction(event -> tableView.openNextDirectory());
 
 		// Button: open parent directory
-		ImageButton openParentButton = new ImageButton(Images.UP_ARROW);
+		ImageDataButton openParentButton = new ImageDataButton(ImageId.ARROW_UP);
 		openParentButton.setDisable(true);
 		openParentButton.setOnAction(event -> tableView.openParentDirectory());
 
 		// Button: home
-		String homePathname = System.getProperty("user.home");
-		ImageButton homeButton = new ImageButton(Images.HOME, HOME_DIRECTORY_STR);
+		String homePathname = System.getProperty(SystemPropertyKey.USER_HOME_DIR);
+		ImageDataButton homeButton = new ImageDataButton(ImageId.HOME, HOME_DIRECTORY_STR);
 		homeButton.setDisable(homePathname == null);
 		homeButton.setOnAction(event ->
 		{
@@ -713,7 +750,7 @@ public class LocationChooserPane
 		});
 
 		// Button: new directory
-		ImageButton newDirectoryButton = new ImageButton(Images.NEW_DIRECTORY, NEW_DIRECTORY_STR);
+		ImageDataButton newDirectoryButton = new ImageDataButton(ImageId.NEW_DIRECTORY, NEW_DIRECTORY_STR);
 		newDirectoryButton.setDisable(true);
 		newDirectoryButton.setOnAction(event ->
 		{
@@ -722,11 +759,10 @@ public class LocationChooserPane
 			{
 				try
 				{
-					List<String> names =
-							DirectoryUtils.listDirectories(directory).stream()
-																		.map(dir -> dir.getFileName().toString())
-																		.toList();
-					String name = new NameDialog(SceneUtils.getWindow(this), NEW_DIRECTORY_STR,
+					List<String> names = DirectoryUtils.listDirectories(directory).stream()
+											.map(dir -> dir.getFileName().toString())
+											.toList();
+					String name = new NameDialog(getWindow(), NEW_DIRECTORY_STR,
 												 name0 -> !name0.isBlank() && !names.contains(name0)).showDialog();
 					if (name != null)
 					{
@@ -767,7 +803,7 @@ public class LocationChooserPane
 				}
 				catch (BaseException e)
 				{
-					ErrorDialog.show(SceneUtils.getWindow(this), NEW_DIRECTORY_STR, e);
+					ErrorDialog.show(getWindow(), NEW_DIRECTORY_STR, e);
 				}
 			}
 		});
@@ -785,7 +821,7 @@ public class LocationChooserPane
 		};
 
 		// Button: refresh
-		ImageButton refreshButton = new ImageButton(Images.REFRESH, REFRESH_STR);
+		ImageDataButton refreshButton = new ImageDataButton(ImageId.REFRESH, REFRESH_STR);
 		refreshButton.setOnAction(event -> refreshView.invoke());
 
 		// Create left button pane
@@ -830,7 +866,7 @@ public class LocationChooserPane
 		HBox.setHgrow(navigationPane, Priority.ALWAYS);
 
 		// Button: navigation mode
-		ImageButton navigationModeButton = new ImageButton(Images.PENCIL, SHOW_PATHNAME_FIELD_STR);
+		ImageDataButton navigationModeButton = new ImageDataButton(ImageId.PENCIL, SHOW_PATHNAME_FIELD_STR);
 		navigationModeButton.setOnAction(event ->
 		{
 			if (directoryBar.isVisible())
@@ -839,14 +875,14 @@ public class LocationChooserPane
 				pathnameField.setVisible(true);
 				pathnameField.requestFocus();
 				pathnameField.selectAll();
-				navigationModeButton.setImage(Images.BUTTON_BAR);
+				navigationModeButton.setImage(ImageData.image(ImageId.BUTTON_BAR));
 				navigationModeButton.setTooltipText(SHOW_DIRECTORY_BAR_STR);
 			}
 			else
 			{
 				directoryBar.setVisible(true);
 				pathnameField.setVisible(false);
-				navigationModeButton.setImage(Images.PENCIL);
+				navigationModeButton.setImage(ImageData.image(ImageId.PENCIL));
 				navigationModeButton.setTooltipText(SHOW_PATHNAME_FIELD_STR);
 			}
 		});
@@ -871,16 +907,16 @@ public class LocationChooserPane
 		treeView.focusedProperty().addListener((observable, oldFocused, focused) ->
 		{
 			treeFocusIndicator.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, focused);
-
-			treeFocusIndicator.setBackground(SceneUtils.createColouredBackground(focused
-																					? getColour(ColourKey.FOCUS_INDICATOR)
-																					: Color.TRANSPARENT));
+			treeFocusIndicator.setBackground(
+					SceneUtils.createColouredBackground(focused ? getColour(ColourKey.FOCUS_INDICATOR)
+																: Color.TRANSPARENT));
 		});
 
 		// Create table view
 		String placeholderText = (filters.isEmpty() ? NO_STR : NO_MATCHING_STR)
 									+ ((scope == MatcherScope.DIRECTORIES) ? DIRECTORIES_STR : ENTRIES_STR);
-		tableView = new DirectoryTableView(scope.getUnconditionalMatcher(), selectionMode, placeholderText, ignoreFilenameCase);
+		tableView = new DirectoryTableView(scope.getUnconditionalMatcher(), selectionMode, placeholderText,
+										   ignoreFilenameCase);
 
 		// Create focus indicator for table view
 		Region tableFocusIndicator = new Region();
@@ -890,16 +926,16 @@ public class LocationChooserPane
 		tableView.focusedProperty().addListener((observable, oldFocused, focused) ->
 		{
 			tableFocusIndicator.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, focused);
-
-			tableFocusIndicator.setBackground(SceneUtils.createColouredBackground(focused
-																					? getColour(ColourKey.FOCUS_INDICATOR)
-																					: Color.TRANSPARENT));
+			tableFocusIndicator.setBackground(
+					SceneUtils.createColouredBackground(focused ? getColour(ColourKey.FOCUS_INDICATOR)
+																: Color.TRANSPARENT));
 		});
 
 		// Create focus-indicator pane
 		HBox focusIndicatorPane = new HBox(treeFocusIndicator, FillerUtils.hBoxFiller(0.0), tableFocusIndicator);
 		focusIndicatorPane.setAlignment(Pos.CENTER);
-		focusIndicatorPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.FOCUS_INDICATOR_PANE_BORDER), Side.TOP));
+		focusIndicatorPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.FOCUS_INDICATOR_PANE_BORDER),
+																  Side.TOP));
 		focusIndicatorPane.getStyleClass().add(StyleClass.FOCUS_INDICATOR_PANE);
 
 		// Create temporary container for tree view and table view
@@ -914,33 +950,59 @@ public class LocationChooserPane
 		namePane.setPadding(NAME_PANE_PADDING);
 
 		// Initialise column constraints
-		ColumnConstraints column1 = new ColumnConstraints();
-		column1.setMinWidth(GridPane.USE_PREF_SIZE);
-		column1.setHalignment(HPos.RIGHT);
-		column1.setFillWidth(false);
-		namePane.getColumnConstraints().add(column1);
+		ColumnConstraints column = new ColumnConstraints();
+		column.setMinWidth(Region.USE_PREF_SIZE);
+		column.setHalignment(HPos.RIGHT);
+		column.setFillWidth(false);
+		namePane.getColumnConstraints().add(column);
 
-		ColumnConstraints column2 = new ColumnConstraints();
-		column2.setHalignment(HPos.LEFT);
-		column2.setFillWidth(false);
-		namePane.getColumnConstraints().add(column2);
+		column = new ColumnConstraints();
+		column.setHalignment(HPos.LEFT);
+		column.setFillWidth(false);
+		namePane.getColumnConstraints().add(column);
 
 		// Initialise row index
 		int row = 0;
 
-		// Create filter pane or name field
+		// Create function to match a file-system location
+		Predicate<Path> locationMatcher = location ->
+				(filters.isEmpty() && scope.matches(location)) || filterSpinner.getItem().matches(location);
+
+		// Create name field
+		nameField = new TextField()
+		{
+			@Override
+			public void paste()
+			{
+				// If system clipboard has a matching location, set it on this field ...
+				if (ClipboardUtils.locationMatches(locationMatcher))
+				{
+					// Get first matching location from system clipboard
+					Path location = ClipboardUtils.firstMatchingLocation(locationMatcher);
+
+					// Set absolute location on this field
+					if (location != null)
+						setText(PathUtils.absString(location));
+				}
+
+				// ... otherwise, call superclass method to paste text into this field
+				else
+					super.paste();
+			}
+		};
+		nameField.setPrefColumnCount(NAME_FIELD_NUM_COLUMNS);
+
+		// Create filter pane or initialise name field
 		switch (selectionMode)
 		{
 			case SINGLE:
 			{
 				// Create filter pane
-				nameFilterPane = new SuggestionFilterPane<>(NAME_FILTER_CONVERTER,
+				nameFilterPane = new SuggestionFilterPane<>(NAME_FILTER_CONVERTER, nameField,
 															SubstringFilterPane.FilterMode.WILDCARD_START, false, true);
 				namePane.addRow(row++, new Label(NAME_STR), nameFilterPane);
 
-				// Get name field of filter pane
-				nameField = nameFilterPane.getTextField();
-				nameField.setPrefColumnCount(NAME_FIELD_NUM_COLUMNS);
+				// Set properties of name field
 				TooltipDecorator.addTooltip(nameField, () -> (nameField.getLength() == 0) ? SUGGESTIONS_STR : null);
 
 				// Update selected location when name changes
@@ -971,11 +1033,11 @@ public class LocationChooserPane
 			}
 
 			case MULTIPLE:
-				nameField = new TextField();
+				// Set properties of name field
 				nameField.setEditable(false);
-				nameField.setPrefColumnCount(NAME_FIELD_NUM_COLUMNS);
 				nameField.setPadding(NON_EDITABLE_FIELD_PADDING);
-				nameField.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.NON_EDITABLE_FIELD_BACKGROUND)));
+				nameField.setBackground(SceneUtils.createColouredBackground(
+																getColour(ColourKey.NON_EDITABLE_FIELD_BACKGROUND)));
 				nameField.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.NON_EDITABLE_FIELD_BORDER)));
 				nameField.getStyleClass().add(StyleClass.NON_EDITABLE_FIELD);
 				namePane.addRow(row++, new Label(NAME_STR), nameField);
@@ -986,8 +1048,7 @@ public class LocationChooserPane
 		nameField.setOnDragOver(event ->
 		{
 			// Accept drag if dragboard contains a location that matches the current filter
-			if (ClipboardUtils.locationMatches(event.getDragboard(), location ->
-						(filters.isEmpty() && scope.matches(location)) || filterChoiceBox.getValue().matches(location)))
+			if (ClipboardUtils.locationMatches(event.getDragboard(), locationMatcher))
 				event.acceptTransferModes(TransferMode.COPY);
 
 			// Consume event
@@ -1002,8 +1063,7 @@ public class LocationChooserPane
 				case SINGLE:
 				{
 					// Get first matching location from clipboard
-					Path location = ClipboardUtils.firstMatchingLocation(event.getDragboard(), location0 ->
-							(filters.isEmpty() && scope.matches(location0)) || filterChoiceBox.getValue().matches(location0));
+					Path location = ClipboardUtils.firstMatchingLocation(event.getDragboard(), locationMatcher);
 
 					// Indicate that drag-and-drop is complete
 					event.setDropCompleted(true);
@@ -1017,8 +1077,7 @@ public class LocationChooserPane
 				case MULTIPLE:
 				{
 					// Get matching locations from clipboard
-					List<Path> locations = ClipboardUtils.matchingLocations(event.getDragboard(), location ->
-							(filters.isEmpty() && scope.matches(location)) || filterChoiceBox.getValue().matches(location));
+					List<Path> locations = ClipboardUtils.matchingLocations(event.getDragboard(), locationMatcher);
 
 					// Indicate that drag-and-drop is complete
 					event.setDropCompleted(true);
@@ -1049,28 +1108,14 @@ public class LocationChooserPane
 			event.consume();
 		});
 
-
-		// Choice box: filter
+		// Create spinner for filter
 		if (!filters.isEmpty())
 		{
-			filterChoiceBox = new ChoiceBox<>(FXCollections.observableArrayList(filters));
-			filterChoiceBox.setConverter(new StringConverter<>()
-			{
-				@Override
-				public String toString(
-					LocationMatcher	filter)
-				{
-					return (filter == null) ? "" : filter.getDescription();
-				}
-
-				@Override
-				public LocationMatcher fromString(
-					String	string)
-				{
-					return null;
-				}
-			});
-			filterChoiceBox.valueProperty().addListener((observable, oldFilter, filter) ->
+			// Create spinner
+			filterSpinner = CollectionSpinner.leftRightH(HPos.CENTER, true, filters, null, null,
+														 LocationMatcher::getDescription);
+			filterSpinner.setItem(null);
+			filterSpinner.itemProperty().addListener((observable, oldFilter, filter) ->
 			{
 				// Clear name field
 				nameField.clear();
@@ -1082,14 +1127,28 @@ public class LocationChooserPane
 				Path directory = tableView.directory;
 				if (directory != null)
 					tableView.setDirectory(directory, true, false);
+
+				// Fire event to notify listeners that content of tooltip pop-up has changed
+				filterSpinner.fireEvent(new PopUpEvent(PopUpEvent.CONTENT_CHANGED));
 			});
-			filterChoiceBox.getSelectionModel().select(filterIndex);
-			TooltipDecorator.addTooltip(filterChoiceBox, () ->
+			filterSpinner.setItem(filters.stream().skip(filterIndex).findFirst().orElse(null));
+
+			// Add tooltip to spinner
+			LabelPopUpManager popUpManager = TooltipDecorator.addTooltip(filterSpinner, () ->
 			{
-				List<String> suffixes = filterChoiceBox.getValue().getFilenameSuffixes();
-				return suffixes.isEmpty() ? null : suffixes.stream().collect(Collectors.joining(", *", "*", ""));
+				List<String> suffixes = filterSpinner.getItem().getFilenameSuffixes();
+				return suffixes.isEmpty() ? "" : suffixes.stream().collect(Collectors.joining(", *", "*", ""));
 			});
-			namePane.addRow(row++, new Label(FILTER_STR), filterChoiceBox);
+
+			// Keep tooltip active when navigating through filters by making pop-up of empty tooltip transparent
+			popUpManager.setPopUpDecorator(popUp ->
+			{
+				if ((popUp.getContent().iterator().next() instanceof Label label) && label.getText().isEmpty())
+					popUp.getProperties().put(PopUpManager.SUPPRESS_POP_UP_PROPERTY_KEY, "");
+			});
+
+			// Add spinner to container
+			namePane.addRow(row++, new Label(FILTER_STR), filterSpinner);
 		}
 
 		// Create bottom-left and bottom-right panes
@@ -1139,7 +1198,7 @@ public class LocationChooserPane
 		// Create procedure to update pathname field
 		IProcedure1<Path> updatePathnameField = directory ->
 		{
-			String pathname = (directory == null) ? "" : directory.toAbsolutePath().toString();
+			String pathname = (directory == null) ? "" : PathUtils.absString(directory);
 			pathnameField.setText(pathname);
 			Platform.runLater(() ->
 			{
@@ -1264,22 +1323,14 @@ public class LocationChooserPane
 				// Add accelerators to new scene
 				if (scene != null)
 				{
-					scene.getAccelerators().put(KEY_COMBO_OPEN_PREVIOUS, () -> tableView.openPreviousDirectory());
-					scene.getAccelerators().put(KEY_COMBO_OPEN_NEXT,     () -> tableView.openNextDirectory());
-					scene.getAccelerators().put(KEY_COMBO_OPEN_PARENT,   () -> tableView.openParentDirectory());
-					scene.getAccelerators().put(KEY_COMBO_REFRESH1,      () -> refreshView.invoke());
-					scene.getAccelerators().put(KEY_COMBO_REFRESH2,      () -> refreshView.invoke());
+					scene.getAccelerators().put(KEY_COMBO_OPEN_PREVIOUS, tableView::openPreviousDirectory);
+					scene.getAccelerators().put(KEY_COMBO_OPEN_NEXT,     tableView::openNextDirectory);
+					scene.getAccelerators().put(KEY_COMBO_OPEN_PARENT,   tableView::openParentDirectory);
+					scene.getAccelerators().put(KEY_COMBO_REFRESH1,      refreshView::invoke);
+					scene.getAccelerators().put(KEY_COMBO_REFRESH2,      refreshView::invoke);
 				}
 			});
 		}
-
-		// Update images of image buttons
-		SceneUtils.visitDepthFirst(this, true, false, node ->
-		{
-			if (node instanceof ImageButton button)
-				button.setGraphic(icon(button.getImage()));
-			return true;
-		});
 
 		// When widths of tree view and table view have been determined, replace temporary container of tree view and
 		// table view with split pane
@@ -1322,33 +1373,6 @@ public class LocationChooserPane
 					getChildren().add(index, splitPane);
 				}
 			}
-		});
-
-		// Scan root directories
-		readRootDirectories(window, () ->
-		{
-			// Set root of tree view
-			treeView.init();
-
-			// Set initial directory on table view
-			tableView.setDirectory((initialDirectory == null) ? DEFAULT_INITIAL_DIRECTORY : initialDirectory);
-
-			// Assume focus on name field
-			Node[] focusNode = { nameField };
-
-			// Set initial filename on name field
-			if (initialFilename != null)
-			{
-				// Set filename on name field
-				nameField.setText(initialFilename);
-
-				// Select entry in table view
-				if (tableView.selectEntry(initialFilename))
-					focusNode[0] = tableView;
-			}
-
-			// Request focus on table view or name field
-			Platform.runLater(() -> focusNode[0].requestFocus());
 		});
 	}
 
@@ -1439,46 +1463,28 @@ public class LocationChooserPane
 		Task<?>	task)
 	{
 		ExecutorService executor = Executors.newSingleThreadExecutor(runnable ->
-				new Thread(runnable, LocationChooserPane.class.getSimpleName() + "-" + ++threadIndex));
+				new Thread(runnable, MethodHandles.lookup().lookupClass().getSimpleName() + "-" + ++threadIndex));
 		executor.execute(task);
 		executor.shutdown();
 	}
 
 	//------------------------------------------------------------------
 
-	private static Image themedImage(
-		Image	image)
-	{
-		return (StyleManager.INSTANCE.notUsingStyleSheet() || NON_INVERTIBLE_IMAGES.contains(image))
-												? image
-												: StyleManager.INSTANCE.getTheme().processImage(image);
-	}
-
-	//------------------------------------------------------------------
-
-	private static Image img(
-		byte[]	data)
-	{
-		return new Image(new ByteArrayInputStream(data));
-	}
-
-	//------------------------------------------------------------------
-
 	private static ImageView icon(
-		Image	image)
+		String	imageId)
 	{
-		return ImageUtils.createSmoothImageView(themedImage(image));
+		return ImageUtils.smoothImageView(ImageData.image(imageId));
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -1509,82 +1515,6 @@ public class LocationChooserPane
 
 	//------------------------------------------------------------------
 
-	private static void readRootDirectories(
-		Window		window,
-		IProcedure0	onCompletion)
-	{
-		// Create task to read root directories
-		Task<Void> task = new Task<>()
-		{
-			{
-				// Initialise task status
-				updateTitle(SCAN_FILE_SYSTEM_STR);
-				updateMessage(SCANNING_ROOT_DIRECTORIES_STR + " " + ELLIPSIS_STR);
-				updateProgress(-1, 1);
-			}
-
-			@Override
-			protected Void call()
-				throws Exception
-			{
-				// Get root directories
-				List<Path> directories = new ArrayList<>();
-				for (Path directory : FileSystems.getDefault().getRootDirectories())
-					directories.add(directory);
-
-				// Linux: get root directories of removable media
-				if (File.separatorChar == '/')
-					directories.addAll(findLinuxMediaRootDirectories());
-
-				// Read subdirectories of root directories
-				for (Path directory : directories)
-				{
-					// Update task status
-					String message = READING_DIRECTORY_STR + " " + directory;
-					updateMessage(message);
-
-					// Read subdirectories
-					try
-					{
-						DirectoryUtils.listDirectories(directory);
-					}
-					catch (FileException e)
-					{
-						Logger.INSTANCE.error(message, e);
-					}
-				}
-
-				// Return nothing
-				return null;
-			}
-
-			@Override
-			protected void succeeded()
-			{
-				// Invoke completion procedure
-				onCompletion.invoke();
-			}
-
-			@Override
-			protected void failed()
-			{
-				// Display error message
-				ErrorDialog.show(window, getTitle(), getException());
-
-				// Invoke completion procedure
-				onCompletion.invoke();
-			}
-		};
-
-		// Show progress of task in dialog
-		new SimpleProgressDialog(window, task);
-
-		// Execute task on background thread
-		executeTask(task);
-	}
-
-	//------------------------------------------------------------------
-
 ////////////////////////////////////////////////////////////////////////
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
@@ -1598,7 +1528,7 @@ public class LocationChooserPane
 
 	public int getFilterIndex()
 	{
-		return (filterChoiceBox == null) ? -1 : filterChoiceBox.getSelectionModel().getSelectedIndex();
+		return (filterSpinner == null) ? -1 : filterSpinner.getValue();
 	}
 
 	//------------------------------------------------------------------
@@ -1615,7 +1545,10 @@ public class LocationChooserPane
 	public void notifyLocationsChosen()
 	{
 		if (!tableView.selectedLocations.isEmpty())
-			fireEvent(new LocationChooserEvent(LocationChooserEvent.LOCATIONS_CHOSEN, this, tableView.selectedLocations));
+		{
+			fireEvent(new LocationChooserEvent(LocationChooserEvent.LOCATIONS_CHOSEN, this,
+											   tableView.selectedLocations));
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -1676,6 +1609,116 @@ public class LocationChooserPane
 		List<TableColumn<DirectoryEntry, ?>> columns = tableView.getColumns();
 		for (int i = 0; i < widths.length; i++)
 			columns.get(i).setPrefWidth(widths[i]);
+	}
+
+	//------------------------------------------------------------------
+
+	public void initDirectoryTree(
+		Path	directory,
+		String	filename)
+	{
+		// Create procedure that will be executed when task has finished
+		IProcedure0	onFinished = () ->
+		{
+			// Set root of tree view
+			treeView.init();
+
+			// Set directory on table view
+			tableView.setDirectory((directory == null) ? DEFAULT_INITIAL_DIRECTORY : directory);
+
+			// Assume focus on name field
+			Node focusNode = nameField;
+
+			// Set filename on name field
+			if (filename != null)
+			{
+				// Set filename on name field
+				nameField.setText(filename);
+
+				// Select entry in table view
+				if (tableView.selectEntry(filename))
+					focusNode = tableView;
+			}
+
+			// Request focus on table view or name field
+			focusNode.requestFocus();
+		};
+
+		// Create task to read root directories
+		Task<Void> task = new Task<>()
+		{
+			{
+				// Initialise task status
+				updateTitle(SCAN_FILE_SYSTEM_STR);
+				updateMessage(SCANNING_ROOT_DIRECTORIES_STR + " " + ELLIPSIS_STR);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Void call()
+				throws Exception
+			{
+				// Get root directories
+				List<Path> directories = new ArrayList<>();
+				for (Path directory : FileSystems.getDefault().getRootDirectories())
+					directories.add(directory);
+
+				// Linux: get root directories of removable media
+				if (OsUtils.isUnixLike())
+					directories.addAll(findLinuxMediaRootDirectories());
+
+				// Read subdirectories of root directories
+				for (Path directory : directories)
+				{
+					// Update task status
+					String message = READING_DIRECTORY_STR + " " + directory;
+					updateMessage(message);
+
+					// Read subdirectories
+					try
+					{
+						DirectoryUtils.listDirectories(directory);
+					}
+					catch (FileException e)
+					{
+						Logger.INSTANCE.error(message, e);
+					}
+				}
+
+				// Return nothing
+				return null;
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Perform remaining initialisation
+				onFinished.invoke();
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Display error message
+				ErrorDialog.show(getWindow(), getTitle(), getException());
+
+				// Perform remaining initialisation
+				onFinished.invoke();
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(getWindow(), task);
+
+		// Execute task on background thread
+		executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
+	private Window getWindow()
+	{
+		return SceneUtils.getWindow(this);
 	}
 
 	//------------------------------------------------------------------
@@ -1940,7 +1983,6 @@ public class LocationChooserPane
 			this.showHiddenDirectories = showHiddenDirectories;
 
 			// Set properties
-			getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 			setCellFactory(treeView -> new Cell());
 			setShowRoot(false);
 			getStyleClass().add(TreeViewStyle.StyleClass.TREE_VIEW);
@@ -1959,7 +2001,7 @@ public class LocationChooserPane
 			}
 
 			// Ensure cells are redrawn if scroll bar is hidden
-			widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+			widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 
 			// Display context menu on request
 			addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event ->
@@ -1980,7 +2022,7 @@ public class LocationChooserPane
 						if (!treeItem.isLeaf())
 						{
 							String text = treeItem.isExpanded() ? COLLAPSE_STR : EXPAND_STR;
-							ImageView graphic = icon(treeItem.isExpanded() ? Images.COLLAPSE : Images.EXPAND);
+							ImageView graphic = icon(treeItem.isExpanded() ? ImageId.COLLAPSE : ImageId.EXPAND);
 							MenuItem menuItem = new MenuItem(text, graphic);
 							menuItem.setOnAction(event0 ->
 							{
@@ -2037,7 +2079,7 @@ public class LocationChooserPane
 			// Get root item
 			TreeItem<Path> root = getRoot();
 
-			// Define class to reset child lists of tree items
+			// Declare class to reset child lists of tree items
 			class Search1
 			{
 				void visit(DirectoryItem item)
@@ -2057,7 +2099,7 @@ public class LocationChooserPane
 			// Reset child lists of tree items
 			new Search1().visit((DirectoryItem)root);
 
-			// Define class to expand tree items that were previously expanded
+			// Declare class to expand tree items that were previously expanded
 			class Search2
 			{
 				void visit(TreeItem<Path> item)
@@ -2098,7 +2140,7 @@ public class LocationChooserPane
 	////////////////////////////////////////////////////////////////////
 
 
-		// CLASS: DIRECTORY TREE ITEM
+		// CLASS: DIRECTORY-TREE ITEM
 
 
 		/**
@@ -2180,7 +2222,7 @@ public class LocationChooserPane
 							items.add(new DirectoryItem(rootDirectory));
 
 						// Linux: add items for root directories of removable media
-						if (File.separatorChar == '/')
+						if (OsUtils.isUnixLike())
 						{
 							for (Path rootDirectory : findLinuxMediaRootDirectories())
 								items.add(new DirectoryItem(rootDirectory));
@@ -2214,9 +2256,10 @@ public class LocationChooserPane
 							{
 								Platform.runLater(() ->
 								{
-									MessageListDialog.show(getWindow(), EXPAND_DIRECTORY_STR, MessageIcon32.WARNING.get(),
-														   ErrorMsg.FAILED_TO_DETERMINE_HIDDEN_STATUS, indeterminateLocations,
-														   true, ButtonInfo.of(HPos.RIGHT, OK_STR));
+									MessageListDialog.show(
+											getWindow(), EXPAND_DIRECTORY_STR, MessageIcon32.WARNING.get(),
+											ErrorMsg.FAILED_TO_DETERMINE_HIDDEN_STATUS, indeterminateLocations, true,
+											ButtonInfo.of(HPos.RIGHT, OK_STR));
 								});
 							}
 						}
@@ -2334,7 +2377,11 @@ public class LocationChooserPane
 				});
 
 				// When mouse leaves cell, deactivate any cell pop-up
-				addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+				addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+				{
+					if (CellPopUpManager.deactivatePopUpOnMouseExited())
+						cellPopUpManager.deactivate();
+				});
 
 				// When a mouse button is released, deactivate any cell pop-up
 				addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -2416,8 +2463,7 @@ public class LocationChooserPane
 			protected void layoutChildren()
 			{
 				// Adjust padding around disclosure node
-				Node node = lookup(StyleSelector.TREE_CELL_DISCLOSURE_NODE);
-				if (node instanceof Region region)
+				if (lookup(StyleSelector.TREE_CELL_DISCLOSURE_NODE) instanceof Region region)
 					region.setPadding(DISCLOSURE_NODE_PADDING);
 
 				// Call superclass method
@@ -2461,16 +2507,14 @@ public class LocationChooserPane
 				{
 					// Set colour of background
 					TreeItem<Path> item = getTreeItem();
-					boolean selected = (getSelectionModel().getSelectedItem() == item);
+					boolean selected = getSelectionModel().getSelectedItems().contains(item);
 					boolean focused = getTreeView().isFocused();
-					Color colour = isEmpty()
-										? null
-										: selected
-											? focused
+					Color colour = selected
+										? focused
 												? getColour(TreeViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
 												: getColour(TreeViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
-											: getColour(TreeViewStyle.ColourKey.CELL_BACKGROUND);
-					if (!selected && focused && (getFocusModel().getFocusedItem() == item))
+										: getColour(TreeViewStyle.ColourKey.CELL_BACKGROUND);
+					if (!isEmpty() && !selected && focused && (getFocusModel().getFocusedItem() == item))
 					{
 						setBackground(SceneUtils.createColouredBackground(
 								getColour(TreeViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED), Insets.EMPTY, colour,
@@ -2480,12 +2524,11 @@ public class LocationChooserPane
 						setBackground(SceneUtils.createColouredBackground(colour));
 
 					// Set colour of disclosure arrow
-					Node disclosureArrow = lookup(StyleSelector.TREE_CELL_DISCLOSURE_ARROW);
-					if (disclosureArrow instanceof Region region)
+					if (lookup(StyleSelector.TREE_CELL_DISCLOSURE_ARROW) instanceof Region arrow)
 					{
 						String key = selected ? TreeViewStyle.ColourKey.CELL_DISCLOSURE_ARROW_SELECTED
 											  : TreeViewStyle.ColourKey.CELL_DISCLOSURE_ARROW;
-						region.setBackground(SceneUtils.createColouredBackground(getColour(key)));
+						arrow.setBackground(SceneUtils.createColouredBackground(getColour(key)));
 					}
 				}
 			}
@@ -2507,8 +2550,8 @@ public class LocationChooserPane
 				if (directory != null)
 				{
 					label = new Label(isRoot(directory) ? getRootName(directory) : directory.getFileName().toString());
-					label.setTextFill(getColour(TreeViewStyle.ColourKey.CELL_TEXT));
 					label.setPadding(LABEL_PADDING);
+					label.setTextFill(getColour(TreeViewStyle.ColourKey.CELL_TEXT));
 					label.getStyleClass().add(TreeViewStyle.StyleClass.CELL_LABEL);
 				}
 
@@ -2549,7 +2592,7 @@ public class LocationChooserPane
 
 		/** The factor by which the size of the default font is multiplied to give the size of the font of the
 			placeholder label. */
-		private static final	double	PLACEHOLDER_LABEL_FONT_FACTOR	= 1.2;
+		private static final	double	PLACEHOLDER_LABEL_FONT_SIZE_FACTOR	= 1.2;
 
 		/** The formatter that is applied to the size of a file. */
 		private static final	DecimalFormat	SIZE_FORMATTER;
@@ -2693,9 +2736,9 @@ public class LocationChooserPane
 			}
 
 			// Set placeholder
-			placeholderLabel = new Label(placeholderText);
-			placeholderLabel.setFont(FontUtils.defaultFont(PLACEHOLDER_LABEL_FONT_FACTOR));
-			placeholderLabel.setTextFill(getColour(ColourKey.TABLE_VIEW_PLACEHOLDER_TEXT));
+			placeholderLabel = Labels.expansive(placeholderText, PLACEHOLDER_LABEL_FONT_SIZE_FACTOR,
+												getColour(ColourKey.TABLE_VIEW_PLACEHOLDER_TEXT),
+												getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EMPTY));
 			placeholderLabel.getStyleClass().add(StyleClass.PLACEHOLDER_LABEL);
 			setPlaceholder(placeholderLabel);
 
@@ -2727,7 +2770,7 @@ public class LocationChooserPane
 			}
 
 			// Ensure cells are redrawn if scroll bar is hidden
-			widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+			widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 
 			// Handle key press
 			addEventHandler(KeyEvent.KEY_PRESSED, event ->
@@ -2796,8 +2839,7 @@ public class LocationChooserPane
 				}
 
 				// Set background and border of filler
-				Node node = lookup(StyleSelector.FILLER);
-				if (node instanceof Region filler)
+				if (lookup(StyleSelector.FILLER) instanceof Region filler)
 				{
 					filler.setBackground(SceneUtils.createColouredBackground(backgroundColour));
 					filler.setBorder(SceneUtils.createSolidBorder(borderColour, Side.BOTTOM));
@@ -2823,6 +2865,7 @@ public class LocationChooserPane
 						label.setAlignment(FxGeomUtils.getPos(VPos.CENTER, hAlignment));
 						label.setPadding(HEADER_CELL_LABEL_PADDING);
 						label.setTextFill(getColour(TableViewStyle.ColourKey.CELL_TEXT));
+						label.getStyleClass().add(TableViewStyle.StyleClass.CELL_LABEL);
 
 						// Create pop-up manager for label
 						if (headerPopUpManager == null)
@@ -2907,7 +2950,7 @@ public class LocationChooserPane
 
 				// Make location absolute and normalise it
 				if (directory != null)
-					directory = directory.toAbsolutePath().normalize();
+					directory = PathUtils.abs(directory);
 
 				// Update instance variable
 				this.directory = directory;
@@ -3011,7 +3054,7 @@ public class LocationChooserPane
 			try
 			{
 				// Make location absolute and normalise it
-				location = location.toAbsolutePath().normalize();
+				location = PathUtils.abs(location);
 
 				// If location denotes a file, get its parent ...
 				Path directory = null;
@@ -3141,9 +3184,9 @@ public class LocationChooserPane
 		private List<Path> getFilteredLocations()
 		{
 			return getItems().stream()
-								.map(entry -> entry.location)
-								.filter(location -> filter.matches(location))
-								.toList();
+					.map(entry -> entry.location)
+					.filter(location -> filter.matches(location))
+					.toList();
 		}
 
 		//--------------------------------------------------------------
@@ -3151,9 +3194,9 @@ public class LocationChooserPane
 		private List<Path> getFilteredSelectedLocations()
 		{
 			return getSelectionModel().getSelectedItems().stream()
-														 .map(entry -> entry.location)
-														 .filter(location -> filter.matches(location))
-														 .toList();
+					 .map(entry -> entry.location)
+					 .filter(location -> filter.matches(location))
+					 .toList();
 		}
 
 		//--------------------------------------------------------------
@@ -3233,7 +3276,8 @@ public class LocationChooserPane
 					if (result.includeHeader)
 					{
 						int index = text.indexOf('\n') + 1;
-						text = text.substring(0, index) + "-".repeat(table.maxLineLength()) + "\n" + text.substring(index);
+						text = text.substring(0, index) + "-".repeat(table.maxLineLength()) + "\n"
+								+ text.substring(index);
 					}
 					break;
 				}
@@ -3462,9 +3506,9 @@ public class LocationChooserPane
 				String	key)
 			{
 				return Stream.of(values())
-								.filter(value -> value.getKey().equals(key))
-								.findFirst()
-								.orElse(null);
+						.filter(value -> value.getKey().equals(key))
+						.findFirst()
+						.orElse(null);
 			}
 
 			//----------------------------------------------------------
@@ -3584,7 +3628,11 @@ public class LocationChooserPane
 				});
 
 				// When mouse leaves cell, deactivate any cell pop-up
-				addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+				addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+				{
+					if (CellPopUpManager.deactivatePopUpOnMouseExited())
+						cellPopUpManager.deactivate();
+				});
 
 				// When a mouse button is released, deactivate any cell pop-up
 				addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -3638,7 +3686,7 @@ public class LocationChooserPane
 						// Add menu item
 						if (!locations.isEmpty())
 						{
-							MenuItem menuItem = new MenuItem(SELECT_STR, icon(Images.SELECT));
+							MenuItem menuItem = new MenuItem(SELECT_STR, icon(ImageId.SELECT));
 							menuItem.setOnAction(event0 ->
 							{
 								selectedLocations.setAll(locations);
@@ -3656,7 +3704,7 @@ public class LocationChooserPane
 							menu.getItems().add(new SeparatorMenuItem());
 
 						// Add menu item
-						MenuItem menuItem = new MenuItem(OPEN_STR + quote(entry.getName()), icon(Images.DOWN_ARROW));
+						MenuItem menuItem = new MenuItem(OPEN_STR + quote(entry.getName()), icon(ImageId.ARROW_DOWN));
 						menuItem.setOnAction(event0 -> openDirectory(entry));
 						menu.getItems().add(menuItem);
 
@@ -3673,7 +3721,7 @@ public class LocationChooserPane
 							menu.getItems().add(new SeparatorMenuItem());
 
 						// Add menu item
-						MenuItem menuItem = new MenuItem(text, icon(Images.UP_ARROW));
+						MenuItem menuItem = new MenuItem(text, icon(ImageId.ARROW_UP));
 						menuItem.setOnAction(event0 -> openParentDirectory());
 						menu.getItems().add(menuItem);
 
@@ -3689,7 +3737,7 @@ public class LocationChooserPane
 							menu.getItems().add(new SeparatorMenuItem());
 
 						// Add menu item
-						MenuItem menuItem = new MenuItem(COPY_PATHNAME_STR, icon(Images.COPY));
+						MenuItem menuItem = new MenuItem(COPY_PATHNAME_STR, icon(ImageId.COPY));
 						menuItem.setOnAction(event0 ->
 								copyToClipboard(getWindow(), COPY_PATHNAME_STR, entry.location.toString()));
 						menu.getItems().add(menuItem);
@@ -3706,7 +3754,7 @@ public class LocationChooserPane
 							menu.getItems().add(new SeparatorMenuItem());
 
 						// Add menu item
-						MenuItem menuItem = new MenuItem(COPY_ALL_ENTRIES_STR + ELLIPSIS_STR, icon(Images.COPY_LINES));
+						MenuItem menuItem = new MenuItem(COPY_ALL_ENTRIES_STR + ELLIPSIS_STR, icon(ImageId.COPY_LINES));
 						menuItem.setOnAction(event0 -> copyEntryText());
 						menu.getItems().add(menuItem);
 
@@ -3753,7 +3801,8 @@ public class LocationChooserPane
 				{
 					label.setBackground(SceneUtils.createColouredBackground(
 							getColour(TableViewStyle.ColourKey.CELL_POPUP_BACKGROUND)));
-					label.setBorder(SceneUtils.createSolidBorder(getColour(TableViewStyle.ColourKey.CELL_POPUP_BORDER)));
+					label.setBorder(SceneUtils.createSolidBorder(
+							getColour(TableViewStyle.ColourKey.CELL_POPUP_BORDER)));
 					label.getStyleClass().add(TableViewStyle.StyleClass.CELL_POPUP_LABEL);
 				}
 
@@ -3860,8 +3909,8 @@ public class LocationChooserPane
 					if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
 					{
 						setBackground(SceneUtils.createColouredBackground(
-								getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED), new Insets(0.0, 1.0, 1.0, 0.0),
-								colour, new Insets(1.0, 1.0, 2.0, 0.0)));
+								getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_FOCUSED),
+								new Insets(0.0, 1.0, 1.0, 0.0), colour, new Insets(1.0, 1.0, 2.0, 0.0)));
 					}
 					else
 						setBackground(SceneUtils.createColouredBackground(colour));
@@ -3909,7 +3958,7 @@ public class LocationChooserPane
 				switch (column)
 				{
 					case NAME:
-						graphic = icon(getItem().isDirectory ? Images.DIRECTORY : Images.FILE);
+						graphic = icon(getItem().isDirectory ? ImageId.DIRECTORY : ImageId.FILE);
 						break;
 
 					case ATTRIBUTES:
@@ -4013,7 +4062,7 @@ public class LocationChooserPane
 
 				// Create pane: columns
 				VBox columnsPane = new VBox(COLUMNS_PANE_GAP);
-				columnsPane.setMaxWidth(VBox.USE_PREF_SIZE);
+				columnsPane.setMaxWidth(Region.USE_PREF_SIZE);
 				columnsPane.setPadding(COLUMNS_PANE_PADDING);
 
 				// Create check boxes for columns
@@ -4047,17 +4096,17 @@ public class LocationChooserPane
 				rowsPane.setPadding(ROWS_PANE_PADDING);
 
 				// Initialise column constraints
-				ColumnConstraints column1 = new ColumnConstraints();
-				column1.setMinWidth(GridPane.USE_PREF_SIZE);
-				column1.setHalignment(HPos.RIGHT);
-				column1.setHgrow(Priority.NEVER);
-				rowsPane.getColumnConstraints().add(column1);
+				ColumnConstraints column = new ColumnConstraints();
+				column.setMinWidth(Region.USE_PREF_SIZE);
+				column.setHalignment(HPos.RIGHT);
+				column.setHgrow(Priority.NEVER);
+				rowsPane.getColumnConstraints().add(column);
 
-				ColumnConstraints column2 = new ColumnConstraints();
-				column2.setHalignment(HPos.LEFT);
-				column2.setHgrow(Priority.NEVER);
-				column2.setFillWidth(false);
-				rowsPane.getColumnConstraints().add(column2);
+				column = new ColumnConstraints();
+				column.setHalignment(HPos.LEFT);
+				column.setHgrow(Priority.NEVER);
+				column.setFillWidth(false);
+				rowsPane.getColumnConstraints().add(column);
 
 				// Initialise row index
 				int row = 0;
@@ -4068,11 +4117,11 @@ public class LocationChooserPane
 				GridPane.setMargin(includeHeaderCheckBox, new Insets(0.0, 0.0, 2.0, 0.0));
 				rowsPane.add(includeHeaderCheckBox, 1, row++);
 
-				// Create choice box: field separator
-				ChoiceBox<FieldSeparator> fieldSeparatorChoiceBox =
-						new ChoiceBox<>(FXCollections.observableArrayList(FieldSeparator.values()));
-				fieldSeparatorChoiceBox.setValue(state.fieldSeparator);
-				rowsPane.addRow(row++, new Label(FIELD_SEPARATOR_STR), fieldSeparatorChoiceBox);
+				// Create spinner: field separator
+				CollectionSpinner<FieldSeparator> fieldSeparatorSpinner =
+						CollectionSpinner.leftRightH(HPos.CENTER, true, FieldSeparator.class, state.fieldSeparator,
+													 null, null);
+				rowsPane.addRow(row++, new Label(FIELD_SEPARATOR_STR), fieldSeparatorSpinner);
 
 				// Create titled pane: rows
 				LabelTitledPane titledRowsPane = new LabelTitledPane(ROWS_STR, rowsPane);
@@ -4086,11 +4135,12 @@ public class LocationChooserPane
 				setContent(outerPane);
 
 				// Create function to get state from components of user interface
-				IFunction0<State> getState = () -> new State(EnumSet.copyOf(columns), includeHeaderCheckBox.isSelected(),
-															 fieldSeparatorChoiceBox.getValue());
+				IFunction0<State> getState = () ->
+						new State(EnumSet.copyOf(columns), includeHeaderCheckBox.isSelected(),
+								  fieldSeparatorSpinner.getItem());
 
 				// Create button: copy
-				Button copyButton = new Button(COPY_STR);
+				Button copyButton = Buttons.hNoShrink(COPY_STR);
 				copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 				copyButton.setOnAction(event ->
 				{
@@ -4109,7 +4159,7 @@ public class LocationChooserPane
 				updateCopyButton.invoke();
 
 				// Create button: cancel
-				Button cancelButton = new Button(CANCEL_STR);
+				Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 				cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 				cancelButton.setOnAction(event -> requestClose());
 				addButton(cancelButton, HPos.RIGHT);
@@ -4235,10 +4285,7 @@ public class LocationChooserPane
 
 		private static final	String	SEPARATOR	= "/";
 
-		private static final	double	ARROWHEAD_WIDTH_FACTOR	= 0.5;
-		private static final	double	ARROWHEAD_HEIGHT_FACTOR	= 2.0 / 3.0;
-
-		private static final	double	ARROWHEAD_H_MARGIN	= 3.0;
+		private static final	double	ARROWHEAD_HEIGHT_FACTOR	= 1.125;
 
 	////////////////////////////////////////////////////////////////////
 	//  Instance variables
@@ -4265,26 +4312,28 @@ public class LocationChooserPane
 			setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.DIRECTORY_BAR_BORDER)));
 			getStyleClass().add(StyleClass.DIRECTORY_BAR);
 
-			// Calculate dimensions of components of navigation buttons
+			// Calculate size of icon of navigation buttons
 			double textHeight = TextUtils.textHeight();
-			double arrowheadWidth = Math.rint(ARROWHEAD_WIDTH_FACTOR * textHeight);
 			double arrowheadHeight = Math.rint(ARROWHEAD_HEIGHT_FACTOR * textHeight);
-			double rectWidth = 2.0 * ARROWHEAD_H_MARGIN + arrowheadWidth;
-			double rectHeight = Math.ceil(textHeight);
 
 			// Create factory for navigation button
-			IFunction1<GraphicButton, Polygon> navigationButtonFactory = arrowhead ->
+			IFunction1<GraphicButton, Shape> navigationButtonFactory = arrowhead ->
 			{
+				// Set properties of icon
 				arrowhead.setFill(getColour(ColourKey.DIRECTORY_BAR_ARROWHEAD));
 				arrowhead.getStyleClass().add(StyleClass.ARROWHEAD);
-				arrowhead.relocate(0.5 * (rectWidth - arrowheadWidth), 0.5 * (rectHeight - arrowheadHeight));
 
-				return new GraphicButton(new Group(new Rectangle(rectWidth, rectHeight, Color.TRANSPARENT), arrowhead));
+				// Create button
+				GraphicButton button = new GraphicButton(Shapes.tile(arrowhead, textHeight));
+				button.setBackgroundColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED),
+										   GraphicButton.State.HOVERED);
+				button.setBorderColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED),
+									   GraphicButton.State.HOVERED);
+				return button;
 			};
 
 			// Button: previous element
-			Polygon arrowhead = new Polygon(arrowheadWidth, 0.0, arrowheadWidth, arrowheadHeight, 0.0,
-											0.5 * arrowheadHeight);
+			Shape arrowhead = Shapes.arrowhead01(VHDirection.LEFT, arrowheadHeight);
 			previousElementButton = navigationButtonFactory.invoke(arrowhead);
 			previousElementButton.setDisable(true);
 			previousElementButton.setOnAction(event ->
@@ -4301,7 +4350,7 @@ public class LocationChooserPane
 			getChildren().add(FillerUtils.hBoxFiller(0.0));
 
 			// Button: next element
-			arrowhead = new Polygon(0.0, 0.0, 0.0, arrowheadHeight, arrowheadWidth, 0.5 * arrowheadHeight);
+			arrowhead = Shapes.arrowhead01(VHDirection.RIGHT, arrowheadHeight);
 			nextElementButton = navigationButtonFactory.invoke(arrowhead);
 			nextElementButton.setDisable(true);
 			nextElementButton.setOnAction(event ->
@@ -4350,11 +4399,17 @@ public class LocationChooserPane
 				// Create factory for button for element of pathname
 				IFunction2<GraphicButton, Path, String> buttonFactory = (location, text) ->
 				{
-					// Create button
-					Group textGroup = Text2.createTile(text);
+					// Create graphic for button
+					Group textGroup = Text2.createTile(text, getColour(ColourKey.DIRECTORY_BAR_TEXT));
 					textGroup.getChildren().get(1).getStyleClass().add(StyleClass.DIRECTORY_BAR_TEXT);
+
+					// Create button
 					GraphicButton button = new GraphicButton(textGroup);
 					button.getProperties().put(ELEMENT_NODE_KEY, "");
+					button.setBackgroundColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BACKGROUND_HOVERED),
+											   GraphicButton.State.HOVERED);
+					button.setBorderColour(getColour(ColourKey.DIRECTORY_BAR_BUTTON_BORDER_HOVERED),
+										   GraphicButton.State.HOVERED);
 					button.setOnAction(event -> this.directory.set(location));
 
 					// Display context menu on request
@@ -4367,7 +4422,7 @@ public class LocationChooserPane
 						ContextMenu menu = new ContextMenu();
 
 						// Menu item: copy pathname
-						MenuItem menuItem = new MenuItem(COPY_PATHNAME_STR, icon(Images.COPY));
+						MenuItem menuItem = new MenuItem(COPY_PATHNAME_STR, icon(ImageId.COPY));
 						menuItem.setOnAction(event0 -> copyToClipboard(window, COPY_PATHNAME_STR, location.toString()));
 						menu.getItems().add(menuItem);
 
@@ -4380,7 +4435,7 @@ public class LocationChooserPane
 				};
 
 				// Make location absolute and normalise it
-				directory = directory.toAbsolutePath().normalize();
+				directory = PathUtils.abs(directory);
 
 				// Create button for root and add it to list
 				Path cumulativeDirectory = directory.getRoot();
@@ -4394,7 +4449,7 @@ public class LocationChooserPane
 					cumulativeDirectory = cumulativeDirectory.resolve(element);
 
 					// Create separator and add it to list
-					Group separator = Text2.createTile(SEPARATOR);
+					Group separator = Text2.createTile(SEPARATOR, getColour(ColourKey.DIRECTORY_BAR_TEXT));
 					separator.getChildren().get(1).getStyleClass().add(StyleClass.DIRECTORY_BAR_TEXT);
 					separator.getProperties().put(ELEMENT_NODE_KEY, "");
 					nodeInfos.add(new NodeInfo(separator));
@@ -4480,7 +4535,8 @@ public class LocationChooserPane
 			{
 				// Initialise instance variables
 				this.node = node;
-				maxX = (node instanceof GraphicButton button) ? getButtonMaxX(button) : node.getLayoutBounds().getMaxX();
+				maxX = (node instanceof GraphicButton button) ? getButtonMaxX(button)
+															  : node.getLayoutBounds().getMaxX();
 			}
 
 			//----------------------------------------------------------
@@ -4558,8 +4614,8 @@ public class LocationChooserPane
 			setResizable(true);
 
 			// Get invalid filename characters
-			String invalidFilenameChars = (File.separatorChar == '\\') ? INVALID_FILENAME_CHARS_WINDOWS
-																	   : INVALID_FILENAME_CHARS_UNIX;
+			String invalidFilenameChars = OsUtils.isWindows() ? INVALID_FILENAME_CHARS_WINDOWS
+															  : INVALID_FILENAME_CHARS_UNIX;
 
 			// Create text field
 			TextField textField = new TextField("");
@@ -4569,14 +4625,14 @@ public class LocationChooserPane
 			HBox.setHgrow(textField, Priority.ALWAYS);
 
 			// Create control pane
-			HBox controlPane = new HBox(CONTROL_PANE_H_GAP, new Label(NAME_STR), textField);
+			HBox controlPane = new HBox(CONTROL_PANE_H_GAP, Labels.hNoShrink(NAME_STR), textField);
 			controlPane.setAlignment(Pos.CENTER);
 
 			// Add control pane to content pane
 			addContent(controlPane);
 
 			// Create button: OK
-			Button okButton = new Button(OK_STR);
+			Button okButton = Buttons.hNoShrink(OK_STR);
 			okButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			okButton.setOnAction(event ->
 			{
@@ -4598,16 +4654,13 @@ public class LocationChooserPane
 			updateOkButton.invoke();
 
 			// Create button: cancel
-			Button cancelButton = new Button(CANCEL_STR);
+			Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 			cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			cancelButton.setOnAction(event -> requestClose());
 			addButton(cancelButton, HPos.RIGHT);
 
 			// Fire 'cancel' button if Escape key is pressed; fire 'OK' button if Ctrl+Enter is pressed
 			setKeyFireButton(cancelButton, okButton);
-
-			// Resize dialog to scene
-			sizeToScene();
 
 			// When dialog is shown, prevent its height from changing; request focus on text field
 			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
@@ -4647,8 +4700,13 @@ public class LocationChooserPane
 //  Image data
 ////////////////////////////////////////////////////////////////////////
 
-	private interface ImageData
+	/**
+	 * PNG image data.
+	 */
+
+	private interface ImgData
 	{
+		// File: directory
 		byte[]	DIRECTORY	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
@@ -4692,498 +4750,426 @@ public class LocationChooserPane
 			(byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/file02
 		byte[]	FILE	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xDE, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xAD, (byte)0xD3, (byte)0xDB, (byte)0x0A, (byte)0x83,
-			(byte)0x30, (byte)0x0C, (byte)0x06, (byte)0xE0, (byte)0x3D, (byte)0xDA, (byte)0xD8, (byte)0x0B,
-			(byte)0x2A, (byte)0x82, (byte)0xF8, (byte)0x7A, (byte)0xE2, (byte)0xF9, (byte)0x7C, (byte)0xAA,
-			(byte)0x55, (byte)0x61, (byte)0x17, (byte)0xD9, (byte)0x52, (byte)0x48, (byte)0xB0, (byte)0x75,
-			(byte)0xAE, (byte)0xC2, (byte)0x16, (byte)0x28, (byte)0x42, (byte)0x4D, (byte)0x3E, (byte)0xFE,
-			(byte)0x08, (byte)0xDE, (byte)0x6E, (byte)0xFF, (byte)0x2C, (byte)0xCF, (byte)0xF3, (byte)0x84,
-			(byte)0xEB, (byte)0xBA, (byte)0x60, (byte)0x9C, (byte)0xA7, (byte)0xE3, (byte)0x38, (byte)0x77,
-			(byte)0xB3, (byte)0xF7, (byte)0x63, (byte)0xE1, (byte)0xC0, (byte)0xB6, (byte)0x6D, (byte)0xDA,
-			(byte)0xC1, (byte)0x3B, (byte)0xDF, (byte)0xF7, (byte)0xE5, (byte)0x1B, (byte)0x79, (byte)0x98,
-			(byte)0xFD, (byte)0x87, (byte)0x3A, (byte)0x03, (byte)0xC2, (byte)0x30, (byte)0xBC, (byte)0x86,
-			(byte)0x60, (byte)0xF3, (byte)0xB2, (byte)0x2C, (byte)0xB0, (byte)0xAE, (byte)0xAB, (byte)0x06,
-			(byte)0xE0, (byte)0xF3, (byte)0x12, (byte)0x82, (byte)0xCD, (byte)0xF3, (byte)0x3C, (byte)0x83,
-			(byte)0x94, (byte)0x52, (byte)0x41, (byte)0x38, (byte)0x18, (byte)0x04, (byte)0xC1, (byte)0xE1,
-			(byte)0x9B, (byte)0x98, (byte)0x73, (byte)0x5C, (byte)0xD8, (byte)0x30, (byte)0x8E, (byte)0x23,
-			(byte)0x08, (byte)0x21, (byte)0x18, (byte)0xDA, (byte)0xA7, (byte)0xA1, (byte)0x44, (byte)0xE6,
-			(byte)0x1C, (byte)0x17, (byte)0xBE, (byte)0xEC, (byte)0xFB, (byte)0x5E, (byte)0x21, (byte)0xD3,
-			(byte)0x34, (byte)0x31, (byte)0xB4, (byte)0x5F, (byte)0xCB, (byte)0x0A, (byte)0xB4, (byte)0x6D,
-			(byte)0x0B, (byte)0x5D, (byte)0xD7, (byte)0xC1, (byte)0x30, (byte)0x0C, (byte)0x1A, (byte)0x44,
-			(byte)0x6B, (byte)0x59, (byte)0x81, (byte)0xBA, (byte)0xAE, (byte)0xA1, (byte)0x69, (byte)0x1A,
-			(byte)0x05, (byte)0x61, (byte)0x1A, (byte)0x82, (byte)0x28, (byte)0x8D, (byte)0x15, (byte)0x28,
-			(byte)0x8A, (byte)0x02, (byte)0xAA, (byte)0xAA, (byte)0x62, (byte)0x08, (byte)0xD3, (byte)0x10,
-			(byte)0x84, (byte)0x69, (byte)0xAC, (byte)0x40, (byte)0x96, (byte)0x65, (byte)0x0A, (byte)0x29,
-			(byte)0xCB, (byte)0x92, (byte)0x21, (byte)0x5A, (byte)0x0B, (byte)0x21, (byte)0x2B, (byte)0x90,
-			(byte)0x24, (byte)0x09, (byte)0xA4, (byte)0x69, (byte)0x0A, (byte)0x79, (byte)0x9E, (byte)0x33,
-			(byte)0xB4, (byte)0x5F, (byte)0xCB, (byte)0x0A, (byte)0x44, (byte)0x51, (byte)0x04, (byte)0x71,
-			(byte)0x1C, (byte)0x2B, (byte)0x08, (byte)0xD3, (byte)0x10, (byte)0x44, (byte)0x69, (byte)0xBE,
-			(byte)0x02, (byte)0x27, (byte)0x3F, (byte)0x93, (byte)0x76, (byte)0xB0, (byte)0xC7, (byte)0x9C,
-			(byte)0xFB, (byte)0xA9, (byte)0x5E, (byte)0x7F, (byte)0xF9, (byte)0xC1, (byte)0xBB, (byte)0xBF,
-			(byte)0x43, (byte)0xB1, (byte)0x70, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x96, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x7D, (byte)0xD0, (byte)0xD1, (byte)0x06, (byte)0x02,
+			(byte)0x41, (byte)0x14, (byte)0x80, (byte)0xE1, (byte)0x7F, (byte)0x44, (byte)0x22, (byte)0x11,
+			(byte)0x59, (byte)0x56, (byte)0x24, (byte)0x22, (byte)0xA5, (byte)0x96, (byte)0x2C, (byte)0x91,
+			(byte)0x48, (byte)0x24, (byte)0x22, (byte)0xD1, (byte)0x4D, (byte)0xAF, (byte)0x57, (byte)0xAC,
+			(byte)0xBD, (byte)0x9D, (byte)0x77, (byte)0x4C, (byte)0x4B, (byte)0x33, (byte)0x7B, (byte)0x4E,
+			(byte)0x7B, (byte)0x2A, (byte)0xE7, (byte)0x62, (byte)0xC6, (byte)0xF1, (byte)0xF9, (byte)0x8D,
+			(byte)0xE1, (byte)0xC9, (byte)0xFF, (byte)0x89, (byte)0x47, (byte)0x81, (byte)0x0F, (byte)0x53,
+			(byte)0xB2, (byte)0xFC, (byte)0x06, (byte)0x7C, (byte)0xBD, (byte)0xF0, (byte)0x3C, (byte)0x34,
+			(byte)0x91, (byte)0x75, (byte)0x1B, (byte)0x17, (byte)0x6E, (byte)0x73, (byte)0xEE, (byte)0x64,
+			(byte)0x16, (byte)0xF4, (byte)0xE8, (byte)0xD0, (byte)0x7A, (byte)0xB7, (byte)0x34, (byte)0x11,
+			(byte)0x90, (byte)0xD0, (byte)0xA7, (byte)0x5B, (byte)0x75, (byte)0xE2, (byte)0x6B, (byte)0xCA,
+			(byte)0x26, (byte)0x18, (byte)0x91, (byte)0x32, (byte)0x88, (byte)0x1D, (byte)0x79, (byte)0x95,
+			(byte)0x80, (byte)0x29, (byte)0x63, (byte)0x86, (byte)0x75, (byte)0xC7, (byte)0x59, (byte)0x90,
+			(byte)0x31, (byte)0x63, (byte)0xA2, (byte)0x3A, (byte)0x06, (byte)0xAC, (byte)0x59, (byte)0xB1,
+			(byte)0x50, (byte)0x1D, (byte)0x03, (byte)0x76, (byte)0x6C, (byte)0xC8, (byte)0x55, (byte)0xC7,
+			(byte)0x80, (byte)0x23, (byte)0x7B, (byte)0xB6, (byte)0xAA, (byte)0x63, (byte)0xC0, (byte)0x85,
+			(byte)0x13, (byte)0x07, (byte)0xD5, (byte)0x31, (byte)0xE0, (byte)0xC6, (byte)0x95, (byte)0xB3,
+			(byte)0xEA, (byte)0x34, (byte)0x40, (byte)0xFC, (byte)0x1E, (byte)0x99, (byte)0xE2, (byte)0x03,
+			(byte)0xFC, (byte)0x9E, (byte)0x17, (byte)0xB3, (byte)0x8F, (byte)0xAC, (byte)0xC7, (byte)0x25,
+			(byte)0xB5, (byte)0x00, (byte)0xD7, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
 			(byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
-		byte[]	UP_ARROW	=
+		// File: mono/arrowUp01
+		byte[]	ARROW_UP	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x76, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0xB4, (byte)0x20,
-			(byte)0x36, (byte)0x36, (byte)0x96, (byte)0x3B, (byte)0x21, (byte)0x21, (byte)0xE1, (byte)0x14,
-			(byte)0x08, (byte)0x83, (byte)0xD8, (byte)0xE8, (byte)0xF2, (byte)0x04, (byte)0x01, (byte)0x50,
-			(byte)0xE3, (byte)0x02, (byte)0x20, (byte)0xFE, (byte)0x0F, (byte)0xC5, (byte)0x0B, (byte)0xD0,
-			(byte)0xE5, (byte)0xF1, (byte)0x82, (byte)0x04, (byte)0x08, (byte)0x80, (byte)0x69, (byte)0x86,
-			(byte)0xE1, (byte)0x04, (byte)0x74, (byte)0x75, (byte)0x58, (byte)0x41, (byte)0x7C, (byte)0x7C,
-			(byte)0xBC, (byte)0x36, (byte)0x50, (byte)0xED, (byte)0x57, (byte)0x2C, (byte)0x06, (byte)0x7C,
-			(byte)0x4F, (byte)0x4A, (byte)0x4A, (byte)0xD2, (byte)0x47, (byte)0x57, (byte)0x8F, (byte)0x01,
-			(byte)0x80, (byte)0x0A, (byte)0x2F, (byte)0x40, (byte)0x35, (byte)0x2C, (byte)0x40, (byte)0xD2,
-			(byte)0x0C, (byte)0x63, (byte)0x5F, (byte)0x40, (byte)0x57, (byte)0x8F, (byte)0x01, (byte)0x80,
-			(byte)0x2E, (byte)0x38, (byte)0x0C, (byte)0x54, (byte)0x78, (byte)0x02, (byte)0x1A, (byte)0x88,
-			(byte)0x60, (byte)0x03, (byte)0xA0, (byte)0xEC, (byte)0x13, (byte)0x20, (byte)0x39, (byte)0x74,
-			(byte)0xF5, (byte)0x78, (byte)0x01, (byte)0xCC, (byte)0x00, (byte)0x74, (byte)0x71, (byte)0xA2,
-			(byte)0xC1, (byte)0xA8, (byte)0x01, (byte)0x90, (byte)0x18, (byte)0x21, (byte)0x39, (byte)0xE4,
-			(byte)0xE9, (byte)0x0E, (byte)0x00, (byte)0x44, (byte)0x35, (byte)0x5F, (byte)0x7C, (byte)0x88,
-			(byte)0xA0, (byte)0x43, (byte)0x69, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0F, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0F,
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x91, (byte)0xDF, (byte)0x5D,
+			(byte)0xC1, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6E, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xCD, (byte)0xC9, (byte)0x31, (byte)0x0E, (byte)0x40,
+			(byte)0x40, (byte)0x10, (byte)0x85, (byte)0xE1, (byte)0x7F, (byte)0xA3, (byte)0x97, (byte)0x88,
+			(byte)0x0B, (byte)0x88, (byte)0x13, (byte)0xA8, (byte)0xDC, (byte)0x49, (byte)0xB7, (byte)0xDD,
+			(byte)0x66, (byte)0x0F, (byte)0xA5, (byte)0x72, (byte)0x0C, (byte)0x85, (byte)0x5E, (byte)0xE1,
+			(byte)0x24, (byte)0x82, (byte)0x47, (byte)0x34, (byte)0xBB, (byte)0xAC, (byte)0x5A, (byte)0x5E,
+			(byte)0x66, (byte)0x5E, (byte)0x66, (byte)0x3E, (byte)0x36, (byte)0xBE, (byte)0x12, (byte)0x9F,
+			(byte)0xE5, (byte)0x07, (byte)0xE3, (byte)0xD9, (byte)0xF1, (byte)0x09, (byte)0xA6, (byte)0x65,
+			(byte)0x15, (byte)0xAF, (byte)0xB4, (byte)0x2F, (byte)0x4C, (byte)0xC1, (byte)0x22, (byte)0x3C,
+			(byte)0xB3, (byte)0x50, (byte)0x44, (byte)0x8C, (byte)0xA1, (byte)0x17, (byte)0x4C, (byte)0x9A,
+			(byte)0x51, (byte)0x33, (byte)0x60, (byte)0x42, (byte)0x6E, (byte)0xF4, (byte)0x9C, (byte)0x71,
+			(byte)0xDA, (byte)0x4E, (byte)0xBD, (byte)0xD3, (byte)0x84, (byte)0x9C, (byte)0xD1, (byte)0x51,
+			(byte)0x63, (byte)0x05, (byte)0x56, (byte)0xDD, (byte)0x91, (byte)0x05, (byte)0x7C, (byte)0x1F,
+			(byte)0x17, (byte)0x07, (byte)0x9F, (byte)0xDF, (byte)0x70, (byte)0x4E, (byte)0x45, (byte)0x9E,
+			(byte)0xE4, (byte)0x67, (byte)0x0E, (byte)0xCB, (byte)0x9A, (byte)0xC5, (byte)0x85, (byte)0x6E,
+			(byte)0xA3, (byte)0x96, (byte)0xC3, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
 			(byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
-		byte[]	DOWN_ARROW	=
+		// File: mono/arrowDown01
+		byte[]	ARROW_DOWN	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x70, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0xD4, (byte)0x20,
-			(byte)0x3E, (byte)0x3E, (byte)0xFE, (byte)0x30, (byte)0x08, (byte)0xA3, (byte)0x8B, (byte)0x13,
-			(byte)0x0D, (byte)0x12, (byte)0x12, (byte)0x12, (byte)0xFE, (byte)0x83, (byte)0x30, (byte)0xBA,
-			(byte)0x38, (byte)0xD1, (byte)0x60, (byte)0xA4, (byte)0x1A, (byte)0x00, (byte)0x0A, (byte)0x75,
-			(byte)0xA0, (byte)0xA6, (byte)0x13, (byte)0xB1, (byte)0xB1, (byte)0xB1, (byte)0xDC, (byte)0x30,
-			(byte)0x03, (byte)0xA0, (byte)0xEC, (byte)0x13, (byte)0x44, (byte)0xC5, (byte)0x08, (byte)0x50,
-			(byte)0xE1, (byte)0x05, (byte)0xA8, (byte)0xC6, (byte)0x05, (byte)0x30, (byte)0x03, (byte)0x90,
-			(byte)0xD8, (byte)0x17, (byte)0xD0, (byte)0xD5, (byte)0x63, (byte)0x00, (byte)0xA0, (byte)0x2D,
-			(byte)0xDA, (byte)0x40, (byte)0x85, (byte)0x5F, (byte)0x91, (byte)0x34, (byte)0xC3, (byte)0xF0,
-			(byte)0xF7, (byte)0xA4, (byte)0xA4, (byte)0x24, (byte)0x7D, (byte)0x74, (byte)0xF5, (byte)0x58,
-			(byte)0x41, (byte)0x02, (byte)0x04, (byte)0xA0, (byte)0x1B, (byte)0x90, (byte)0x80, (byte)0xAE,
-			(byte)0x0E, (byte)0x2F, (byte)0x48, (byte)0x40, (byte)0xF3, (byte)0x02, (byte)0xBA, (byte)0x3C,
-			(byte)0x41, (byte)0x00, (byte)0x0B, (byte)0x38, (byte)0x10, (byte)0x06, (byte)0xB1, (byte)0xD1,
-			(byte)0xE5, (byte)0x07, (byte)0x0F, (byte)0x00, (byte)0x00, (byte)0x7C, (byte)0x0B, (byte)0x5F,
-			(byte)0x78, (byte)0x9A, (byte)0xD9, (byte)0x3F, (byte)0x2E, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60,
-			(byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x5B, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x62, (byte)0x08, (byte)0xA0, (byte)0x43, (byte)0x74, (byte)0xEE, (byte)0x7F, (byte)0x86,
+			(byte)0xFF, (byte)0x43, (byte)0x59, (byte)0x01, (byte)0xC3, (byte)0x61, (byte)0x86, (byte)0x13,
+			(byte)0x0C, (byte)0xDC, (byte)0x20, (byte)0x05, (byte)0x40, (byte)0xF2, (byte)0x04, (byte)0xC3,
+			(byte)0x61, (byte)0x4C, (byte)0x05, (byte)0x17, (byte)0x80, (byte)0x52, (byte)0x0B, (byte)0xC0,
+			(byte)0x0A, (byte)0x40, (byte)0xE4, (byte)0x05, (byte)0x4C, (byte)0x05, (byte)0xDA, (byte)0x0C,
+			(byte)0x5F, (byte)0xC1, (byte)0xD2, (byte)0x20, (byte)0xF8, (byte)0x9D, (byte)0x41, (byte)0x1F,
+			(byte)0x43, (byte)0x01, (byte)0x90, (byte)0x99, (byte)0x00, (byte)0x57, (byte)0x90, (byte)0x80,
+			(byte)0x24, (byte)0x8A, (byte)0x60, (byte)0x02, (byte)0x39, (byte)0x50, (byte)0x2B, (byte)0x50,
+			(byte)0xC4, (byte)0x50, (byte)0x38, (byte)0x20, (byte)0xE7, (byte)0x01, (byte)0x9D, (byte)0x8A,
+			(byte)0x53, (byte)0x01, (byte)0x36, (byte)0x88, (byte)0x21, (byte)0x80, (byte)0x0E, (byte)0x01,
+			(byte)0xD5, (byte)0x43, (byte)0xF4, (byte)0x41, (byte)0xDC, (byte)0x94, (byte)0x2B, (byte)0x84,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44,
+			(byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
-		byte[]	LEFT_ARROW	=
+		// File: mono/arrowLeft01
+		byte[]	ARROW_LEFT	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x58, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0x05, (byte)0x58,
-			(byte)0x41, (byte)0x7C, (byte)0x7C, (byte)0xBC, (byte)0x76, (byte)0x42, (byte)0x42, (byte)0xC2,
-			(byte)0x05, (byte)0x20, (byte)0x7D, (byte)0x18, (byte)0x5D, (byte)0x8E, (byte)0x20, (byte)0x48,
-			(byte)0x80, (byte)0x80, (byte)0xAF, (byte)0x40, (byte)0xFC, (byte)0x1F, (byte)0x88, (byte)0x8F,
-			(byte)0xA3, (byte)0xCB, (byte)0xE3, (byte)0x04, (byte)0xA1, (byte)0xA1, (byte)0xA1, (byte)0x9C,
-			(byte)0x89, (byte)0x89, (byte)0x89, (byte)0x33, (byte)0xA1, (byte)0x1A, (byte)0x41, (byte)0x78,
-			(byte)0x51, (byte)0x6C, (byte)0x6C, (byte)0x2C, (byte)0x37, (byte)0xBA, (byte)0x3A, (byte)0x9C,
-			(byte)0x00, (byte)0x64, (byte)0x1B, (byte)0x92, (byte)0x66, (byte)0xBC, (byte)0x18, (byte)0xAB,
-			(byte)0xD7, (byte)0x28, (byte)0x36, (byte)0x80, (byte)0x62, (byte)0x2F, (byte)0xC0, (byte)0x40,
-			(byte)0x02, (byte)0x04, (byte)0x90, (byte)0x1E, (byte)0x88, (byte)0xC8, (byte)0x80, (byte)0xA2,
-			(byte)0x68, (byte)0x1C, (byte)0x81, (byte)0x00, (byte)0x00, (byte)0xDB, (byte)0x54, (byte)0x5F,
-			(byte)0x2D, (byte)0xB9, (byte)0xD3, (byte)0xDB, (byte)0xCD, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60,
-			(byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x57, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x62, (byte)0x08, (byte)0xA0, (byte)0x43, (byte)0x0C, (byte)0x01, (byte)0x74, (byte)0x88,
+			(byte)0x21, (byte)0x80, (byte)0x0E, (byte)0x91, (byte)0x99, (byte)0xDA, (byte)0x0C, (byte)0x17,
+			(byte)0x18, (byte)0x0E, (byte)0xE3, (byte)0x54, (byte)0xC0, (byte)0x90, (byte)0xC0, (byte)0xF0,
+			(byte)0x95, (byte)0xE1, (byte)0x3F, (byte)0xC3, (byte)0x09, (byte)0xAC, (byte)0x0A, (byte)0x18,
+			(byte)0x38, (byte)0x19, (byte)0x66, (byte)0x02, (byte)0x25, (byte)0xFF, (byte)0x33, (byte)0x2C,
+			(byte)0x62, (byte)0xE0, (byte)0xC6, (byte)0xAE, (byte)0xE0, (byte)0x04, (byte)0x58, (byte)0x1A,
+			(byte)0x03, (byte)0x92, (byte)0xA0, (byte)0x80, (byte)0x90, (byte)0x15, (byte)0x60, (byte)0x06,
+			(byte)0x3E, (byte)0x47, (byte)0x42, (byte)0x99, (byte)0xF8, (byte)0xBD, (byte)0x89, (byte)0x0B,
+			(byte)0x62, (byte)0x08, (byte)0xA0, (byte)0x43, (byte)0x0C, (byte)0x01, (byte)0x74, (byte)0x88,
+			(byte)0x21, (byte)0x80, (byte)0x0E, (byte)0x01, (byte)0xF8, (byte)0x6F, (byte)0xF4, (byte)0x2D,
+			(byte)0xBB, (byte)0x7D, (byte)0x67, (byte)0x6C, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00,
+			(byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
-		byte[]	RIGHT_ARROW	=
+		// File: mono/arrowRight01
+		byte[]	ARROW_RIGHT	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x58, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0x05, (byte)0x04,
-			(byte)0x41, (byte)0x7C, (byte)0x7C, (byte)0xFC, (byte)0xE1, (byte)0x84, (byte)0x84, (byte)0x84,
-			(byte)0x0B, (byte)0x40, (byte)0x5A, (byte)0x1B, (byte)0x5D, (byte)0x8E, (byte)0x28, (byte)0x00,
-			(byte)0xD4, (byte)0x7C, (byte)0x1C, (byte)0x88, (byte)0xFF, (byte)0x03, (byte)0xF1, (byte)0x57,
-			(byte)0x20, (byte)0x4E, (byte)0x40, (byte)0x97, (byte)0x27, (byte)0x08, (byte)0x42, (byte)0x43,
-			(byte)0x43, (byte)0x39, (byte)0x13, (byte)0x13, (byte)0x13, (byte)0x67, (byte)0x42, (byte)0x0D,
-			(byte)0x01, (byte)0xE1, (byte)0x45, (byte)0xB1, (byte)0xB1, (byte)0xB1, (byte)0xDC, (byte)0xE8,
-			(byte)0xEA, (byte)0x60, (byte)0x4E, (byte)0x85, (byte)0x29, (byte)0x22, (byte)0x84, (byte)0x4F,
-			(byte)0xA0, (byte)0xEB, (byte)0xA7, (byte)0xDC, (byte)0x00, (byte)0x5C, (byte)0x80, (byte)0x68,
-			(byte)0x2F, (byte)0xE0, (byte)0x02, (byte)0x09, (byte)0x94, (byte)0x06, (byte)0x22, (byte)0xC5,
-			(byte)0xD1, (byte)0x38, (byte)0x02, (byte)0x00, (byte)0x00, (byte)0xA7, (byte)0x58, (byte)0x5F,
-			(byte)0x2F, (byte)0x9A, (byte)0x6C, (byte)0xED, (byte)0xB1, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60,
-			(byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x54, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x62, (byte)0x08, (byte)0xA0, (byte)0x43, (byte)0x0C, (byte)0x01, (byte)0x74, (byte)0x88,
+			(byte)0x21, (byte)0x80, (byte)0x0E, (byte)0x31, (byte)0x05, (byte)0x0E, (byte)0x33, (byte)0x5C,
+			(byte)0x60, (byte)0xD0, (byte)0xC6, (byte)0xA7, (byte)0xE0, (byte)0x04, (byte)0xC3, (byte)0x7F,
+			(byte)0x86, (byte)0xAF, (byte)0x0C, (byte)0x09, (byte)0xB8, (byte)0x15, (byte)0x70, (byte)0x32,
+			(byte)0xCC, (byte)0x04, (byte)0x2A, (byte)0xF9, (byte)0xCF, (byte)0xB0, (byte)0x88, (byte)0x81,
+			(byte)0x1B, (byte)0xAE, (byte)0x00, (byte)0x2C, (byte)0x80, (byte)0x09, (byte)0x8F, (byte)0x13,
+			(byte)0xAF, (byte)0x80, (byte)0xA0, (byte)0x15, (byte)0x28, (byte)0x0A, (byte)0x08, (byte)0x3A,
+			(byte)0x92, (byte)0x90, (byte)0x37, (byte)0xD1, (byte)0x21, (byte)0x86, (byte)0x00, (byte)0x3A,
+			(byte)0xC4, (byte)0x10, (byte)0x40, (byte)0x87, (byte)0x18, (byte)0x02, (byte)0xE8, (byte)0x10,
+			(byte)0x00, (byte)0x65, (byte)0xF9, (byte)0xF4, (byte)0x2B, (byte)0x68, (byte)0xC8, (byte)0x2B,
+			(byte)0x83, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E,
+			(byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/home01
 		byte[]	HOME	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xF5, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xB5, (byte)0x50, (byte)0x3B, (byte)0x0A, (byte)0xC2,
-			(byte)0x50, (byte)0x10, (byte)0x4C, (byte)0x4A, (byte)0x41, (byte)0x04, (byte)0x6B, (byte)0xBD,
-			(byte)0x81, (byte)0xB5, (byte)0x95, (byte)0xD6, (byte)0x7A, (byte)0x00, (byte)0x89, (byte)0x45,
-			(byte)0x42, (byte)0xBE, (byte)0xC4, (byte)0x26, (byte)0x8D, (byte)0x47, (byte)0xF0, (byte)0x0C,
-			(byte)0x5E, (byte)0x41, (byte)0xBC, (byte)0x81, (byte)0x9D, (byte)0x57, (byte)0xB0, (byte)0xB2,
-			(byte)0xB0, (byte)0x15, (byte)0xEC, (byte)0x2D, (byte)0xD2, (byte)0x09, (byte)0x0A, (byte)0xEA,
-			(byte)0x6C, (byte)0x78, (byte)0xFB, (byte)0x78, (byte)0x59, (byte)0xF2, (byte)0x20, (byte)0x08,
-			(byte)0x0E, (byte)0x0C, (byte)0x2F, (byte)0x33, (byte)0x3B, (byte)0xB3, (byte)0x2B, (byte)0x3A,
-			(byte)0xCE, (byte)0x3F, (byte)0x11, (byte)0xC7, (byte)0xF1, (byte)0x88, (byte)0x28, (byte)0xFD,
-			(byte)0x36, (byte)0x70, (byte)0x93, (byte)0x24, (byte)0x59, (byte)0x83, (byte)0x0F, (byte)0xC5,
-			(byte)0x75, (byte)0x18, (byte)0x86, (byte)0x73, (byte)0xBC, (byte)0x17, (byte)0x2C, (byte)0x9C,
-			(byte)0xC9, (byte)0x70, (byte)0x0D, (byte)0x51, (byte)0x14, (byte)0x0D, (byte)0x10, (byte)0x3C,
-			(byte)0x22, (byte)0xF8, (byte)0xC2, (byte)0xBB, (byte)0x21, (byte)0xAA, (byte)0xEF, (byte)0x33,
-			(byte)0xF8, (byte)0x01, (byte)0x3D, (byte)0xD9, (byte)0xD1, (byte)0x40, (byte)0x70, (byte)0x81,
-			(byte)0xC0, (byte)0x1D, (byte)0xBC, (byte)0x66, (byte)0x59, (byte)0x36, (byte)0x65, (byte)0x1F,
-			(byte)0x7A, (byte)0x0C, (byte)0xDE, (byte)0xC0, (byte)0x27, (byte)0x2D, (byte)0x34, (byte)0x3B,
-			(byte)0x15, (byte)0x82, (byte)0x20, (byte)0xE8, (byte)0x61, (byte)0xB0, (byte)0x57, (byte)0x17,
-			(byte)0x76, (byte)0x45, (byte)0x51, (byte)0x74, (byte)0x65, (byte)0xC6, (byte)0xF3, (byte)0xBC,
-			(byte)0x4E, (byte)0x9A, (byte)0xA6, (byte)0x5B, (byte)0xCC, (byte)0xDF, (byte)0x78, (byte)0x0F,
-			(byte)0xBE, (byte)0xEF, (byte)0xF7, (byte)0x79, (byte)0xE6, (byte)0xE2, (byte)0xF2, (byte)0x09,
-			(byte)0x83, (byte)0x92, (byte)0x16, (byte)0x98, (byte)0xA5, (byte)0x26, (byte)0xA8, (byte)0x23,
-			(byte)0x25, (byte)0x75, (byte)0x20, (byte)0xDD, (byte)0xCA, (byte)0x84, (byte)0x98, (byte)0xE0,
-			(byte)0x4F, (byte)0x5A, (byte)0xB5, (byte)0x5D, (byte)0x40, (byte)0x59, (byte)0xEA, (byte)0xD4,
-			(byte)0x06, (byte)0x30, (byte)0x96, (byte)0xE6, (byte)0x02, (byte)0xD2, (byte)0x26, (byte)0xD9,
-			(byte)0xA7, (byte)0x8C, (byte)0xA9, (byte)0x35, (byte)0xE4, (byte)0x02, (byte)0xF5, (byte)0x53,
-			(byte)0x35, (byte)0x4D, (byte)0xBF, (byte)0xF5, (byte)0x02, (byte)0xBE, (byte)0xDE, (byte)0xE4,
-			(byte)0xB3, (byte)0xD6, (byte)0xB0, (byte)0x05, (byte)0x6D, (byte)0x3E, (byte)0x6B, (byte)0x0D,
-			(byte)0x5B, (byte)0xD0, (byte)0xE6, (byte)0xB3, (byte)0xD6, (byte)0xE0, (byte)0xA0, (byte)0x49,
-			(byte)0x73, (byte)0x81, (byte)0xF4, (byte)0x65, (byte)0xDF, (byte)0xC9, (byte)0xF3, (byte)0x7C,
-			(byte)0xC8, (byte)0x05, (byte)0x26, (byte)0x79, (byte)0x36, (byte)0x5F, (byte)0xF6, (byte)0x7F,
-			(byte)0xC6, (byte)0x17, (byte)0xD2, (byte)0x85, (byte)0xC1, (byte)0x58, (byte)0xE5, (byte)0x2C,
-			(byte)0x45, (byte)0xE7, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45,
-			(byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x9B, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0xA2, (byte)0x73, (byte)0xF9, (byte)0x18, (byte)0xF8, (byte)0xF0, (byte)0x28, (byte)0x60,
+			(byte)0xB0, (byte)0x65, (byte)0xB8, (byte)0x07, (byte)0x84, (byte)0xB6, (byte)0x0C, (byte)0x06,
+			(byte)0x0C, (byte)0x07, (byte)0x18, (byte)0x0C, (byte)0xD0, (byte)0x14, (byte)0x30, (byte)0xB0,
+			(byte)0x30, (byte)0x34, (byte)0x30, (byte)0x3C, (byte)0x63, (byte)0xF0, (byte)0x63, (byte)0x70,
+			(byte)0x63, (byte)0x78, (byte)0xC2, (byte)0xB0, (byte)0x96, (byte)0xE1, (byte)0x3F, (byte)0x83,
+			(byte)0x03, (byte)0x8A, (byte)0x02, (byte)0x06, (byte)0x4D, (byte)0x86, (byte)0x33, (byte)0x0C,
+			(byte)0xDB, (byte)0x19, (byte)0x24, (byte)0xC1, (byte)0x6C, (byte)0x51, (byte)0x86, (byte)0x3D,
+			(byte)0x0C, (byte)0x1F, (byte)0x18, (byte)0x02, (byte)0xE0, (byte)0x0A, (byte)0x18, (byte)0x18,
+			(byte)0x19, (byte)0xD2, (byte)0x18, (byte)0x3E, (byte)0x31, (byte)0xE4, (byte)0x23, (byte)0xAC,
+			(byte)0x02, (byte)0x8A, (byte)0xC5, (byte)0x31, (byte)0x7C, (byte)0x64, (byte)0x28, (byte)0x67,
+			(byte)0x60, (byte)0x82, (byte)0x28, (byte)0x58, (byte)0xCA, (byte)0x70, (byte)0x8C, (byte)0xE1,
+			(byte)0x3F, (byte)0xB2, (byte)0x34, (byte)0x58, (byte)0xC9, (byte)0x7F, (byte)0xA0, (byte)0xE8,
+			(byte)0x52, (byte)0x88, (byte)0x02, (byte)0x2D, (byte)0xA0, (byte)0xFD, (byte)0xD8, (byte)0x14,
+			(byte)0xB0, (byte)0x30, (byte)0x68, (byte)0x21, (byte)0xDC, (byte)0x80, (byte)0x45, (byte)0x01,
+			(byte)0x94, (byte)0x46, (byte)0xE6, (byte)0x32, (byte)0x5C, (byte)0x05, (byte)0xEA, (byte)0xFB,
+			(byte)0xCF, (byte)0x70, (byte)0x15, (byte)0x9F, (byte)0x02, (byte)0x6D, (byte)0x20, (byte)0xA4,
+			(byte)0x95, (byte)0x02, (byte)0x28, (byte)0x04, (byte)0x29, (byte)0x80, (byte)0xB2, (byte)0x51,
+			(byte)0x14, (byte)0xE0, (byte)0x86, (byte)0x18, (byte)0x02, (byte)0xE8, (byte)0x10, (byte)0x00,
+			(byte)0x54, (byte)0xD4, (byte)0xDF, (byte)0x65, (byte)0x5E, (byte)0x2D, (byte)0xE8, (byte)0xEC,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44,
+			(byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/directoryNew
 		byte[]	NEW_DIRECTORY	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x01, (byte)0x8B, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xAD, (byte)0x52, (byte)0x3D, (byte)0x6B, (byte)0x02,
-			(byte)0x41, (byte)0x10, (byte)0xBD, (byte)0xD2, (byte)0xEB, (byte)0x0F, (byte)0x6D, (byte)0x03,
-			(byte)0x1E, (byte)0x68, (byte)0x4A, (byte)0x4B, (byte)0xFF, (byte)0x80, (byte)0x9D, (byte)0x10,
-			(byte)0x04, (byte)0x8B, (byte)0x04, (byte)0x04, (byte)0xBF, (byte)0x0B, (byte)0x05, (byte)0x1B,
-			(byte)0x3F, (byte)0x3A, (byte)0x9B, (byte)0xBB, (byte)0xC6, (byte)0xE6, (byte)0x24, (byte)0x58,
-			(byte)0x26, (byte)0xA4, (byte)0x88, (byte)0x95, (byte)0x36, (byte)0xFE, (byte)0x06, (byte)0x8B,
-			(byte)0x78, (byte)0x60, (byte)0x1B, (byte)0x39, (byte)0x90, (byte)0x2B, (byte)0x82, (byte)0x90,
-			(byte)0xC6, (byte)0xE2, (byte)0x84, (byte)0x10, (byte)0x13, (byte)0x35, (byte)0x29, (byte)0x32,
-			(byte)0xD9, (byte)0xB7, (byte)0xE4, (byte)0x8E, (byte)0xB8, (byte)0x6A, (byte)0x62, (byte)0x20,
-			(byte)0x0F, (byte)0x1E, (byte)0x3B, (byte)0xBB, (byte)0x3B, (byte)0x6F, (byte)0x66, (byte)0x76,
-			(byte)0x66, (byte)0x25, (byte)0xE9, (byte)0x08, (byte)0xF8, (byte)0xFD, (byte)0xFE, (byte)0xB3,
-			(byte)0x70, (byte)0x38, (byte)0x6C, (byte)0x46, (byte)0x22, (byte)0x91, (byte)0x7B, (byte)0xAC,
-			(byte)0x8A, (byte)0xA2, (byte)0x5C, (byte)0x88, (byte)0x3E, (byte)0x07, (byte)0xA1, (byte)0xAA,
-			(byte)0xEA, (byte)0x75, (byte)0xA3, (byte)0xD1, (byte)0x70, (byte)0xD6, (byte)0xEB, (byte)0x35,
-			(byte)0x2D, (byte)0x16, (byte)0x0B, (byte)0xC2, (byte)0xAA, (byte)0xEB, (byte)0xFA, (byte)0x53,
-			(byte)0x30, (byte)0x18, (byte)0xBC, (byte)0x15, (byte)0x7D, (byte)0x77, (byte)0x80, (byte)0xCC,
-			(byte)0x10, (byte)0xD3, (byte)0x17, (byte)0x64, (byte)0x59, (byte)0x76, (byte)0x4D, (byte)0xAA,
-			(byte)0xD5, (byte)0x6A, (byte)0x0E, (byte)0xAB, (byte)0x24, (byte)0x2E, (byte)0x6A, (byte)0xB6,
-			(byte)0x80, (byte)0x72, (byte)0x91, (byte)0xD1, (byte)0x05, (byte)0x3B, (byte)0xF2, (byte)0xEC,
-			(byte)0xD5, (byte)0x6A, (byte)0x45, (byte)0xA1, (byte)0x50, (byte)0x68, (byte)0x24, (byte)0x25,
-			(byte)0x93, (byte)0x49, (byte)0xB9, (byte)0x50, (byte)0x28, (byte)0x3C, (byte)0xA6, (byte)0xD3,
-			(byte)0x69, (byte)0x02, (byte)0x61, (byte)0xE3, (byte)0x0C, (byte)0x01, (byte)0xF0, (byte)0x66,
-			(byte)0xC7, (byte)0x71, (byte)0xC8, (byte)0xE7, (byte)0xF3, (byte)0x71, (byte)0xB1, (byte)0x4B,
-			(byte)0xEC, (byte)0x71, (byte)0x8E, (byte)0x7B, (byte)0x29, (byte)0x9B, (byte)0xCD, (byte)0x6A,
-			(byte)0x86, (byte)0x61, (byte)0x3C, (byte)0x6F, (byte)0x36, (byte)0x1B, (byte)0x02, (byte)0xDB,
-			(byte)0xED, (byte)0xF6, (byte)0x32, (byte)0x9F, (byte)0xCF, (byte)0x6B, (byte)0xC7, (byte)0x54,
-			(byte)0xC0, (byte)0xEE, (byte)0x47, (byte)0x08, (byte)0xF0, (byte)0x66, (byte)0x59, (byte)0x96,
-			(byte)0x3D, (byte)0x9F, (byte)0xCF, (byte)0x2D, (byte)0x10, (byte)0x36, (byte)0xAB, (byte)0xE2,
-			(byte)0x1D, (byte)0xD5, (byte)0xC4, (byte)0x62, (byte)0x31, (byte)0xD2, (byte)0x34, (byte)0xCD,
-			(byte)0x13, (byte)0x89, (byte)0x3D, (byte)0x08, (byte)0x04, (byte)0x02, (byte)0x71, (byte)0x09,
-			(byte)0x8E, (byte)0xB3, (byte)0xD9, (byte)0xEC, (byte)0x20, (byte)0x4B, (byte)0xA5, (byte)0x12,
-			(byte)0x35, (byte)0x9B, (byte)0x4D, (byte)0x9E, (byte)0x11, (byte)0x53, (byte)0xC0, (byte)0x5A,
-			(byte)0xAD, (byte)0x56, (byte)0x1D, (byte)0x36, (byte)0x9D, (byte)0x2B, (byte)0xDE, (byte)0xA8,
-			(byte)0xDF, (byte)0x02, (byte)0x80, (byte)0xDD, (byte)0x6E, (byte)0x97, (byte)0x12, (byte)0x89,
-			(byte)0x04, (byte)0x45, (byte)0xA3, (byte)0x51, (byte)0x94, (byte)0x7D, (byte)0xC7, (byte)0x33,
-			(byte)0xBB, (byte)0xF8, (byte)0x1E, (byte)0xA0, (byte)0xD7, (byte)0xEB, (byte)0xF1, (byte)0x46,
-			(byte)0xFE, (byte)0x81, (byte)0x97, (byte)0x5E, (byte)0x00, (byte)0xD3, (byte)0x34, (byte)0xA9,
-			(byte)0x5C, (byte)0x2E, (byte)0xD3, (byte)0x78, (byte)0x3C, (byte)0xA6, (byte)0xE9, (byte)0x74,
-			(byte)0xFA, (byte)0x23, (byte)0x87, (byte)0xC3, (byte)0x21, (byte)0xA6, (byte)0xB5, (byte)0x64,
-			(byte)0xDA, (byte)0x13, (byte)0x1E, (byte)0xC0, (byte)0xB6, (byte)0x6D, (byte)0xBC, (byte)0x8B,
-			(byte)0x06, (byte)0x83, (byte)0xC1, (byte)0x8E, (byte)0xB3, (byte)0xC8, (byte)0xC9, (byte)0x64,
-			(byte)0x42, (byte)0x95, (byte)0x4A, (byte)0xE5, (byte)0x25, (byte)0x93, (byte)0xC9, (byte)0x9C,
-			(byte)0x7B, (byte)0x4F, (byte)0x60, (byte)0xA3, (byte)0xA3, (byte)0x4E, (byte)0xA7, (byte)0xB3,
-			(byte)0xE3, (byte)0xBC, (byte)0x8F, (byte)0xAD, (byte)0x56, (byte)0xEB, (byte)0xB5, (byte)0x58,
-			(byte)0x2C, (byte)0xDE, (byte)0x6C, (byte)0xF5, (byte)0xA0, (byte)0x5E, (byte)0xAF, (byte)0xF3,
-			(byte)0xC8, (byte)0xA2, (byte)0xB3, (byte)0xC8, (byte)0x7E, (byte)0xBF, (byte)0x4F, (byte)0x4C,
-			(byte)0xFC, (byte)0xE0, (byte)0x7E, (byte)0x34, (byte)0x0E, (byte)0xF6, (byte)0x0F, (byte)0x3E,
-			(byte)0xF6, (byte)0x34, (byte)0x67, (byte)0x2F, (byte)0x73, (byte)0xB9, (byte)0x1C, (byte)0xA5,
-			(byte)0x52, (byte)0xA9, (byte)0x53, (byte)0x4F, (byte)0xFC, (byte)0x1F, (byte)0xF8, (byte)0x04,
-			(byte)0x9F, (byte)0x2D, (byte)0x07, (byte)0xAA, (byte)0x85, (byte)0xF3, (byte)0x55, (byte)0x00,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44,
-			(byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xDA, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x75, (byte)0x90, (byte)0x3F, (byte)0x0E, (byte)0x01,
+			(byte)0x51, (byte)0x10, (byte)0xC6, (byte)0x7F, (byte)0x85, (byte)0x66, (byte)0x13, (byte)0x07,
+			(byte)0xA0, (byte)0xA2, (byte)0xC5, (byte)0x6E, (byte)0xE7, (byte)0x30, (byte)0x7A, (byte)0x07,
+			(byte)0xD0, (byte)0xB1, (byte)0xD9, (byte)0x86, (byte)0x38, (byte)0x80, (byte)0xCE, (byte)0x0D,
+			(byte)0x14, (byte)0x28, (byte)0xD1, (byte)0x8B, (byte)0x70, (byte)0x03, (byte)0xC5, (byte)0x46,
+			(byte)0x70, (byte)0x00, (byte)0x89, (byte)0x52, (byte)0x2C, (byte)0x12, (byte)0xD6, (byte)0xEC,
+			(byte)0x78, (byte)0xC4, (byte)0x3E, (byte)0x91, (byte)0xC9, (byte)0xBE, (byte)0xC9, (byte)0xF7,
+			(byte)0xE7, (byte)0x7D, (byte)0x6F, (byte)0x66, (byte)0x79, (byte)0x90, (byte)0x2E, (byte)0x32,
+			(byte)0x04, (byte)0xEC, (byte)0xB9, (byte)0xC9, (byte)0xD7, (byte)0xC5, (byte)0x11, (byte)0xFC,
+			(byte)0x23, (byte)0x2F, (byte)0x98, (byte)0x50, (byte)0x26, (byte)0x47, (byte)0x85, (byte)0x21,
+			(byte)0x4B, (byte)0xC1, (byte)0x96, (byte)0x21, (byte)0x60, (byte)0xA2, (byte)0xFD, (byte)0xAC,
+			(byte)0xE7, (byte)0x14, (byte)0xDF, (byte)0x36, (byte)0xEC, (byte)0x29, (byte)0x6B, (byte)0x8F,
+			(byte)0xF5, (byte)0x74, (byte)0xD9, (byte)0x82, (byte)0x43, (byte)0x48, (byte)0x2C, (byte)0x15,
+			(byte)0xEA, (byte)0x8B, (byte)0x57, (byte)0xF2, (byte)0x44, (byte)0x8A, (byte)0x63, (byte)0xE9,
+			(byte)0x79, (byte)0x2E, (byte)0xD0, (byte)0x61, (byte)0xA4, (byte)0xEE, (byte)0x31, (byte)0x6D,
+			(byte)0x4D, (byte)0xA8, (byte)0x7C, (byte)0x25, (byte)0x78, (byte)0x49, (byte)0xC2, (byte)0x89,
+			(byte)0x82, (byte)0x82, (byte)0x02, (byte)0x47, (byte)0xBD, (byte)0x37, (byte)0xFC, (byte)0x9A,
+			(byte)0x61, (byte)0x46, (byte)0xD3, (byte)0x78, (byte)0x3F, (byte)0x33, (byte)0x38, (byte)0xAC,
+			(byte)0x84, (byte)0x76, (byte)0x65, (byte)0x0B, (byte)0x4F, (byte)0xFA, (byte)0x5C, (byte)0xB6,
+			(byte)0x48, (byte)0x1B, (byte)0x74, (byte)0x51, (byte)0x9F, (byte)0x1D, (byte)0x77, (byte)0x09,
+			(byte)0x6F, (byte)0x91, (byte)0x11, (byte)0x6C, (byte)0x5E, (byte)0x6B, (byte)0x08, (byte)0xF5,
+			(byte)0x1A, (byte)0x2D, (byte)0x5D, (byte)0x3D, (byte)0x35, (byte)0x50, (byte)0xE5, (byte)0x40,
+			(byte)0x31, (byte)0x9D, (byte)0xF4, (byte)0x66, (byte)0xC5, (byte)0x40, (byte)0x96, (byte)0x0D,
+			(byte)0xB5, (byte)0x1F, (byte)0xD9, (byte)0xB0, (byte)0x89, (byte)0x61, (byte)0x40, (byte)0xDF,
+			(byte)0x96, (byte)0x45, (byte)0x30, (byte)0x6C, (byte)0x62, (byte)0x58, (byte)0x27, (byte)0xBF,
+			(byte)0xC8, (byte)0x92, (byte)0xEB, (byte)0x6F, (byte)0x96, (byte)0x3F, (byte)0xC3, (byte)0x45,
+			(byte)0x94, (byte)0x8C, (byte)0xD5, (byte)0xBE, (byte)0x6B, (byte)0xD7, (byte)0x13, (byte)0xF9,
+			(byte)0x47, (byte)0xD1, (byte)0x11, (byte)0x97, (byte)0xB4, (byte)0x7A, (byte)0x82, (byte)0x00,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE,
+			(byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/refresh
 		byte[]	REFRESH	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x01, (byte)0x1B, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xB5, (byte)0x52, (byte)0xCB, (byte)0x4A, (byte)0xC3,
-			(byte)0x50, (byte)0x14, (byte)0x4C, (byte)0x56, (byte)0xD6, (byte)0x4D, (byte)0xA5, (byte)0xDF,
-			(byte)0x54, (byte)0xD1, (byte)0x3E, (byte)0xD6, (byte)0xD9, (byte)0x24, (byte)0x34, (byte)0xAF,
-			(byte)0x45, (byte)0x36, (byte)0x25, (byte)0x7D, (byte)0x6D, (byte)0x2D, (byte)0xBA, (byte)0x0D,
-			(byte)0x82, (byte)0x7F, (byte)0x20, (byte)0x45, (byte)0xFF, (byte)0x41, (byte)0xA5, (byte)0xDB,
-			(byte)0x7E, (byte)0x8E, (byte)0x58, (byte)0xFD, (byte)0x05, (byte)0x3B, (byte)0xD3, (byte)0x9E,
-			(byte)0x5C, (byte)0x4E, (byte)0x6E, (byte)0x6F, (byte)0xA1, (byte)0x08, (byte)0x0E, (byte)0x0C,
-			(byte)0x49, (byte)0x66, (byte)0xE6, (byte)0x4E, (byte)0xCE, (byte)0x4D, (byte)0xAE, (byte)0xE7,
-			(byte)0xFD, (byte)0x07, (byte)0x82, (byte)0x20, (byte)0xB8, (byte)0x4C, (byte)0x92, (byte)0x64,
-			(byte)0x98, (byte)0x65, (byte)0xD9, (byte)0x9C, (byte)0x4C, (byte)0xD3, (byte)0x74, (byte)0x40,
-			(byte)0xCD, (byte)0xCE, (byte)0xB9, (byte)0xE0, (byte)0x23, (byte)0x3C, (byte)0x03, (byte)0xBF,
-			(byte)0xC1, (byte)0x5F, (byte)0x8B, (byte)0x5B, (byte)0x94, (byte)0x4E, (byte)0x98, (byte)0xB1,
-			(byte)0x17, (byte)0xD5, (byte)0xF0, (byte)0xF1, (byte)0xB6, (byte)0x57, (byte)0x09, (byte)0xBF,
-			(byte)0x23, (byte)0xDC, (byte)0x2D, (byte)0x8A, (byte)0xE2, (byte)0x8A, (byte)0xCC, (byte)0xF3,
-			(byte)0xFC, (byte)0x1A, (byte)0xDE, (byte)0x87, (byte)0x78, (byte)0x4F, (byte)0xF6, (byte)0xC2,
-			(byte)0x3D, (byte)0x60, (byte)0x4C, (byte)0x19, (byte)0x40, (byte)0x70, (byte)0x69, (byte)0x7B,
-			(byte)0x35, (byte)0xE0, (byte)0x3F, (byte)0x32, (byte)0x83, (byte)0xF2, (byte)0xB1, (byte)0x6D,
-			(byte)0xB4, (byte)0xC0, (byte)0x1F, (byte)0xF0, (byte)0xAD, (byte)0x61, (byte)0x1C, (byte)0x83,
-			(byte)0x53, (byte)0x72, (byte)0x92, (byte)0x6D, (byte)0x59, (byte)0x96, (byte)0x17, (byte)0x46,
-			(byte)0x8D, (byte)0xE3, (byte)0xB8, (byte)0x2F, (byte)0xCD, (byte)0x5D, (byte)0x15, (byte)0x76,
-			(byte)0x82, (byte)0xDB, (byte)0x91, (byte)0xAD, (byte)0xF4, (byte)0x8C, (byte)0x88, (byte)0x87,
-			(byte)0x05, (byte)0xC5, (byte)0x28, (byte)0x8A, (byte)0xDA, (byte)0x2A, (byte)0xEB, (byte)0x44,
-			(byte)0x18, (byte)0x86, (byte)0x1D, (byte)0x29, (byte)0x98, (byte)0x19, (byte)0xB1, (byte)0x2E,
-			(byte)0xE0, (byte)0x07, (byte)0x53, (byte)0x59, (byte)0x27, (byte)0x54, (byte)0xC1, (byte)0xD4,
-			(byte)0x88, (byte)0x78, (byte)0x18, (byte)0x50, (byte)0xE4, (byte)0x78, (byte)0x2A, (byte)0xEB,
-			(byte)0x04, (byte)0xB6, (byte)0x79, (byte)0xC3, (byte)0x2C, (byte)0xBE, (byte)0xC5, (byte)0xAD,
-			(byte)0x11, (byte)0x79, (byte)0x48, (byte)0x20, (byte)0x7E, (byte)0x82, (byte)0x1B, (byte)0xCF,
-			(byte)0xF1, (byte)0x9F, (byte)0xA1, (byte)0x57, (byte)0xEA, (byte)0x7E, (byte)0x8D, (byte)0x92,
-			(byte)0x2F, (byte)0x5C, (byte)0x5B, (byte)0x3A, (byte)0x43, (byte)0x63, (byte)0xC4, (byte)0x66,
-			(byte)0x98, (byte)0xF7, (byte)0x0D, (byte)0xE3, (byte)0xE0, (byte)0x71, (byte)0xE4, (byte)0x0A,
-			(byte)0x7C, (byte)0x90, (byte)0x4C, (byte)0xF3, (byte)0x37, (byte)0x0A, (byte)0x78, (byte)0x0A,
-			(byte)0x5F, (byte)0x24, (byte)0xFC, (byte)0xAC, (byte)0x0D, (byte)0xD1, (byte)0xF6, (byte)0xC4,
-			(byte)0xE2, (byte)0x15, (byte)0xB3, (byte)0xDA, (byte)0xD7, (byte)0xF0, (byte)0xD9, (byte)0x0E,
-			(byte)0xDE, (byte)0x69, (byte)0x51, (byte)0x17, (byte)0x70, (byte)0x12, (byte)0xED, (byte)0x9D,
-			(byte)0x05, (byte)0xAB, (byte)0xE0, (byte)0x6F, (byte)0x25, (byte)0xA7, (byte)0xB0, (byte)0x03,
-			(byte)0x89, (byte)0x67, (byte)0xA1, (byte)0x38, (byte)0xED, (byte)0xF7, (byte)0x1D, (byte)0xDF,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44,
-			(byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xC4, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x7D, (byte)0xCF, (byte)0x4B, (byte)0x0E, (byte)0x82,
+			(byte)0x30, (byte)0x00, (byte)0x04, (byte)0xD0, (byte)0xE9, (byte)0x4A, (byte)0xD8, (byte)0x48,
+			(byte)0x3C, (byte)0x13, (byte)0xC4, (byte)0x0F, (byte)0x9E, (byte)0xC1, (byte)0x13, (byte)0x90,
+			(byte)0x08, (byte)0xBA, (byte)0xD5, (byte)0xE8, (byte)0x96, (byte)0x98, (byte)0x78, (byte)0x03,
+			(byte)0x43, (byte)0xF4, (byte)0x0E, (byte)0x4A, (byte)0xDC, (byte)0x7A, (byte)0x1C, (byte)0xE3,
+			(byte)0xE7, (byte)0x08, (byte)0xE0, (byte)0xD0, (byte)0x16, (byte)0x28, (byte)0xD6, (byte)0x98,
+			(byte)0x49, (byte)0x9A, (byte)0x76, (byte)0xFA, (byte)0xDA, (byte)0xA6, (byte)0x28, (byte)0xF0,
+			(byte)0x3F, (byte)0xE6, (byte)0xD4, (byte)0xC5, (byte)0x14, (byte)0x0B, (byte)0x26, (byte)0x84,
+			(byte)0x6B, (byte)0x01, (byte)0x08, (byte)0x24, (byte)0x78, (byte)0xA1, (byte)0xD4, (byte)0x79,
+			(byte)0x62, (byte)0x0E, (byte)0x61, (byte)0x00, (byte)0x6E, (byte)0x9F, (byte)0x58, (byte)0x5F,
+			(byte)0xE0, (byte)0xC3, (byte)0x63, (byte)0x02, (byte)0xE4, (byte)0x5C, (byte)0xED, (byte)0x4D,
+			(byte)0x10, (byte)0xB3, (byte)0x58, (byte)0xB7, (byte)0xD7, (byte)0xB2, (byte)0xD9, (byte)0xB1,
+			(byte)0x89, (byte)0x34, (byte)0x80, (byte)0x83, (byte)0x37, (byte)0xCE, (byte)0xE6, (byte)0xB6,
+			(byte)0xBC, (byte)0x33, (byte)0xE7, (byte)0x43, (byte)0x3D, (byte)0x05, (byte)0x26, (byte)0xD4,
+			(byte)0x7E, (byte)0x17, (byte)0xB0, (byte)0x0D, (byte)0xD8, (byte)0x8E, (byte)0x15, (byte)0x58,
+			(byte)0x72, (byte)0xDA, (byte)0xB7, (byte)0xC0, (byte)0x80, (byte)0x6D, (byte)0xD2, (byte)0x02,
+			(byte)0xEF, (byte)0x27, (byte)0x88, (byte)0x15, (byte)0x08, (byte)0x39, (byte)0x0D, (byte)0x2C,
+			(byte)0x30, (byte)0x64, (byte)0x3B, (byte)0x52, (byte)0xC0, (byte)0xC5, (byte)0x1D, (byte)0xB7,
+			(byte)0xFA, (byte)0xDF, (byte)0x5C, (byte)0xA7, (byte)0x72, (byte)0xBC, (byte)0xE2, (byte)0x01,
+			(byte)0x47, (byte)0x02, (byte)0x0E, (byte)0x33, (byte)0xEA, (byte)0x4D, (byte)0x03, (byte)0x4A,
+			(byte)0xA4, (byte)0xD8, (byte)0x1A, (byte)0xDF, (byte)0x2C, (byte)0xAA, (byte)0x4F, (byte)0x1D,
+			(byte)0x59, (byte)0x1C, (byte)0x1A, (byte)0x50, (byte)0x25, (byte)0x53, (byte)0x77, (byte)0xD6,
+			(byte)0xA7, (byte)0x04, (byte)0x22, (byte)0xAC, (byte)0x3A, (byte)0x40, (byte)0x3E, (byte)0xD4,
+			(byte)0x00, (byte)0x33, (byte)0x1A, (byte)0x68, (byte)0x62, (byte)0x6D, (byte)0x7F, (byte)0xE7,
+			(byte)0x03, (byte)0x72, (byte)0x7E, (byte)0xD2, (byte)0x9E, (byte)0x78, (byte)0x1E, (byte)0x74,
+			(byte)0xDB, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E,
+			(byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/buttonBar
 		byte[]	BUTTON_BAR	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x5F, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0x05, (byte)0x0C,
-			(byte)0xF3, (byte)0xE7, (byte)0xCF, (byte)0x6F, (byte)0x58, (byte)0xB0, (byte)0x60, (byte)0xC1,
-			(byte)0x7F, (byte)0x72, (byte)0x30, (byte)0x48, (byte)0x2F, (byte)0xC3, (byte)0xF3, (byte)0xE7,
-			(byte)0xCF, (byte)0xEB, (byte)0x5F, (byte)0xBC, (byte)0x78, (byte)0xF1, (byte)0x97, (byte)0x1C,
-			(byte)0x0C, (byte)0xD4, (byte)0x1B, (byte)0x02, (byte)0x36, (byte)0x20, (byte)0x2B, (byte)0x2B,
-			(byte)0xEB, (byte)0x7F, (byte)0x62, (byte)0x62, (byte)0x22, (byte)0x18, (byte)0x83, (byte)0xD8,
-			(byte)0x20, (byte)0x49, (byte)0x62, (byte)0xC4, (byte)0xE0, (byte)0x06, (byte)0x80, (byte)0x04,
-			(byte)0x7E, (byte)0xFC, (byte)0xF8, (byte)0x01, (byte)0xC6, (byte)0x20, (byte)0x36, (byte)0x48,
-			(byte)0x31, (byte)0x31, (byte)0x62, (byte)0xD4, (byte)0x33, (byte)0x00, (byte)0xDD, (byte)0x69,
-			(byte)0xD8, (byte)0x9C, (byte)0x8B, (byte)0x4D, (byte)0x0C, (byte)0x6E, (byte)0x00, (byte)0x7A,
-			(byte)0xE0, (byte)0x10, (byte)0x8B, (byte)0xC1, (byte)0x06, (byte)0x50, (byte)0x1C, (byte)0x8D,
-			(byte)0xA3, (byte)0x80, (byte)0x01, (byte)0x00, (byte)0x65, (byte)0x56, (byte)0x81, (byte)0xAA,
-			(byte)0xFC, (byte)0xA9, (byte)0x81, (byte)0xE3, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x53, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x8D, (byte)0xD0, (byte)0xCB, (byte)0x09, (byte)0x40,
+			(byte)0x21, (byte)0x10, (byte)0x43, (byte)0xD1, (byte)0xAC, (byte)0x66, (byte)0x65, (byte)0x37,
+			(byte)0xF6, (byte)0x64, (byte)0xF9, (byte)0x76, (byte)0xA0, (byte)0x3C, (byte)0x75, (byte)0x25,
+			(byte)0x37, (byte)0x30, (byte)0x3E, (byte)0x0E, (byte)0x88, (byte)0x86, (byte)0xE0, (byte)0x4F,
+			(byte)0x53, (byte)0x39, (byte)0x0B, (byte)0xC8, (byte)0x02, (byte)0xB2, (byte)0x80, (byte)0xA4,
+			(byte)0xAA, (byte)0x96, (byte)0xA8, (byte)0x52, (byte)0xA8, (byte)0x24, (byte)0x62, (byte)0x17,
+			(byte)0xBA, (byte)0xC6, (byte)0xD2, (byte)0xD7, (byte)0xD2, (byte)0x67, (byte)0xA7, (byte)0x30,
+			(byte)0x4E, (byte)0x77, (byte)0x8F, (byte)0x3E, (byte)0xFB, (byte)0x57, (byte)0xF0, (byte)0x8D,
+			(byte)0x71, (byte)0x04, (byte)0x2F, (byte)0x76, (byte)0x8B, (byte)0xF7, (byte)0x33, (byte)0xF9,
+			(byte)0x31, (byte)0x64, (byte)0x01, (byte)0x59, (byte)0x40, (byte)0x16, (byte)0xD0, (byte)0x07,
+			(byte)0x12, (byte)0x6C, (byte)0xB0, (byte)0x5D, (byte)0xD8, (byte)0xC7, (byte)0x42, (byte)0x4D,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44,
+			(byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/pencil
 		byte[]	PENCIL	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xFA, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x20, (byte)0x01, (byte)0xA4,
-			(byte)0xA5, (byte)0xA5, (byte)0x89, (byte)0x64, (byte)0x65, (byte)0x65, (byte)0xF1, (byte)0xA0,
-			(byte)0x8B, (byte)0x13, (byte)0x05, (byte)0x12, (byte)0x12, (byte)0x12, (byte)0x1C, (byte)0x80,
-			(byte)0xF8, (byte)0x2D, (byte)0x10, (byte)0xBF, (byte)0x4F, (byte)0x4C, (byte)0x4C, (byte)0xDC,
-			(byte)0x08, (byte)0xA4, (byte)0x25, (byte)0xD0, (byte)0xD5, (byte)0xE0, (byte)0x04, (byte)0x50,
-			(byte)0xCD, (byte)0xAF, (byte)0x40, (byte)0x74, (byte)0x43, (byte)0x43, (byte)0x03, (byte)0x4B,
-			(byte)0x4D, (byte)0x4D, (byte)0xCD, (byte)0xFA, (byte)0xA4, (byte)0xA4, (byte)0xA4, (byte)0x7D,
-			(byte)0x40, (byte)0x29, (byte)0x46, (byte)0x74, (byte)0xB5, (byte)0x18, (byte)0x00, (byte)0x59,
-			(byte)0x33, (byte)0x88, (byte)0xFF, (byte)0xE0, (byte)0xC1, (byte)0x83, (byte)0xE4, (byte)0x7B,
-			(byte)0xF7, (byte)0xEE, (byte)0x9D, (byte)0xCA, (byte)0xCC, (byte)0xCC, (byte)0xFC, (byte)0x9E,
-			(byte)0x9E, (byte)0x9E, (byte)0xAE, (byte)0x8A, (byte)0xA6, (byte)0x1C, (byte)0x15, (byte)0x60,
-			(byte)0xD3, (byte)0x7C, (byte)0xF7, (byte)0xEE, (byte)0xDD, (byte)0x53, (byte)0x6B, (byte)0xD7,
-			(byte)0xAE, (byte)0xFD, (byte)0x0A, (byte)0x74, (byte)0xC1, (byte)0xC7, (byte)0x98, (byte)0x98,
-			(byte)0x18, (byte)0x49, (byte)0x34, (byte)0x2D, (byte)0x08, (byte)0x00, (byte)0xD4, (byte)0x64,
-			(byte)0x0B, (byte)0xC4, (byte)0x2F, (byte)0x81, (byte)0xFE, (byte)0x75, (byte)0x02, (byte)0xF1,
-			(byte)0x61, (byte)0x9A, (byte)0x37, (byte)0x6C, (byte)0xD8, (byte)0xF0, (byte)0x25, (byte)0x39,
-			(byte)0x39, (byte)0xF9, (byte)0x03, (byte)0x4C, (byte)0x1C, (byte)0x2B, (byte)0x18, (byte)0xA2,
-			(byte)0x9A, (byte)0xE3, (byte)0xE3, (byte)0xE3, (byte)0xED, (byte)0x80, (byte)0x9A, (byte)0xBF,
-			(byte)0x01, (byte)0x15, (byte)0x6D, (byte)0x8B, (byte)0x8E, (byte)0x8E, (byte)0xE6, (byte)0x43,
-			(byte)0x0E, (byte)0x30, (byte)0x90, (byte)0x66, (byte)0x58, (byte)0x40, (byte)0xE2, (byte)0x04,
-			(byte)0x40, (byte)0x03, (byte)0xA6, (byte)0x01, (byte)0xF1, (byte)0x32, (byte)0xA0, (byte)0xC2,
-			(byte)0xA9, (byte)0xC0, (byte)0xE8, (byte)0x79, (byte)0x7E, (byte)0xE5, (byte)0xCA, (byte)0x15,
-			(byte)0xE2, (byte)0x35, (byte)0x83, (byte)0x00, (byte)0x50, (byte)0xD1, (byte)0xA3, (byte)0x94,
-			(byte)0x94, (byte)0x14, (byte)0x3D, (byte)0x10, (byte)0x1B, (byte)0x48, (byte)0xCF, (byte)0x29,
-			(byte)0x2F, (byte)0x2F, (byte)0x7F, (byte)0x4D, (byte)0x8A, (byte)0x66, (byte)0x5D, (byte)0xA0,
-			(byte)0xED, (byte)0xDF, (byte)0x80, (byte)0xF4, (byte)0x56, (byte)0x60, (byte)0xFC, (byte)0xEA,
-			(byte)0x03, (byte)0xE9, (byte)0x25, (byte)0x20, (byte)0xEF, (byte)0x10, (byte)0xA5, (byte)0x19,
-			(byte)0x04, (byte)0x80, (byte)0x9A, (byte)0xAB, (byte)0x81, (byte)0x8A, (byte)0x7F, (byte)0x41,
-			(byte)0x0D, (byte)0x79, (byte)0x08, (byte)0xF2, (byte)0x46, (byte)0x5C, (byte)0x5C, (byte)0x9C,
-			(byte)0x23, (byte)0xBA, (byte)0x3A, (byte)0x9C, (byte)0x00, (byte)0xEA, (byte)0x7F, (byte)0x90,
-			(byte)0x21, (byte)0xBA, (byte)0xE8, (byte)0x72, (byte)0x34, (byte)0x07, (byte)0x00, (byte)0x77,
-			(byte)0x6D, (byte)0xC6, (byte)0xC1, (byte)0xF5, (byte)0x41, (byte)0x96, (byte)0xD3, (byte)0x00,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE,
-			(byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xA9, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x7D, (byte)0xCE, (byte)0x3F, (byte)0x0A, (byte)0xC2,
+			(byte)0x30, (byte)0x14, (byte)0x80, (byte)0xF1, (byte)0x4F, (byte)0x70, (byte)0x14, (byte)0x07,
+			(byte)0x71, (byte)0xA8, (byte)0xBB, (byte)0x6B, (byte)0x75, (byte)0x15, (byte)0xC1, (byte)0xA2,
+			(byte)0xBD, (byte)0x96, (byte)0x8B, (byte)0x78, (byte)0x02, (byte)0x17, (byte)0xEB, (byte)0x05,
+			(byte)0xC4, (byte)0xDD, (byte)0xC1, (byte)0x4E, (byte)0x1E, (byte)0xC0, (byte)0x53, (byte)0x08,
+			(byte)0x3A, (byte)0xF9, (byte)0x17, (byte)0x37, (byte)0x07, (byte)0x07, (byte)0xF1, (byte)0x99,
+			(byte)0x46, (byte)0x69, (byte)0x1F, (byte)0x49, (byte)0x09, (byte)0x69, (byte)0x42, (byte)0x7F,
+			(byte)0x1F, (byte)0xBC, (byte)0xF0, (byte)0xC6, (byte)0xB5, (byte)0x68, (byte)0x52, (byte)0xB3,
+			(byte)0x37, (byte)0x4D, (byte)0xE6, (byte)0xE7, (byte)0x90, (byte)0x3B, (byte)0x0F, (byte)0xD6,
+			(byte)0x04, (byte)0xCE, (byte)0x40, (byte)0xF8, (byte)0x22, (byte)0xBB, (byte)0xCA, (byte)0x8C,
+			(byte)0x2D, (byte)0x15, (byte)0x0F, (byte)0xCB, (byte)0xD9, (byte)0xA0, (byte)0xCF, (byte)0x89,
+			(byte)0xB6, (byte)0x9F, (byte)0x7B, (byte)0x4C, (byte)0x65, (byte)0x50, (byte)0xAB, (byte)0xC8,
+			(byte)0x03, (byte)0xCE, (byte)0xC4, (byte)0x96, (byte)0x27, (byte)0x5C, (byte)0xCD, (byte)0xBD,
+			(byte)0x9C, (byte)0x73, (byte)0x81, (byte)0x9B, (byte)0xFF, (byte)0x81, (byte)0x8F, (byte)0x6D,
+			(byte)0x40, (byte)0xC4, (byte)0x93, (byte)0x94, (byte)0xBA, (byte)0x7D, (byte)0xDA, (byte)0xED,
+			(byte)0xFB, (byte)0xCC, (byte)0x62, (byte)0x90, (byte)0xB0, (byte)0x62, (byte)0xCE, (byte)0x9E,
+			(byte)0x58, (byte)0xF3, (byte)0x2F, (byte)0x38, (byte)0xD2, (byte)0x91, (byte)0xEF, (byte)0x82,
+			(byte)0x9D, (byte)0x66, (byte)0x13, (byte)0x10, (byte)0xCA, (byte)0x80, (byte)0x0D, (byte)0x5D,
+			(byte)0x96, (byte)0x72, (byte)0x2A, (byte)0xCE, (byte)0x82, (byte)0x31, (byte)0x2F, (byte)0xA1,
+			(byte)0x83, (byte)0x0C, (byte)0x19, (byte)0x69, (byte)0xCE, (byte)0x82, (byte)0x44, (byte)0x92,
+			(byte)0x50, (byte)0x43, (byte)0x2E, (byte)0x28, (byte)0x5F, (byte)0x1F, (byte)0x8B, (byte)0x52,
+			(byte)0xC9, (byte)0x6E, (byte)0x7C, (byte)0x8A, (byte)0xFF, (byte)0x0E, (byte)0x00, (byte)0x00,
+			(byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42,
+			(byte)0x60, (byte)0x82
 		};
 
+		// File: mono/expand
 		byte[]	EXPAND	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x81, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0xD4, (byte)0x20,
-			(byte)0x31, (byte)0x31, (byte)0x31, (byte)0x3D, (byte)0x3E, (byte)0x3E, (byte)0x3E, (byte)0x0D,
-			(byte)0x5D, (byte)0x9C, (byte)0x28, (byte)0x10, (byte)0x17, (byte)0x17, (byte)0x67, (byte)0x99,
-			(byte)0x90, (byte)0x90, (byte)0xF0, (byte)0x03, (byte)0x88, (byte)0x7F, (byte)0x01, (byte)0xB1,
-			(byte)0x2D, (byte)0xBA, (byte)0x3C, (byte)0x5E, (byte)0x00, (byte)0xD4, (byte)0x20, (byte)0x01,
-			(byte)0xC4, (byte)0x4F, (byte)0x80, (byte)0xF8, (byte)0x3F, (byte)0x14, (byte)0x3F, (byte)0x07,
-			(byte)0x1A, (byte)0x28, (byte)0x8D, (byte)0xAE, (byte)0x0E, (byte)0x2B, (byte)0x48, (byte)0x4B,
-			(byte)0x4B, (byte)0x63, (byte)0x05, (byte)0x6A, (byte)0x38, (byte)0x84, (byte)0xA4, (byte)0x19,
-			(byte)0x86, (byte)0x8F, (byte)0xE7, (byte)0xE6, (byte)0xE6, (byte)0xB2, (byte)0xA3, (byte)0xAB,
-			(byte)0xC7, (byte)0x00, (byte)0x40, (byte)0x7F, (byte)0xCF, (byte)0xC4, (byte)0xA2, (byte)0x19,
-			(byte)0x86, (byte)0x17, (byte)0xA0, (byte)0xAB, (byte)0x1F, (byte)0x84, (byte)0x80, (byte)0x80,
-			(byte)0x17, (byte)0x66, (byte)0xA0, (byte)0xAB, (byte)0xC7, (byte)0x00, (byte)0xB8, (byte)0x02,
-			(byte)0x11, (byte)0x68, (byte)0xF0, (byte)0x31, (byte)0xA2, (byte)0x02, (byte)0x11, (byte)0x04,
-			(byte)0x12, (byte)0x28, (byte)0x89, (byte)0x46, (byte)0x18, (byte)0x00, (byte)0x6A, (byte)0xB2,
-			(byte)0x48, (byte)0x20, (byte)0x37, (byte)0x21, (byte)0xC1, (byte)0x00, (byte)0x28, (byte)0x19,
-			(byte)0x93, (byte)0x9D, (byte)0x94, (byte)0xE9, (byte)0x06, (byte)0x00, (byte)0xB4, (byte)0xE1,
-			(byte)0x67, (byte)0x43, (byte)0x04, (byte)0xA9, (byte)0xEF, (byte)0xC3, (byte)0x00, (byte)0x00,
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x69, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0xA2, (byte)0x73, (byte)0xD3, (byte)0x19, (byte)0xD2, (byte)0xF0, (byte)0x28, (byte)0x60,
+			(byte)0xB0, (byte)0x64, (byte)0xF8, (byte)0xC1, (byte)0xF0, (byte)0x8B, (byte)0xC1, (byte)0x16,
+			(byte)0x87, (byte)0x02, (byte)0x06, (byte)0x09, (byte)0x86, (byte)0x27, (byte)0x0C, (byte)0xFF,
+			(byte)0x81, (byte)0xF0, (byte)0x39, (byte)0x83, (byte)0x34, (byte)0x16, (byte)0x05, (byte)0x0C,
+			(byte)0xAC, (byte)0x0C, (byte)0x87, (byte)0xC0, (byte)0xD2, (byte)0x20, (byte)0x78, (byte)0x9C,
+			(byte)0x81, (byte)0x1D, (byte)0x53, (byte)0xC1, (byte)0x4C, (byte)0xB8, (byte)0x34, (byte)0x08,
+			(byte)0x2E, (byte)0xC0, (byte)0x50, (byte)0x80, (byte)0x0B, (byte)0x62, (byte)0x08, (byte)0xA0,
+			(byte)0x43, (byte)0x0C, (byte)0x01, (byte)0x74, (byte)0x88, (byte)0x21, (byte)0x80, (byte)0x0E,
+			(byte)0x11, (byte)0x0C, (byte)0x54, (byte)0x47, (byte)0xCE, (byte)0xC0, (byte)0x54, (byte)0x80,
+			(byte)0xEC, (byte)0xCD, (byte)0x63, (byte)0x58, (byte)0xBC, (byte)0x49, (byte)0x30, (byte)0xA0,
+			(byte)0xC0, (byte)0x1C, (byte)0x0B, (byte)0xBC, (byte)0x41, (byte)0x0D, (byte)0xE6, (byte)0xA6,
+			(byte)0xE1, (byte)0x8D, (byte)0x2C, (byte)0x6C, (byte)0x10, (byte)0x00, (byte)0x25, (byte)0x0D,
+			(byte)0xEE, (byte)0x50, (byte)0xD6, (byte)0xD5, (byte)0xCF, (byte)0xEB, (byte)0x00, (byte)0x00,
 			(byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42,
 			(byte)0x60, (byte)0x82
 		};
 
+		// File: mono/collapse
 		byte[]	COLLAPSE	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x78, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0x18, (byte)0x74, (byte)0x20,
-			(byte)0x31, (byte)0x31, (byte)0x71, (byte)0x66, (byte)0x42, (byte)0x42, (byte)0xC2, (byte)0x7F,
-			(byte)0x1C, (byte)0x78, (byte)0x06, (byte)0xBA, (byte)0x7A, (byte)0x0C, (byte)0x90, (byte)0x96,
-			(byte)0x96, (byte)0xC6, (byte)0x0A, (byte)0x54, (byte)0x78, (byte)0x08, (byte)0x5D, (byte)0x33,
-			(byte)0xD0, (byte)0xE0, (byte)0x63, (byte)0xB9, (byte)0xB9, (byte)0xB9, (byte)0xEC, (byte)0xE8,
-			(byte)0xEA, (byte)0xB1, (byte)0x02, (byte)0xA0, (byte)0x06, (byte)0x09, (byte)0x20, (byte)0x7E,
-			(byte)0x82, (byte)0x64, (byte)0xC0, (byte)0xF3, (byte)0xB8, (byte)0xB8, (byte)0x38, (byte)0x69,
-			(byte)0x74, (byte)0x75, (byte)0x78, (byte)0x01, (byte)0x50, (byte)0x93, (byte)0x05, (byte)0x10,
-			(byte)0xFF, (byte)0x00, (byte)0xE2, (byte)0x5F, (byte)0x40, (byte)0x6C, (byte)0x8B, (byte)0x2E,
-			(byte)0x4F, (byte)0x14, (byte)0x88, (byte)0x8F, (byte)0x8F, (byte)0x4F, (byte)0x03, (byte)0x61,
-			(byte)0x74, (byte)0xF1, (byte)0x21, (byte)0x04, (byte)0x80, (byte)0x21, (byte)0x9F, (byte)0x4E,
-			(byte)0xB6, (byte)0x17, (byte)0x80, (byte)0xA1, (byte)0x6E, (byte)0x49, (byte)0x76, (byte)0x20,
-			(byte)0x52, (byte)0x14, (byte)0x8D, (byte)0xB8, (byte)0x12, (byte)0x12, (byte)0x10, (byte)0x1F,
-			(byte)0x27, (byte)0x2A, (byte)0x21, (byte)0x11, (byte)0x48, (byte)0xCA, (byte)0x0B, (byte)0xD0,
-			(byte)0xD5, (byte)0x0F, (byte)0x3C, (byte)0x00, (byte)0x00, (byte)0xA6, (byte)0xA9, (byte)0x67,
-			(byte)0x43, (byte)0x4B, (byte)0x1D, (byte)0x09, (byte)0x98, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60,
-			(byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6A, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x62, (byte)0x08, (byte)0xA0, (byte)0x43, (byte)0x04, (byte)0x63, (byte)0x26, (byte)0xC3,
+			(byte)0x7F, (byte)0x24, (byte)0x38, (byte)0x03, (byte)0x53, (byte)0x01, (byte)0x2B, (byte)0xC3,
+			(byte)0x21, (byte)0xB8, (byte)0xF4, (byte)0x31, (byte)0x06, (byte)0x76, (byte)0x0C, (byte)0x05,
+			(byte)0x40, (byte)0xA6, (byte)0x04, (byte)0xC3, (byte)0x13, (byte)0xB0, (byte)0xF4, (byte)0x73,
+			(byte)0x06, (byte)0x69, (byte)0x24, (byte)0x51, (byte)0x04, (byte)0x13, (byte)0xC8, (byte)0xB1,
+			(byte)0x60, (byte)0xF8, (byte)0xC1, (byte)0xF0, (byte)0x8B, (byte)0xC1, (byte)0x16, (byte)0x45,
+			(byte)0x0C, (byte)0x99, (byte)0x03, (byte)0xE4, (byte)0xA6, (byte)0x31, (byte)0xA4, (byte)0xA1,
+			(byte)0x89, (byte)0xA0, (byte)0x72, (byte)0x31, (byte)0x21, (byte)0x86, (byte)0x00, (byte)0x3A,
+			(byte)0x44, (byte)0xE7, (byte)0xA6, (byte)0xE3, (byte)0xB5, (byte)0x82, (byte)0xC1, (byte)0x12,
+			(byte)0xAF, (byte)0x23, (byte)0x09, (byte)0x78, (byte)0x13, (byte)0x25, (byte)0xA0, (byte)0x8E,
+			(byte)0x63, (byte)0x09, (byte)0x28, (byte)0xB4, (byte)0xA0, (byte)0x5E, (byte)0x80, (byte)0xA1,
+			(byte)0x00, (byte)0x17, (byte)0xC4, (byte)0x10, (byte)0x40, (byte)0x87, (byte)0x00, (byte)0x19,
+			(byte)0xB5, (byte)0xEE, (byte)0x50, (byte)0xD8, (byte)0x2A, (byte)0xAA, (byte)0xCC, (byte)0x00,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE,
+			(byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/selectFromList
 		byte[]	SELECT	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6E, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0x60, (byte)0xA0, (byte)0x06, (byte)0x48,
-			(byte)0x48, (byte)0x48, (byte)0xF8, (byte)0x4F, (byte)0x08, (byte)0xA3, (byte)0xEB, (byte)0x41,
-			(byte)0x01, (byte)0x20, (byte)0x05, (byte)0x7F, (byte)0xFE, (byte)0xFC, (byte)0xF9, (byte)0x8B,
-			(byte)0x0B, (byte)0x0F, (byte)0x11, (byte)0x03, (byte)0x08, (byte)0x61, (byte)0xA8, (byte)0xBA,
-			(byte)0xAE, (byte)0xA4, (byte)0xA4, (byte)0x24, (byte)0x5E, (byte)0x74, (byte)0xFD, (byte)0x60,
-			(byte)0x03, (byte)0x1E, (byte)0x3C, (byte)0x78, (byte)0xF0, (byte)0x17, (byte)0x17, (byte)0x06,
-			(byte)0xCA, (byte)0x87, (byte)0xC2, (byte)0xD4, (byte)0xC5, (byte)0xC7, (byte)0xC7, (byte)0xBF,
-			(byte)0x06, (byte)0xD2, (byte)0xF9, (byte)0x0D, (byte)0x0D, (byte)0x0D, (byte)0x4C, (byte)0x04,
-			(byte)0x0D, (byte)0x40, (byte)0x77, (byte)0x05, (byte)0x1A, (byte)0x9E, (byte)0x44, (byte)0xD0,
-			(byte)0x00, (byte)0x6C, (byte)0x2E, (byte)0x00, (byte)0xE2, (byte)0x67, (byte)0x40, (byte)0x57,
-			(byte)0xA4, (byte)0x61, (byte)0xB8, (byte)0x80, (byte)0x10, (byte)0x86, (byte)0xAA, (byte)0xC3,
-			(byte)0x1D, (byte)0x06, (byte)0xE8, (byte)0x21, (byte)0x4F, (byte)0x72, (byte)0x2C, (byte)0xA0,
-			(byte)0x6B, (byte)0xA2, (byte)0xBF, (byte)0x01, (byte)0x84, (byte)0x30, (byte)0xBA, (byte)0x9E,
-			(byte)0xC1, (byte)0x03, (byte)0x00, (byte)0x13, (byte)0x3D, (byte)0x7D, (byte)0xFF, (byte)0x2A,
-			(byte)0x03, (byte)0xEB, (byte)0x79, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
-			(byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x4C, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x82, (byte)0xD0, (byte)0x7F, (byte)0x74, (byte)0x88, (byte)0xA1, (byte)0xE0, (byte)0xF7,
+			(byte)0x5F, (byte)0x64, (byte)0x48, (byte)0x13, (byte)0x05, (byte)0xE8, (byte)0x10, (byte)0x28,
+			(byte)0xD6, (byte)0xC5, (byte)0xC0, (byte)0x8B, (byte)0xAC, (byte)0x40, (byte)0x0D, (byte)0x05,
+			(byte)0x3A, (byte)0x80, (byte)0xC5, (byte)0x5E, (byte)0x33, (byte)0xE4, (byte)0x33, (byte)0x30,
+			(byte)0x61, (byte)0x2A, (byte)0x40, (byte)0x35, (byte)0x6B, (byte)0x12, (byte)0xA6, (byte)0x02,
+			(byte)0x84, (byte)0x09, (byte)0xCF, (byte)0x18, (byte)0xD2, (byte)0x10, (byte)0x26, (byte)0x10,
+			(byte)0x72, (byte)0x03, (byte)0x41, (byte)0x5F, (byte)0x50, (byte)0xAE, (byte)0x00, (byte)0x1D,
+			(byte)0xA2, (byte)0x29, (byte)0xC0, (byte)0x0F, (byte)0x31, (byte)0x04, (byte)0xD0, (byte)0x21,
+			(byte)0x00, (byte)0xBF, (byte)0x93, (byte)0x0F, (byte)0x4C, (byte)0xD6, (byte)0x58, (byte)0x64,
+			(byte)0x3D, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E,
+			(byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 
+		// File: mono/copy
 		byte[]	COPY	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x88, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xB5, (byte)0x8F, (byte)0x51, (byte)0x0A, (byte)0x80,
-			(byte)0x30, (byte)0x0C, (byte)0x43, (byte)0xBD, (byte)0x8C, (byte)0xE7, (byte)0x5A, (byte)0xE7,
-			(byte)0x9F, (byte)0xE7, (byte)0xF6, (byte)0x00, (byte)0x1E, (byte)0x40, (byte)0x41, (byte)0x3B,
-			(byte)0xD8, (byte)0x4A, (byte)0x9B, (byte)0x75, (byte)0x55, (byte)0x10, (byte)0x1F, (byte)0xE4,
-			(byte)0xC3, (byte)0x25, (byte)0x86, (byte)0x66, (byte)0x9A, (byte)0xFE, (byte)0x80, (byte)0x88,
-			(byte)0x76, (byte)0xD6, (byte)0xA5, (byte)0x74, (byte)0xB2, (byte)0x16, (byte)0xCC, (byte)0x0D,
-			(byte)0x29, (byte)0x3F, (byte)0xE1, (byte)0x77, (byte)0x4A, (byte)0x69, (byte)0xCB, (byte)0x39,
-			(byte)0xAF, (byte)0xFA, (byte)0x7D, (byte)0x88, (byte)0x57, (byte)0xC0, (byte)0x9A, (byte)0x5F,
-			(byte)0x97, (byte)0x38, (byte)0x05, (byte)0x32, (byte)0x89, (byte)0x0B, (byte)0x0E, (byte)0xED,
-			(byte)0x19, (byte)0x74, (byte)0xB0, (byte)0xAA, (byte)0xDB, (byte)0x8E, (byte)0xE5, (byte)0x06,
-			(byte)0x34, (byte)0xCB, (byte)0x37, (byte)0x9E, (byte)0x8D, (byte)0x19, (byte)0x03, (byte)0x9A,
-			(byte)0xF5, (byte)0x0A, (byte)0xB3, (byte)0x1D, (byte)0x33, (byte)0x06, (byte)0x34, (byte)0xC9,
-			(byte)0xD9, (byte)0x8E, (byte)0x19, (byte)0x43, (byte)0x64, (byte)0x36, (byte)0x2F, (byte)0xCA,
-			(byte)0x84, (byte)0x66, (byte)0xBB, (byte)0xA4, (byte)0x5C, (byte)0x85, (byte)0x9E, (byte)0xF0,
-			(byte)0x54, (byte)0x80, (byte)0x6F, (byte)0x1D, (byte)0x51, (byte)0x28, (byte)0xF2, (byte)0x84,
-			(byte)0x28, (byte)0x14, (byte)0x79, (byte)0x42, (byte)0xD9, (byte)0x57, (byte)0x77, (byte)0x7A,
-			(byte)0x1A, (byte)0x6F, (byte)0xFF, (byte)0xC2, (byte)0x0D, (byte)0xD0, (byte)0x9C, (byte)0x83,
-			(byte)0xB2, (byte)0x5A, (byte)0x66, (byte)0xC3, (byte)0x8C, (byte)0x00, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60,
-			(byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x59, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x22, (byte)0x33, (byte)0xDF, (byte)0x33, (byte)0xFC, (byte)0x07, (byte)0xC3, (byte)0xDF,
+			(byte)0x0C, (byte)0x49, (byte)0xD8, (byte)0x15, (byte)0xFC, (byte)0x87, (byte)0xD1, (byte)0x0C,
+			(byte)0x8F, (byte)0x19, (byte)0x32, (byte)0xF1, (byte)0x2B, (byte)0x50, (byte)0x45, (byte)0x28,
+			(byte)0xC1, (byte)0xA6, (byte)0x00, (byte)0x62, (byte)0xD5, (byte)0x6F, (byte)0x14, (byte)0x05,
+			(byte)0x98, (byte)0xF6, (byte)0xC3, (byte)0x95, (byte)0xA3, (byte)0x71, (byte)0xE1, (byte)0xF6,
+			(byte)0xE3, (byte)0x56, (byte)0x00, (byte)0xB5, (byte)0x1F, (byte)0x97, (byte)0x02, (byte)0xB8,
+			(byte)0xFD, (byte)0x38, (byte)0x14, (byte)0x20, (byte)0x78, (byte)0x04, (byte)0x14, (byte)0x00,
+			(byte)0xE1, (byte)0x7B, (byte)0xBC, (byte)0x0A, (byte)0x90, (byte)0xD8, (byte)0x98, (byte)0x42,
+			(byte)0x64, (byte)0x2A, (byte)0x80, (byte)0x05, (byte)0x14, (byte)0x04, (byte)0x42, (byte)0xED,
+			(byte)0x47, (byte)0x52, (byte)0x80, (byte)0x1B, (byte)0x02, (byte)0x00, (byte)0xE5, (byte)0x32,
+			(byte)0xF8, (byte)0x0C, (byte)0x4A, (byte)0x24, (byte)0x84, (byte)0xAC, (byte)0x00, (byte)0x00,
+			(byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42,
+			(byte)0x60, (byte)0x82
 		};
 
+		// File: mono/copy-lines
 		byte[]	COPY_LINES	=
 		{
 			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
 			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x06, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x1F, (byte)0xF3, (byte)0xFF,
-			(byte)0x61, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x96, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0xB5, (byte)0x8F, (byte)0xD1, (byte)0x0D, (byte)0x80,
-			(byte)0x20, (byte)0x0C, (byte)0x44, (byte)0x5D, (byte)0xC6, (byte)0xB9, (byte)0x00, (byte)0xF9,
-			(byte)0x72, (byte)0x08, (byte)0x76, (byte)0x60, (byte)0x47, (byte)0x7F, (byte)0x4D, (byte)0x18,
-			(byte)0x40, (byte)0x13, (byte)0x04, (byte)0x43, (byte)0x09, (byte)0xAD, (byte)0xA5, (byte)0x92,
-			(byte)0x18, (byte)0x5F, (byte)0x72, (byte)0x1F, (byte)0x7A, (byte)0xE7, (byte)0xD9, (byte)0x9B,
-			(byte)0xA6, (byte)0x3F, (byte)0xD0, (byte)0x5A, (byte)0x87, (byte)0xA4, (byte)0xD8, (byte)0xE8,
-			(byte)0x4C, (byte)0x5A, (byte)0x68, (byte)0xAE, (byte)0x4B, (byte)0xFE, (byte)0x88, (byte)0x3E,
-			(byte)0x2B, (byte)0xA5, (byte)0x36, (byte)0x63, (byte)0xCC, (byte)0xDA, (byte)0xBE, (byte)0xEF,
-			(byte)0xC2, (byte)0x15, (byte)0x24, (byte)0xCD, (byte)0xC3, (byte)0x25, (byte)0x50, (byte)0xE0,
-			(byte)0xBD, (byte)0x8F, (byte)0x59, (byte)0xD6, (byte)0xDA, (byte)0x3A, (byte)0x27, (byte)0x15,
-			(byte)0x1C, (byte)0x34, (byte)0x5F, (byte)0xD1, (byte)0x03, (byte)0xDB, (byte)0xE9, (byte)0x75,
-			(byte)0x08, (byte)0x6A, (byte)0x96, (byte)0x3F, (byte)0xEE, (byte)0xCE, (byte)0xB9, (byte)0xFB,
-			(byte)0x12, (byte)0x2E, (byte)0x83, (byte)0xA0, (byte)0x66, (byte)0xB9, (byte)0x02, (byte)0x6D,
-			(byte)0xA7, (byte)0x19, (byte)0x04, (byte)0x98, (byte)0xD2, (byte)0xF6, (byte)0xA1, (byte)0x02,
-			(byte)0x0E, (byte)0xF0, (byte)0xA4, (byte)0xCC, (byte)0xE3, (byte)0x02, (byte)0x10, (byte)0x78,
-			(byte)0x45, (byte)0x01, (byte)0x7F, (byte)0xD5, (byte)0x20, (byte)0xB5, (byte)0x4B, (byte)0x5E,
-			(byte)0xE5, (byte)0xED, (byte)0x02, (byte)0x9C, (byte)0x66, (byte)0x90, (byte)0x42, (byte)0x92,
-			(byte)0x57, (byte)0xC9, (byte)0xFB, (byte)0xCA, (byte)0x4E, (byte)0x4E, (byte)0xFD, (byte)0xED,
-			(byte)0x5F, (byte)0xB8, (byte)0x00, (byte)0xE1, (byte)0x2C, (byte)0xA7, (byte)0xC0, (byte)0xA2,
-			(byte)0x03, (byte)0x93, (byte)0x3A, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49,
-			(byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6D, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x7D, (byte)0xD0, (byte)0xBB, (byte)0x0D, (byte)0xC0,
+			(byte)0x20, (byte)0x0C, (byte)0x04, (byte)0xD0, (byte)0x5B, (byte)0x26, (byte)0x8B, (byte)0xA5,
+			(byte)0xCB, (byte)0x34, (byte)0x4C, (byte)0x94, (byte)0x69, (byte)0xD2, (byte)0xD0, (byte)0xD1,
+			(byte)0x46, (byte)0x8A, (byte)0x14, (byte)0x82, (byte)0x6C, (byte)0xFE, (byte)0x5C, (byte)0xAC,
+			(byte)0x2B, (byte)0x30, (byte)0xE8, (byte)0xC9, (byte)0x27, (byte)0x81, (byte)0x17, (byte)0x76,
+			(byte)0xFA, (byte)0x31, (byte)0x20, (byte)0x4A, (byte)0x1E, (byte)0xEC, (byte)0x1C, (byte)0xC4,
+			(byte)0x72, (byte)0xE2, (byte)0xC2, (byte)0x61, (byte)0x83, (byte)0xAD, (byte)0x91, (byte)0x09,
+			(byte)0xC0, (byte)0xA5, (byte)0xDC, (byte)0x5A, (byte)0x34, (byte)0x80, (byte)0xB5, (byte)0xBF,
+			(byte)0xEE, (byte)0x9B, (byte)0xAE, (byte)0x11, (byte)0x1E, (byte)0x27, (byte)0x9C, (byte)0x05,
+			(byte)0x72, (byte)0x3F, (byte)0x01, (byte)0x63, (byte)0x3F, (byte)0x01, (byte)0x2D, (byte)0xC2,
+			(byte)0x57, (byte)0x20, (byte)0x1B, (byte)0x9C, (byte)0xF6, (byte)0xA7, (byte)0x84, (byte)0x05,
+			(byte)0x8C, (byte)0x1B, (byte)0xEA, (byte)0xCC, (byte)0x37, (byte)0x50, (byte)0xD0, (byte)0x3D,
+			(byte)0x12, (byte)0x50, (byte)0x3E, (byte)0x4A, (byte)0x93, (byte)0xFB, (byte)0x3B, (byte)0xF0,
+			(byte)0x9F, (byte)0x0F, (byte)0xA9, (byte)0xA0, (byte)0xF2, (byte)0xD4, (byte)0x33, (byte)0x76,
+			(byte)0x77, (byte)0x50, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45,
+			(byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42, (byte)0x60, (byte)0x82
 		};
 	}
+
+	//==================================================================
+
 }
 
 //----------------------------------------------------------------------

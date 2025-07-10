@@ -50,9 +50,12 @@ import javafx.scene.control.TableView;
  * </ol>
  * The nesting of the lists allows the unsorted order of items to be restored when the sorting of the columns of a table
  * view is removed.
+ *
+ * @param <E>
+ *          the type of the elements of the list.
  */
 
-public class ElasticList<T>
+public class ElasticList<E>
 {
 
 ////////////////////////////////////////////////////////////////////////
@@ -60,10 +63,10 @@ public class ElasticList<T>
 ////////////////////////////////////////////////////////////////////////
 
 	/** The underlying unsorted list of the items that are represented in the table view. */
-	private	ObservableList<T>	baseList;
+	private	ObservableList<E>	baseList;
 
 	/** The underlying sorted list of the items that are represented in the table view. */
-	private	SortedList<T>		sortedList;
+	private	SortedList<E>		sortedList;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -77,7 +80,7 @@ public class ElasticList<T>
 	 */
 
 	public ElasticList(
-		ListView<T>	listView)
+		ListView<E>	listView)
 	{
 		// Validate arguments
 		if (listView == null)
@@ -101,7 +104,7 @@ public class ElasticList<T>
 	 */
 
 	public ElasticList(
-		TableView<T>	tableView)
+		TableView<E>	tableView)
 	{
 		// Validate arguments
 		if (tableView == null)
@@ -138,12 +141,25 @@ public class ElasticList<T>
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns the unsorted list of items.
+	 *
+	 * @return the unsorted list of items.
+	 */
+
+	public ObservableList<E> getBaseList()
+	{
+		return baseList;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns a modifiable copy of this list in which the items are in unsorted order.
 	 *
 	 * @return a modifiable copy of this list in which the items are in unsorted order.
 	 */
 
-	public List<T> getItems()
+	public List<E> getItems()
 	{
 		return new ArrayList<>(baseList);
 	}
@@ -161,7 +177,7 @@ public class ElasticList<T>
 	 */
 
 	public int indexOf(
-		T	item)
+		E	item)
 	{
 		int numItems = baseList.size();
 		for (int i = 0; i < numItems; i++)
@@ -182,7 +198,7 @@ public class ElasticList<T>
 	 */
 
 	public void add(
-		T	item)
+		E	item)
 	{
 		baseList.add(item);
 	}
@@ -200,9 +216,15 @@ public class ElasticList<T>
 
 	public void add(
 		int	index,
-		T	item)
+		E	item)
 	{
-		baseList.add(sortedList.getSourceIndex(index), item);
+		int numItems = baseList.size();
+		if (index < numItems)
+			baseList.add(sortedList.getSourceIndex(index), item);
+		else if (index == numItems)
+			baseList.add(item);
+		else
+			throw new IndexOutOfBoundsException(index);
 	}
 
 	//------------------------------------------------------------------
@@ -215,7 +237,7 @@ public class ElasticList<T>
 	 * @return the item that was removed from this list.
 	 */
 
-	public T remove(
+	public E remove(
 		int	index)
 	{
 		return baseList.remove(sortedList.getSourceIndex(index));
@@ -232,7 +254,7 @@ public class ElasticList<T>
 	 */
 
 	public boolean remove(
-		T	item)
+		E	item)
 	{
 		return baseList.remove(item);
 	}
@@ -250,7 +272,7 @@ public class ElasticList<T>
 
 	public void set(
 		int	index,
-		T	item)
+		E	item)
 	{
 		baseList.set(sortedList.getSourceIndex(index), item);
 	}
@@ -263,7 +285,7 @@ public class ElasticList<T>
 	 * @return the comparison function that is applied to the sorted list, or {@code null} if no comparator is applied.
 	 */
 
-	public Comparator<? super T> getComparator()
+	public Comparator<? super E> getComparator()
 	{
 		return sortedList.getComparator();
 	}
@@ -280,7 +302,7 @@ public class ElasticList<T>
 	 */
 
 	public void setComparator(
-		Comparator<? super T>	comparator)
+		Comparator<? super E>	comparator)
 	{
 		sortedList.setComparator(comparator);
 	}
@@ -295,7 +317,7 @@ public class ElasticList<T>
 	 */
 
 	public void update(
-		Collection<? extends T>	items)
+		Collection<? extends E>	items)
 	{
 		baseList.setAll(items);
 	}
@@ -311,7 +333,7 @@ public class ElasticList<T>
 
 	@SuppressWarnings("unchecked")
 	public void update(
-		T...	items)
+		E...	items)
 	{
 		baseList.setAll(items);
 	}

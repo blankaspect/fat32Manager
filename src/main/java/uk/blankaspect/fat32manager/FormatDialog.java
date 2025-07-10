@@ -46,6 +46,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -60,10 +61,14 @@ import uk.blankaspect.common.number.NumberUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.ConfirmationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
+
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
@@ -134,8 +139,8 @@ public class FormatDialog
 	private static final	String	SECTORS_PER_CLUSTER_STR			= "Sectors per cluster";
 	private static final	String	BYTES_STR						= " bytes";
 	private static final	String	FORMAT_STR						= "Format";
-	private static final	String	CONFIRM_FORMAT_STR				= "Formatting will erase the contents of the volume.\n"
-																		+ "Do you want to proceed?";
+	private static final	String	CONFIRM_FORMAT_STR				=
+			"Formatting will erase the contents of the volume.\nDo you want to proceed?";
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -145,35 +150,36 @@ public class FormatDialog
 			FxProperty.TEXT_FILL,
 			ColourKey.INFO_LABEL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.FORMAT_DIALOG)
-						.desc(StyleClass.INFO_LABEL)
-						.build()
+					.cls(StyleClass.FORMAT_DIALOG_ROOT)
+					.desc(StyleClass.INFO_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.INFO_LABEL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.FORMAT_DIALOG)
-						.desc(StyleClass.INFO_LABEL)
-						.build()
+					.cls(StyleClass.FORMAT_DIALOG_ROOT)
+					.desc(StyleClass.INFO_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.INFO_LABEL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.FORMAT_DIALOG)
-						.desc(StyleClass.INFO_LABEL)
-						.build()
+					.cls(StyleClass.FORMAT_DIALOG_ROOT)
+					.desc(StyleClass.INFO_LABEL)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	FORMAT_DIALOG	= StyleConstants.CLASS_PREFIX + "fat32manager-format-dialog";
-		String	INFO_LABEL		= StyleConstants.CLASS_PREFIX + "info-label";
+		String	FORMAT_DIALOG_ROOT	= StyleConstants.APP_CLASS_PREFIX + "format-dialog-root";
+
+		String	INFO_LABEL	= StyleConstants.CLASS_PREFIX + "info-label";
 	}
 
 	/** Keys of colours that are used in colour properties. */
@@ -181,9 +187,9 @@ public class FormatDialog
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	INFO_LABEL_TEXT			= PREFIX + "infoLabel.text";
 		String	INFO_LABEL_BACKGROUND	= PREFIX + "infoLabel.background";
 		String	INFO_LABEL_BORDER		= PREFIX + "infoLabel.border";
+		String	INFO_LABEL_TEXT			= PREFIX + "infoLabel.text";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -235,6 +241,9 @@ public class FormatDialog
 		// Call superclass constructor
 		super(owner, MethodHandles.lookup().lookupClass().getName(), null, title);
 
+		// Set style class on root node of scene graph
+		getScene().getRoot().getStyleClass().add(StyleClass.FORMAT_DIALOG_ROOT);
+
 		// Create control pane
 		GridPane controlPane = new GridPane();
 		controlPane.setHgap(CONTROL_PANE_H_GAP);
@@ -242,16 +251,16 @@ public class FormatDialog
 		controlPane.setAlignment(Pos.CENTER);
 
 		// Initialise column constraints
-		ColumnConstraints column1 = new ColumnConstraints();
-		column1.setMinWidth(GridPane.USE_PREF_SIZE);
-		column1.setHalignment(HPos.RIGHT);
-		column1.setHgrow(Priority.NEVER);
-		controlPane.getColumnConstraints().add(column1);
+		ColumnConstraints column = new ColumnConstraints();
+		column.setMinWidth(Region.USE_PREF_SIZE);
+		column.setHalignment(HPos.RIGHT);
+		column.setHgrow(Priority.NEVER);
+		controlPane.getColumnConstraints().add(column);
 
-		ColumnConstraints column2 = new ColumnConstraints();
-		column2.setHalignment(HPos.LEFT);
-		column2.setHgrow(Priority.ALWAYS);
-		controlPane.getColumnConstraints().add(column2);
+		column = new ColumnConstraints();
+		column.setHalignment(HPos.LEFT);
+		column.setHgrow(Priority.ALWAYS);
+		controlPane.getColumnConstraints().add(column);
 
 		// Initialise row index
 		int row = 0;
@@ -273,9 +282,9 @@ public class FormatDialog
 		// Create field: formatter name
 		TextField formatterNameField = new TextField(params.getFormatterName());
 		formatterNameField.setPrefColumnCount(FORMATTER_NAME_FIELD_NUM_COLUMNS);
-		formatterNameField.setTextFormatter(new TextFormatter<>(FilterFactory.createFilter(FORMATTER_NAME_FIELD_NUM_COLUMNS,
-																						   (ch, index, text) ->
-				Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch) : "")));
+		formatterNameField.setTextFormatter(
+				new TextFormatter<>(FilterFactory.createFilter(FORMATTER_NAME_FIELD_NUM_COLUMNS, (ch, index, text) ->
+						Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch) : "")));
 		GridPane.setFillWidth(formatterNameField, false);
 		controlPane.addRow(row++, new Label(FORMATTER_NAME_STR), formatterNameField);
 
@@ -287,7 +296,7 @@ public class FormatDialog
 		controlPane.addRow(row++, new Label(MIN_NUM_RESERVED_SECTORS_STR), minNumReservedSectorsSpinner);
 
 		// Create function to get minimum number of reserved sectors
-		IFunction0<Integer> getMinNumReservedSectors = () -> minNumReservedSectorsSpinner.getValue();
+		IFunction0<Integer> getMinNumReservedSectors = minNumReservedSectorsSpinner::getValue;
 
 		// Create choice box: cluster alignment
 		CollectionSpinner<ClusterAlignment> clusterAlignmentSpinner =
@@ -296,30 +305,34 @@ public class FormatDialog
 		controlPane.addRow(row++, new Label(CLUSTER_ALIGNMENT_STR), clusterAlignmentSpinner);
 
 		// Create function to get cluster alignment
-		IFunction0<ClusterAlignment> getClusterAlignment = () -> clusterAlignmentSpinner.getItem();
+		IFunction0<ClusterAlignment> getClusterAlignment = clusterAlignmentSpinner::getItem;
 
 		// Create check box: align FATs
 		CheckBox alignFatsCheckBox = new CheckBox(ALIGN_FATS_TO_CLUSTERS_STR);
-		alignFatsCheckBox.disableProperty().bind(clusterAlignmentSpinner.itemProperty().isEqualTo(ClusterAlignment.NONE));
+		alignFatsCheckBox.disableProperty()
+				.bind(clusterAlignmentSpinner.itemProperty().isEqualTo(ClusterAlignment.NONE));
 		alignFatsCheckBox.setSelected(params.isAlignFatsToClusters());
 		GridPane.setMargin(alignFatsCheckBox, CHECK_BOX_MARGINS);
 		controlPane.add(alignFatsCheckBox, 1, row++);
 
 		// Create label: sectors per cluster
-		Label sectorsPerClusterLabel = new Label();
+		Label sectorsPerClusterLabel = Labels.hNoShrink();
 		sectorsPerClusterLabel.setAlignment(Pos.CENTER_RIGHT);
 		sectorsPerClusterLabel.setPadding(INFO_LABEL_PADDING);
 		sectorsPerClusterLabel.setTextFill(getColour(ColourKey.INFO_LABEL_TEXT));
-		sectorsPerClusterLabel.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.INFO_LABEL_BACKGROUND)));
+		sectorsPerClusterLabel.setBackground(SceneUtils.createColouredBackground(
+				getColour(ColourKey.INFO_LABEL_BACKGROUND)));
 		sectorsPerClusterLabel.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.INFO_LABEL_BORDER)));
 
 		// Create spinner: sectors per cluster
 		CollectionSpinner<Integer> sectorsPerClusterSpinner =
 					CollectionSpinner.leftRightH(HPos.CENTER, false, List.of(), 0, null, null);
 		sectorsPerClusterSpinner.itemProperty().addListener((observable, oldSectorsPerCluster, sectorsPerCluster) ->
-				sectorsPerClusterLabel.setText((sectorsPerCluster == null)
+		{
+			sectorsPerClusterLabel.setText((sectorsPerCluster == null)
 														? null
-														: sectorsPerCluster * bytesPerSector + BYTES_STR));
+														: sectorsPerCluster * bytesPerSector + BYTES_STR);
+		});
 
 		// Create pane: sectors per cluster
 		HBox sectorsPerClusterPane = new HBox(CONTROL_PANE_H_GAP, sectorsPerClusterSpinner, sectorsPerClusterLabel);
@@ -327,7 +340,7 @@ public class FormatDialog
 		controlPane.addRow(row++, new Label(SECTORS_PER_CLUSTER_STR), sectorsPerClusterPane);
 
 		// Create function to get sectors per cluster
-		IFunction0<Integer> getSectorsPerCluster = () -> sectorsPerClusterSpinner.getItem();
+		IFunction0<Integer> getSectorsPerCluster = sectorsPerClusterSpinner::getItem;
 
 		// Create procedure to update list of sectors per cluster
 		IProcedure0 updateSectorsPerCluster = () ->
@@ -340,16 +353,19 @@ public class FormatDialog
 
 			// Update spinner
 			String prototypeText = "0".repeat(NumberUtils.getNumDecDigitsInt(Fat32Volume.MAX_SECTORS_PER_CLUSTER) + 1);
-			sectorsPerClusterSpinner.setItems(FXCollections.observableList(validSectorsPerCluster), prototypeText, null);
+			sectorsPerClusterSpinner.setItems(FXCollections.observableList(validSectorsPerCluster), prototypeText,
+											  null);
 			sectorsPerClusterSpinner.setItem(validSectorsPerCluster.contains(sectorsPerCluster)
 																				? sectorsPerCluster
 																				: DEFAULT_SECTORS_PER_CLUSTER);
 
 			// Update minimum width of label
-			int spc = validSectorsPerCluster.isEmpty() ? 1 : validSectorsPerCluster.get(validSectorsPerCluster.size() - 1);
+			int spc = validSectorsPerCluster.isEmpty() ? 1
+													   : validSectorsPerCluster.get(validSectorsPerCluster.size() - 1);
 			String text = spc * bytesPerSector + BYTES_STR;
 			Insets insets = sectorsPerClusterLabel.getInsets();
-			sectorsPerClusterLabel.setMinWidth(Math.ceil(TextUtils.textWidth(text) + insets.getLeft() + insets.getRight()));
+			sectorsPerClusterLabel.setMinWidth(
+					Math.ceil(TextUtils.textWidth(text) + insets.getLeft() + insets.getRight()));
 		};
 
 		// Initialise list of sectors per cluster
@@ -357,14 +373,14 @@ public class FormatDialog
 
 		// Update list of sectors per cluster when cluster alignment or number of reserved sectors changes
 		minNumReservedSectorsSpinner.valueProperty().addListener(observable -> updateSectorsPerCluster.invoke());
-		clusterAlignmentSpinner.valueProperty().addListener(observable -> updateSectorsPerCluster.invoke());
+		clusterAlignmentSpinner.itemProperty().addListener(observable -> updateSectorsPerCluster.invoke());
 		alignFatsCheckBox.selectedProperty().addListener(observable -> updateSectorsPerCluster.invoke());
 
 		// Add control pane to content pane
 		addContent(controlPane);
 
 		// Create button: format
-		Button formatButton = new Button(FORMAT_STR);
+		Button formatButton = Buttons.hNoShrink(FORMAT_STR);
 		formatButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		formatButton.setOnAction(event ->
 		{
@@ -398,7 +414,7 @@ public class FormatDialog
 		updateFormatButton.invoke();
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);
@@ -424,6 +440,14 @@ public class FormatDialog
 	public static FormatParams getParams()
 	{
 		return params;
+	}
+
+	//------------------------------------------------------------------
+
+	public static void setParams(
+		FormatParams	params)
+	{
+		FormatDialog.params = params;
 	}
 
 	//------------------------------------------------------------------
@@ -455,12 +479,12 @@ public class FormatDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -731,7 +755,7 @@ public class FormatDialog
 			});
 
 			// Add children
-			getChildren().addAll(field1, new Label("\u2013"), field2);
+			getChildren().addAll(field1, Labels.hNoShrink("\u2013"), field2);
 		}
 
 		//--------------------------------------------------------------

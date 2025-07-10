@@ -24,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
+import java.nio.file.attribute.DosFileAttributeView;
+
 import java.text.DecimalFormat;
 
 import java.time.LocalDateTime;
@@ -32,7 +34,7 @@ import java.time.format.DateTimeFormatter;
 
 import java.util.Random;
 
-import uk.blankaspect.common.exception.UnexpectedRuntimeException;
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
 
 //----------------------------------------------------------------------
 
@@ -165,8 +167,27 @@ public class FileSystemUtils
 		IOException exception = null;
 		for (int i = 0; i < maxNumAttempts; i++)
 		{
-			// Delay before next attempt
-			if (i > 0)
+			// Case: first attempt
+			//   Clear the DOS read-only attribute, which, if set, can impede the deletion of a file or directory on a
+			//   FAT or exFAT file system
+			if (i == 0)
+			{
+				try
+				{
+					DosFileAttributeView fileAttrs =
+							Files.getFileAttributeView(location, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+					if (fileAttrs != null)
+						fileAttrs.setReadOnly(false);
+				}
+				catch (IOException e)
+				{
+					// ignore
+				}
+			}
+
+			// Case: not the first attempt
+			//   Delay before attempting to delete file or directory
+			else
 			{
 				try
 				{
@@ -322,7 +343,7 @@ public class FileSystemUtils
 			}
 			catch (InterruptedException e)
 			{
-				// Ignore
+				// ignore
 			}
 		}
 

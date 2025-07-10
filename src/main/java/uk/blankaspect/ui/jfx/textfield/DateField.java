@@ -106,37 +106,37 @@ public class DateField
 			FxProperty.CONTROL_INNER_BACKGROUND,
 			ColourKey.BACKGROUND_INVALID,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_FIELD).pseudo(PseudoClassKey.INVALID)
-						.build()
+					.cls(StyleClass.DATE_FIELD).pseudo(PseudoClassKey.INVALID)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.CONTROL_INNER_BACKGROUND,
 			ColourKey.BACKGROUND_VALID,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_FIELD).pseudo(PseudoClassKey.VALID)
-						.build()
+					.cls(StyleClass.DATE_FIELD).pseudo(PseudoClassKey.VALID)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.HIGHLIGHT_FILL,
 			ColourKey.HIGHLIGHT_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_FIELD).pseudo(FxPseudoClass.FOCUSED)
-						.build()
+					.cls(StyleClass.DATE_FIELD).pseudo(FxPseudoClass.FOCUSED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.HIGHLIGHT_TEXT_FILL,
 			ColourKey.HIGHLIGHT_TEXT_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_FIELD).pseudo(FxPseudoClass.FOCUSED)
-						.build()
+					.cls(StyleClass.DATE_FIELD).pseudo(FxPseudoClass.FOCUSED)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	DATE_FIELD	= StyleConstants.CLASS_PREFIX + "date-field";
 	}
@@ -281,12 +281,12 @@ public class DateField
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

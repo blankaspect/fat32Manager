@@ -23,6 +23,8 @@ import java.util.stream.IntStream;
 
 import javafx.geometry.Side;
 
+import javafx.scene.text.FontWeight;
+
 import uk.blankaspect.common.css.CssRuleSet;
 
 //----------------------------------------------------------------------
@@ -111,7 +113,8 @@ public class RuleSetBuilder
 		// Add property to map; return this builder
 		return (uri == null)
 					? this
-					: property(FxProperty.BACKGROUND_COLOUR, String.format(REPEATING_IMAGE_PATTERN_PROPERTY_VALUE, uri));
+					: property(FxProperty.BACKGROUND_COLOUR,
+							   String.format(REPEATING_IMAGE_PATTERN_PROPERTY_VALUE, uri));
 	}
 
 	//------------------------------------------------------------------
@@ -181,6 +184,33 @@ public class RuleSetBuilder
 
 	//------------------------------------------------------------------
 
+	public RuleSetBuilder fontFamily(
+		String	name)
+	{
+		// Add property to map; return this builder
+		return property(FxProperty.FONT_FAMILY, (name.indexOf(' ') < 0) ? name : "\"" + name + "\"");
+	}
+
+	//------------------------------------------------------------------
+
+	public RuleSetBuilder fontSize(
+		String	size)
+	{
+		// Add property to map; return this builder
+		return property(FxProperty.FONT_SIZE, size);
+	}
+
+	//------------------------------------------------------------------
+
+	public RuleSetBuilder fontWeight(
+		FontWeight	weight)
+	{
+		// Add property to map; return this builder
+		return property(FxProperty.FONT_WEIGHT, Integer.toString(weight.getWeight()));
+	}
+
+	//------------------------------------------------------------------
+
 	public RuleSetBuilder boldFont()
 	{
 		// Add property to map; return this builder
@@ -201,6 +231,14 @@ public class RuleSetBuilder
 	{
 		// Add property to map; return this builder
 		return property(FxProperty.FONT_SMOOTHING_TYPE, "gray");
+	}
+
+	//------------------------------------------------------------------
+
+	public RuleSetBuilder underlinedText()
+	{
+		// Add property to map; return this builder
+		return property(FxProperty.UNDERLINE, Boolean.toString(true));
 	}
 
 	//------------------------------------------------------------------

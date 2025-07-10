@@ -44,6 +44,7 @@ import javafx.scene.control.SeparatorMenuItem;
 
 import javafx.scene.input.KeyEvent;
 
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import javafx.stage.Window;
@@ -54,9 +55,13 @@ import uk.blankaspect.common.function.IProcedure0;
 
 import uk.blankaspect.common.logging.Logger;
 
+import uk.blankaspect.common.message.MessageConstants;
+
 import uk.blankaspect.common.string.StringUtils;
 
 import uk.blankaspect.driveio.VolumeException;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
@@ -221,7 +226,8 @@ public class MainDirectoryTableView
 				// Add menu item: open directory
 				if ((entry != null) && entry.isRegularDirectory())
 				{
-					MenuItem menuItem = new MenuItem(OPEN_STR + quote(entry.getName()), Images.icon(Images.DOWN_ARROW));
+					MenuItem menuItem =
+							new MenuItem(OPEN_STR + quote(entry.getName()), Images.icon(Images.ImageId.ARROW_DOWN));
 					menuItem.setOnAction(event0 -> openDirectory(entry));
 					menu.getItems().add(menuItem);
 				}
@@ -230,7 +236,7 @@ public class MainDirectoryTableView
 				String text = getOpenParentDirectoryCommand();
 				if (text != null)
 				{
-					MenuItem menuItem = new MenuItem(text, Images.icon(Images.UP_ARROW));
+					MenuItem menuItem = new MenuItem(text, Images.icon(Images.ImageId.ARROW_UP));
 					menuItem.setOnAction(event0 -> openParentDirectory());
 					menu.getItems().add(menuItem);
 				}
@@ -247,7 +253,8 @@ public class MainDirectoryTableView
 						menu.getItems().add(new SeparatorMenuItem());
 
 					// Add menu item
-					MenuItem menuItem = new MenuItem(EDIT_VOLUME_LABEL_STR + ELLIPSIS_STR, Images.icon(Images.PENCIL));
+					MenuItem menuItem =
+							new MenuItem(EDIT_VOLUME_LABEL_STR + ELLIPSIS_STR, Images.icon(Images.ImageId.PENCIL));
 					menuItem.setOnAction(event0 -> editVolumeLabel(entry));
 					menu.getItems().add(menuItem);
 				}
@@ -262,7 +269,8 @@ public class MainDirectoryTableView
 	protected void onCellDoubleClicked(
 		Fat32Directory.Entry	entry)
 	{
-		if ((entry != null) && entry.isDirectory() && !entry.getName().equals(Fat32Directory.SPECIAL_DIRECTORY_NAME_THIS))
+		if ((entry != null) && entry.isDirectory()
+				&& !entry.getName().equals(Fat32Directory.SPECIAL_DIRECTORY_NAME_THIS))
 			openDirectory(entry);
 	}
 
@@ -640,7 +648,8 @@ public class MainDirectoryTableView
 						Fat32Directory.Entry entry = (directory == null) ? null : directory.findEntry(name);
 						if ((entry == null) || !entry.isDirectory())
 						{
-							errorPathname = StringUtils.join(Fat32Directory.NAME_SEPARATOR_CHAR, names.subList(0, i + 1));
+							errorPathname = StringUtils.join(Fat32Directory.NAME_SEPARATOR_CHAR,
+															 names.subList(0, i + 1));
 							break;
 						}
 						directory = directory.getDirectory(entry);
@@ -702,7 +711,7 @@ public class MainDirectoryTableView
 	{
 		// Display dialog to edit volume label
 		VolumeLabelDialog.Result result = VolumeLabelDialog.show(getWindow(), EDIT_VOLUME_LABEL_STR, entry.getName(),
-																 entry.getModificationTime());
+																 entry.getLastModificationTime());
 		if (result == null)
 			return;
 
@@ -934,7 +943,7 @@ public class MainDirectoryTableView
 
 			// Create control pane
 			VBox controlPane = new VBox(CONTROL_PANE_SPACING);
-			controlPane.setMaxWidth(VBox.USE_PREF_SIZE);
+			controlPane.setMaxWidth(Region.USE_PREF_SIZE);
 			controlPane.setAlignment(Pos.CENTER_LEFT);
 			controlPane.setPadding(CONTROL_PANE_PADDING);
 
@@ -942,7 +951,7 @@ public class MainDirectoryTableView
 			addContent(controlPane);
 
 			// Create button: OK
-			Button okButton = new Button(OK_STR);
+			Button okButton = Buttons.hNoShrink(OK_STR);
 			okButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			okButton.setOnAction(event ->
 			{
@@ -952,7 +961,7 @@ public class MainDirectoryTableView
 			addButton(okButton, HPos.RIGHT);
 
 			// Create button: cancel
-			Button cancelButton = new Button(CANCEL_STR);
+			Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 			cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			cancelButton.setOnAction(event -> requestClose());
 			addButton(cancelButton, HPos.RIGHT);
@@ -1130,7 +1139,7 @@ public class MainDirectoryTableView
 				return;
 
 			// Update message with pathname of directory
-			updateMessage(SORTING_STR + SimpleProgressDialog.SPACE_MESSAGE_SEPARATOR + directory.getPathname());
+			updateMessage(SORTING_STR + MessageConstants.SPACE_SEPARATOR + directory.getPathname());
 
 			// Sort directory entries
 			directory.sortByName(ignoreCase);

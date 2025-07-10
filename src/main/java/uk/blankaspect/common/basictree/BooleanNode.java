@@ -229,7 +229,7 @@ public class BooleanNode
 	public boolean equals(
 		Object	obj)
 	{
-		return (obj == this) || ((obj instanceof BooleanNode other) && (value == other.value));
+		return (this == obj) || ((obj instanceof BooleanNode other) && (value == other.value));
 	}
 
 	//------------------------------------------------------------------

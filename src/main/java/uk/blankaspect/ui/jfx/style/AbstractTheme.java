@@ -20,11 +20,12 @@ package uk.blankaspect.ui.jfx.style;
 
 import java.io.IOException;
 
+import java.lang.invoke.MethodHandles;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -60,6 +61,9 @@ import uk.blankaspect.common.tuple.StrKVPair;
 
 import uk.blankaspect.ui.jfx.colour.ColourUtils;
 
+import uk.blankaspect.ui.jfx.image.ImageData;
+import uk.blankaspect.ui.jfx.image.ImageUtils;
+
 //----------------------------------------------------------------------
 
 
@@ -73,7 +77,9 @@ public abstract class AbstractTheme
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	private static final	int	COLOUR_PROPERTIES_SEPARATOR_LINE_LENGTH	= 80;
+	public static final		String	MONO_IMAGE_KEY	= MethodHandles.lookup().lookupClass().getName() + ".mono";
+
+	private static final	int		COLOUR_PROPERTIES_SEPARATOR_LINE_LENGTH	= 80;
 
 	private static final	String[]	COLOUR_PROPERTIES_HEADER_LINES	=
 	{
@@ -87,6 +93,12 @@ public abstract class AbstractTheme
 		"  <opacity> is a floating-point number in the interval [0, 1]",
 	};
 
+	/** Miscellaneous strings. */
+	private static final	String	NULL_COLOUR_STR		= "Null colour";
+	private static final	String	NULL_COLOURS_STR	= "Null colours";
+	private static final	String	NULL_KEY_STR		= "Null key";
+	private static final	String	NULL_PROPERTIES_STR	= "Null properties";
+
 	/** Keys of properties. */
 	public interface PropertyKey
 	{
@@ -98,13 +110,18 @@ public abstract class AbstractTheme
 	{
 		String	FAILED_TO_READ_COLOURS			= "Failed to read the set of colours.";
 		String	MALFORMED_KEY_VALUE_PAIR		= "The key-value pair is malformed.";
-		String	DUPLICATE_KEY					= "The key '%s' appears more than once.";
+		String	DUPLICATE_KEY					= "The key '%s' occurs more than once.";
 		String	INVALID_COLOUR					= "The colour specifier is invalid.";
 		String	ERROR_PARSING_BASE_STYLE_SHEET	= "An error occurred when parsing the base style sheet:";
-		String	ERRORS_PARSING_BASE_STYLE_SHEET	= "%d errors occurred when parsing the base style sheet.\n"
-													+ "First error:";
+		String	ERRORS_PARSING_BASE_STYLE_SHEET	= "%d errors occurred when parsing the base style sheet.\nFirst error:";
 		String	ERROR_WRITING_FILE				= "An error occurred when writing the file.";
 	}
+
+////////////////////////////////////////////////////////////////////////
+//  Class variables
+////////////////////////////////////////////////////////////////////////
+
+	private static	boolean	classInitialised;
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -114,6 +131,7 @@ public abstract class AbstractTheme
 	private	String				baseStyleSheet;
 	private	Map<String, Color>	defaultColours;
 	private	Map<String, Color>	colours;
+	private	Color				monoImageColour;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -160,7 +178,7 @@ public abstract class AbstractTheme
 				throw new ParseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
 
 			// Extract key
-			String key = line.substring(0, index).trim();
+			String key = line.substring(0, index).strip();
 			if (key.isEmpty())
 				throw new ParseException(ErrorMsg.MALFORMED_KEY_VALUE_PAIR, lineIndex);
 
@@ -176,7 +194,7 @@ public abstract class AbstractTheme
 			Color colour = null;
 			try
 			{
-				colour = ColourUtils.parseRgb(line.substring(index + 1).trim());
+				colour = ColourUtils.parseRgb(line.substring(index + 1).strip());
 			}
 			catch (IllegalArgumentException e)
 			{
@@ -372,24 +390,35 @@ public abstract class AbstractTheme
 
 	//------------------------------------------------------------------
 
+	static void init(
+		StyleManager	styleManager)
+	{
+		if (!classInitialised)
+		{
+			styleManager.themeProperty().addListener((observable, oldTheme, newTheme) ->
+			{
+				if (newTheme != null)
+				{
+					ImageData.addProcessor(MONO_IMAGE_KEY, image -> styleManager.getTheme().processMonoImage(image));
+					ImageData.updateImages();
+				}
+			});
+
+			classInitialised = true;
+		}
+	}
+
+	//------------------------------------------------------------------
+
 ////////////////////////////////////////////////////////////////////////
 //  Abstract methods
 ////////////////////////////////////////////////////////////////////////
 
-	public abstract String getId();
+	public abstract String id();
 
 	//------------------------------------------------------------------
 
-	public abstract String getName();
-
-	//------------------------------------------------------------------
-
-	public abstract double getBrightnessDelta1();
-
-	//------------------------------------------------------------------
-
-	public abstract Image processImage(
-		Image	image);
+	public abstract String name();
 
 	//------------------------------------------------------------------
 
@@ -452,15 +481,35 @@ public abstract class AbstractTheme
 
 	//------------------------------------------------------------------
 
+	public Color getMonoImageColour()
+	{
+		return monoImageColour;
+	}
+
+	//------------------------------------------------------------------
+
+	public void setMonoImageColour(
+		Color	colour)
+	{
+		// Validate argument
+		if (colour == null)
+			throw new IllegalArgumentException(NULL_COLOUR_STR);
+
+		// Update instance variable
+		monoImageColour = colour;
+	}
+
+	//------------------------------------------------------------------
+
 	public Color addColour(
 		String	key,
 		Color	colour)
 	{
 		// Validate arguments
 		if (key == null)
-			throw new IllegalArgumentException("Null key");
+			throw new IllegalArgumentException(NULL_KEY_STR);
 		if (colour == null)
-			throw new IllegalArgumentException("Null colour");
+			throw new IllegalArgumentException(NULL_COLOUR_STR);
 
 		// Add colour to map
 		return colours.put(key, colour);
@@ -473,7 +522,7 @@ public abstract class AbstractTheme
 	{
 		// Validate argument
 		if (colours == null)
-			throw new IllegalArgumentException("Null colours");
+			throw new IllegalArgumentException(NULL_COLOURS_STR);
 
 		// Add colours to map
 		this.colours.putAll(colours);
@@ -486,7 +535,7 @@ public abstract class AbstractTheme
 	{
 		// Validate argument
 		if (properties == null)
-			throw new IllegalArgumentException("Null properties");
+			throw new IllegalArgumentException(NULL_PROPERTIES_STR);
 
 		// Add colours to map
 		int index = 0;
@@ -511,10 +560,10 @@ public abstract class AbstractTheme
 	{
 		// Validate argument
 		if (properties == null)
-			throw new IllegalArgumentException("Null properties");
+			throw new IllegalArgumentException(NULL_PROPERTIES_STR);
 
 		// Add colours to map
-		addColours(Arrays.asList(properties));
+		addColours(List.of(properties));
 	}
 
 	//------------------------------------------------------------------
@@ -655,7 +704,25 @@ public abstract class AbstractTheme
 								.replaceAll("[ \t]+\n", "\n")		// remove space at end of each line
 								.replaceAll("\n\n+", "\n")			// remove empty lines
 								.replaceAll("}\n", "}\n\n")			// insert empty line after each block
+								.replaceAll("^\n+", "")				// remove empty lines at start of text
 								.replaceAll("\n\n+$", "\n");		// remove empty lines at end of text
+	}
+
+	//------------------------------------------------------------------
+
+	public Image processMonoImage(
+		Image	image)
+	{
+		double red = monoImageColour.getRed();
+		double green = monoImageColour.getGreen();
+		double blue = monoImageColour.getBlue();
+		Color transparent = Color.color(red, green, blue, 0.0);
+		image = ImageUtils.processPixelColours(image, colour ->
+		{
+			double opacity = colour.getOpacity();
+			return (opacity > 0.0) ? Color.color(red, green, blue, opacity) : transparent;
+		});
+		return image;
 	}
 
 	//------------------------------------------------------------------
@@ -695,7 +762,7 @@ public abstract class AbstractTheme
 		 * @param lineIndex
 		 *          the zero-based index of the line at which the exception occurred.
 		 * @param replacements
-		 *          the objects whose string representations will replace placeholders in {@code message}.
+		 *          the items whose string representations will replace placeholders in {@code message}.
 		 */
 
 		private ParseException(
@@ -719,7 +786,7 @@ public abstract class AbstractTheme
 		 * @param lineIndex
 		 *          the zero-based index of the line at which the exception occurred.
 		 * @param replacements
-		 *          the objects whose string representations will replace placeholders in {@code message}.
+		 *          the items whose string representations will replace placeholders in {@code message}.
 		 */
 
 		private ParseException(

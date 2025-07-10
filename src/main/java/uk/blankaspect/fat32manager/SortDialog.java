@@ -18,8 +18,6 @@ package uk.blankaspect.fat32manager;
 // IMPORTS
 
 
-import java.io.File;
-
 import java.lang.invoke.MethodHandles;
 
 import javafx.geometry.HPos;
@@ -29,9 +27,14 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import javafx.stage.Window;
+
+import uk.blankaspect.common.os.OsUtils;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
@@ -67,7 +70,7 @@ public class SortDialog
 
 	private static	boolean	preview		= true;
 	private static	boolean	recursive;
-	private static	boolean	ignoreCase	= (File.separatorChar == '\\');
+	private static	boolean	ignoreCase	= OsUtils.isWindows();
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -101,7 +104,7 @@ public class SortDialog
 
 		// Create control pane
 		VBox controlPane = new VBox(CONTROL_PANE_GAP, previewCheckBox, recursiveCheckBox, ignoreCaseCheckBox);
-		controlPane.setMaxWidth(VBox.USE_PREF_SIZE);
+		controlPane.setMaxWidth(Region.USE_PREF_SIZE);
 		controlPane.setAlignment(Pos.CENTER_LEFT);
 		controlPane.setPadding(CONTROL_PANE_PADDING);
 
@@ -109,7 +112,7 @@ public class SortDialog
 		addContent(controlPane);
 
 		// Create button: sort
-		Button sortButton = new Button(SORT_STR);
+		Button sortButton = Buttons.hNoShrink(SORT_STR);
 		sortButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		sortButton.setOnAction(event ->
 		{
@@ -120,7 +123,7 @@ public class SortDialog
 		addButton(sortButton, HPos.RIGHT);
 
 		// Create button: cancel
-		Button cancelButton = new Button(CANCEL_STR);
+		Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 		cancelButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		cancelButton.setOnAction(event -> requestClose());
 		addButton(cancelButton, HPos.RIGHT);

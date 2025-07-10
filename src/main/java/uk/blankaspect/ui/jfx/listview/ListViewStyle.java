@@ -2,7 +2,7 @@
 
 ListViewStyle.java
 
-Class: style information for a list view
+Class: style information for a list view.
 
 \*====================================================================*/
 
@@ -56,99 +56,101 @@ public class ListViewStyle
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_EMPTY,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_EVEN,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.EVEN)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.EVEN)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_ODD,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.ODD)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.ODD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED, FxPseudoClass.EVEN)
-						.build(),
+					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED, FxPseudoClass.EVEN)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED, FxPseudoClass.ODD)
-						.build()
+					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.SELECTED, FxPseudoClass.ODD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW)
-						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED)
-						.build()
+					.cls(StyleClass.LIST_VIEW)
+					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_LABEL)
-						.build()
+					.cls(StyleClass.CELL_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.CELL_POPUP_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.CELL_POPUP_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.CELL_POPUP_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.CELL_POPUP_LABEL)
-						.build()
+					.cls(StyleClass.CELL_POPUP_LABEL)
+					.build()
 		)
 	);
 
@@ -156,23 +158,24 @@ public class ListViewStyle
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LIST_VIEW)
-									.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
-									.build())
-						.emptyBorder()
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LIST_VIEW)
+						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.EMPTY)
+						.build())
+				.emptyBorder()
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LIST_VIEW)
-									.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED)
-									.build())
-						.borders(Side.BOTTOM)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LIST_VIEW)
+						.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED)
+						.build())
+				.borders(Side.BOTTOM)
+				.build(),
 		focusedCellRuleSet(
 			CssSelector.builder()
 					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
-					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.FOCUSED, FxPseudoClass.EVEN)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.FOCUSED, FxPseudoClass.EVEN)
 					.build(),
 			ColourKey.CELL_BACKGROUND_FOCUSED,
 			ColourKey.CELL_BACKGROUND_EVEN
@@ -180,7 +183,8 @@ public class ListViewStyle
 		focusedCellRuleSet(
 			CssSelector.builder()
 					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
-					.desc(FxStyleClass.LIST_CELL).pseudo(FxPseudoClass.FILLED, FxPseudoClass.FOCUSED, FxPseudoClass.ODD)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.FOCUSED, FxPseudoClass.ODD)
 					.build(),
 			ColourKey.CELL_BACKGROUND_FOCUSED,
 			ColourKey.CELL_BACKGROUND_ODD
@@ -242,14 +246,6 @@ public class ListViewStyle
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
 
-	public static String colourKey(
-		String	suffix)
-	{
-		return StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass()) + suffix;
-	}
-
-	//------------------------------------------------------------------
-
 	public static CssRuleSet focusedCellRuleSet(
 		String	selector,
 		String	outerColourKey,
@@ -259,7 +255,7 @@ public class ListViewStyle
 				.selector(selector)
 				.property(FxProperty.BACKGROUND_COLOUR,
 						  StyleConstants.COLOUR_KEY_PREFIX + outerColourKey + StyleConstants.VALUE_SEPARATOR
-							+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
+								+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
 				.property(FxProperty.BACKGROUND_INSETS, "0 0 1 0, 1 1 2 1")
 				.build();
 	}

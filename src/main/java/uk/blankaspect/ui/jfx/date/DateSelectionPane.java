@@ -28,8 +28,6 @@ import java.util.Locale;
 
 import javafx.application.Platform;
 
-import javafx.collections.FXCollections;
-
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
@@ -40,7 +38,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 
@@ -75,9 +72,13 @@ import uk.blankaspect.common.geometry.VHPos;
 
 import uk.blankaspect.common.misc.ModernCalendar;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
 import uk.blankaspect.ui.jfx.button.GraphicButton;
 
 import uk.blankaspect.ui.jfx.container.DialogButtonPane;
+import uk.blankaspect.ui.jfx.container.PaneStyle;
+
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
 
 import uk.blankaspect.ui.jfx.font.FontUtils;
 
@@ -85,6 +86,7 @@ import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
 import uk.blankaspect.ui.jfx.shape.Shapes;
 
+import uk.blankaspect.ui.jfx.spinner.CollectionSpinner;
 import uk.blankaspect.ui.jfx.spinner.SpinnerFactory;
 import uk.blankaspect.ui.jfx.spinner.SpinnerUtils;
 
@@ -162,80 +164,80 @@ public class DateSelectionPane
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.MONTH_LABEL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.MONTH_LABEL)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.MONTH_LABEL)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.MONTH_LABEL_BACKGROUND_HOVERED,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.MONTH_LABEL).pseudo(FxPseudoClass.HOVER)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.MONTH_LABEL).pseudo(FxPseudoClass.HOVERED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.NAVIGATION_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.NAVIGATION_PANE)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.NAVIGATION_PANE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.NAVIGATION_BUTTON_ICON,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.NAVIGATION_BUTTON)
-						.desc(StyleClass.ICON)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.NAVIGATION_BUTTON)
+					.desc(StyleClass.ICON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.NAVIGATION_BUTTON_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.NAVIGATION_BUTTON)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.NAVIGATION_BUTTON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.NAVIGATION_BUTTON_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.DATE_SELECTION_PANE)
-						.desc(StyleClass.NAVIGATION_BUTTON)
-						.build()
+					.cls(StyleClass.DATE_SELECTION_PANE)
+					.desc(StyleClass.NAVIGATION_BUTTON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.MONTH_YEAR_DIALOG_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.MONTH_YEAR_DIALOG)
-						.build()
+					.cls(StyleClass.MONTH_YEAR_DIALOG)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.MONTH_YEAR_DIALOG_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.MONTH_YEAR_DIALOG)
-						.build()
+					.cls(StyleClass.MONTH_YEAR_DIALOG)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.MONTH_YEAR_DIALOG_DIVIDER,
 			CssSelector.builder()
-						.cls(StyleClass.MONTH_YEAR_DIALOG)
-						.desc(StyleClass.CONTROL_PANE)
-						.build()
+					.cls(StyleClass.MONTH_YEAR_DIALOG)
+					.desc(StyleClass.CONTROL_PANE)
+					.build()
 		)
 	);
 
@@ -243,18 +245,18 @@ public class DateSelectionPane
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(DaySelectionPane.StyleClass.DAY_SELECTION_PANE)
-									.build())
-						.emptyBorder()
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(DaySelectionPane.StyleClass.DAY_SELECTION_PANE)
+						.build())
+				.emptyBorder()
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.MONTH_YEAR_DIALOG)
-									.desc(StyleClass.CONTROL_PANE)
-									.build())
-						.borders(Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.MONTH_YEAR_DIALOG)
+						.desc(StyleClass.CONTROL_PANE)
+						.build())
+				.borders(Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -282,7 +284,6 @@ public class DateSelectionPane
 		String	NAVIGATION_BUTTON_BACKGROUND	= PREFIX + "navigationButton.background";
 		String	NAVIGATION_BUTTON_BORDER		= PREFIX + "navigationButton.border";
 		String	NAVIGATION_BUTTON_ICON			= PREFIX + "navigationButton.icon";
-		String	NAVIGATION_PANE_BORDER			= PREFIX + "navigationPane.border";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -328,8 +329,9 @@ public class DateSelectionPane
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(DateSelectionPane.class, COLOUR_PROPERTIES, RULE_SETS);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(DateSelectionPane.class, COLOUR_PROPERTIES, RULE_SETS,
+									   PaneStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -491,6 +493,7 @@ public class DateSelectionPane
 		IFunction2<GraphicButton, Shape, String> navigationButtonFactory = (icon, tooltipText) ->
 		{
 			// Set properties of icon
+			icon.setStroke(getColour(ColourKey.NAVIGATION_BUTTON_ICON));
 			icon.getStyleClass().add(StyleClass.ICON);
 
 			// Create button
@@ -528,9 +531,15 @@ public class DateSelectionPane
 		if (StyleManager.INSTANCE.notUsingStyleSheet())
 		{
 			monthLabel.addEventHandler(MouseEvent.MOUSE_ENTERED, event ->
-					monthLabel.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.MONTH_LABEL_BACKGROUND_HOVERED))));
+			{
+				monthLabel.setBackground(SceneUtils.createColouredBackground(
+						getColour(ColourKey.MONTH_LABEL_BACKGROUND_HOVERED)));
+			});
 			monthLabel.addEventHandler(MouseEvent.MOUSE_EXITED, event ->
-					monthLabel.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.MONTH_LABEL_BACKGROUND))));
+			{
+				monthLabel.setBackground(SceneUtils.createColouredBackground(
+						getColour(ColourKey.MONTH_LABEL_BACKGROUND)));
+			});
 		}
 		monthLabel.getStyleClass().add(StyleClass.MONTH_LABEL);
 		HBox.setHgrow(monthLabel, Priority.ALWAYS);
@@ -553,7 +562,7 @@ public class DateSelectionPane
 		// Create navigation pane
 		HBox navigationPane = new HBox(previousYearButton, previousMonthButton, monthLabel, nextMonthButton,
 									   nextYearButton);
-		navigationPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.NAVIGATION_PANE_BORDER), Side.BOTTOM));
+		navigationPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER), Side.BOTTOM));
 		navigationPane.getStyleClass().add(StyleClass.NAVIGATION_PANE);
 
 		// Create day-selection pane
@@ -599,7 +608,7 @@ public class DateSelectionPane
 		updateButtons();
 
 		// Request focus on day-selection pane
-		Platform.runLater(() -> daySelectionPane.requestFocus());
+		Platform.runLater(daySelectionPane::requestFocus);
 	}
 
 	//------------------------------------------------------------------
@@ -609,12 +618,12 @@ public class DateSelectionPane
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -923,6 +932,9 @@ public class DateSelectionPane
 		/** The object that is used as the value of the <i>group</i> property of a button, to equalise button widths. */
 		private static final	Object	BUTTON_GROUP	= new Object();
 
+		/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
+		private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+
 		/** Miscellaneous strings. */
 		private static final	String	OK_STR		= "OK";
 		private static final	String	CANCEL_STR	= "Cancel";
@@ -960,7 +972,7 @@ public class DateSelectionPane
 			// Call superclass constructor
 			super(StageStyle.TRANSPARENT);
 
-			// Set attributes
+			// Set properties
 			initModality(Modality.APPLICATION_MODAL);
 			initOwner(SceneUtils.getWindow(locator));
 			setResizable(false);
@@ -968,19 +980,20 @@ public class DateSelectionPane
 			// Make window invisible until it is displayed
 			setOpacity(0.0);
 
-			// Choice box: months
-			ChoiceBox<String> monthChoiceBox = new ChoiceBox<>(FXCollections.observableList(monthStrs));
-			monthChoiceBox.getSelectionModel().select(month);
+			// Spinner: months
+			CollectionSpinner<String> monthSpinner =
+					CollectionSpinner.leftRightH(HPos.CENTER, true, monthStrs, monthStrs.get(month), null, null);
 
 			// Spinner: year
-			Spinner<Integer> yearSpinner = SpinnerFactory.integerSpinner(MIN_YEAR, MAX_YEAR, year,
-																		 YEAR_SPINNER_NUM_DIGITS);
+			Spinner<Integer> yearSpinner =
+					SpinnerFactory.integerSpinner(MIN_YEAR, MAX_YEAR, year, YEAR_SPINNER_NUM_DIGITS);
 
 			// Create control pane
-			HBox controlPane = new HBox(CONTROL_PANE_GAP, monthChoiceBox, yearSpinner);
+			HBox controlPane = new HBox(CONTROL_PANE_GAP, monthSpinner, yearSpinner);
 			controlPane.setAlignment(Pos.CENTER);
 			controlPane.setPadding(CONTROL_PANE_PADDING);
-			controlPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.MONTH_YEAR_DIALOG_DIVIDER), Side.BOTTOM));
+			controlPane.setBorder(SceneUtils.createSolidBorder(
+					getColour(ColourKey.MONTH_YEAR_DIALOG_DIVIDER), Side.BOTTOM));
 			controlPane.getStyleClass().add(StyleClass.CONTROL_PANE);
 
 			// Create button pane
@@ -988,18 +1001,18 @@ public class DateSelectionPane
 			buttonPane.setPadding(BUTTON_PANE_PADDING);
 
 			// Create button: OK
-			Button okButton = new Button(OK_STR);
+			Button okButton = Buttons.hNoShrink(OK_STR);
 			okButton.getProperties().put(DialogButtonPane.BUTTON_GROUP_KEY, BUTTON_GROUP);
 			okButton.setPadding(BUTTON_PADDING);
 			okButton.setOnAction(event ->
 			{
-				result = new int[] { yearSpinner.getValue(), monthChoiceBox.getSelectionModel().getSelectedIndex() };
+				result = new int[] { yearSpinner.getValue(), monthSpinner.getValue() };
 				hide();
 			});
 			buttonPane.addButton(okButton, HPos.RIGHT);
 
 			// Create button: cancel
-			Button cancelButton = new Button(CANCEL_STR);
+			Button cancelButton = Buttons.hNoShrink(CANCEL_STR);
 			cancelButton.getProperties().put(DialogButtonPane.BUTTON_GROUP_KEY, BUTTON_GROUP);
 			cancelButton.setPadding(BUTTON_PADDING);
 			cancelButton.setOnAction(event -> hide());
@@ -1010,7 +1023,8 @@ public class DateSelectionPane
 
 			// Create main pane
 			VBox mainPane = new VBox(controlPane, buttonPane);
-			mainPane.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.MONTH_YEAR_DIALOG_BACKGROUND)));
+			mainPane.setBackground(SceneUtils.createColouredBackground(
+					getColour(ColourKey.MONTH_YEAR_DIALOG_BACKGROUND)));
 			mainPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.MONTH_YEAR_DIALOG_BORDER)));
 			mainPane.getStyleClass().add(StyleClass.MONTH_YEAR_DIALOG);
 
@@ -1052,22 +1066,22 @@ public class DateSelectionPane
 			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 			{
 				// Equalise widths of groups of buttons
-				double extraWidth = buttonPane.equaliseButtonWidths();
+				double extraWidth = buttonPane.equaliseButtonWidths(true);
 
 				// Increase width of window to accommodate extra width of buttons
 				if (extraWidth > 0.0)
 					setWidth(getWidth() + extraWidth);
 
 				// Get location of window relative to locator
-				Point2D location = SceneUtils.getRelativeLocation(getWidth(), getHeight(), VHPos.TOP_CENTRE,
-																  locator, VHPos.TOP_CENTRE);
+				Point2D location = SceneUtils.getRelativeLocation(getWidth(), getHeight(), VHPos.TOP_CENTRE, locator,
+																  VHPos.TOP_CENTRE);
 
 				// Set location of window
 				setX(location.getX());
 				setY(location.getY() - 1.0);
 
-				// Make window visible
-				Platform.runLater(() -> setOpacity(1.0));
+				// Make window visible after a delay
+				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () -> setOpacity(1.0));
 			});
 		}
 

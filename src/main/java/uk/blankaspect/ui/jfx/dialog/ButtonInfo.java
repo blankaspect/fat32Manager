@@ -102,6 +102,57 @@ public class ButtonInfo
 ////////////////////////////////////////////////////////////////////////
 
 	/**
+	 * Creates and returns a button-information item for a button with the specified text that is positioned on the
+	 * left.
+	 *
+	 * @param  text
+	 *           the text of the button.
+	 * @return a button-information item for a left-positioned button whose text is {@code text}.
+	 */
+
+	public static ButtonInfo left(
+		String	text)
+	{
+		return new ButtonInfo(text, HPos.LEFT);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a button-information item for a button with the specified text that is horizontally
+	 * positioned in the centre.
+	 *
+	 * @param  text
+	 *           the text of the button.
+	 * @return a button-information item for a horizontally centred button whose text is {@code text}.
+	 */
+
+	public static ButtonInfo centre(
+		String	text)
+	{
+		return new ButtonInfo(text, HPos.CENTER);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a button-information item for a button with the specified text that is positioned on the
+	 * right.
+	 *
+	 * @param  text
+	 *           the text of the button.
+	 * @return a button-information item for a right-positioned button whose text is {@code text}.
+	 */
+
+	public static ButtonInfo right(
+		String	text)
+	{
+		return new ButtonInfo(text, HPos.RIGHT);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Creates and returns a list of button-information items, with the specified texts for the buttons.  All items have
 	 * the specified horizontal position.
 	 *

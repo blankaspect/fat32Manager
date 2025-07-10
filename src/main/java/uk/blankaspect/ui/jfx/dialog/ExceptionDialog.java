@@ -21,7 +21,6 @@ package uk.blankaspect.ui.jfx.dialog;
 import java.lang.invoke.MethodHandles;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +31,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 
 import javafx.scene.control.Button;
@@ -52,7 +50,7 @@ import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
 
-import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Shape;
 
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -69,7 +67,11 @@ import uk.blankaspect.common.function.IProcedure0;
 
 import uk.blankaspect.common.geometry.VHDirection;
 
+import uk.blankaspect.common.message.MessageConstants;
+
 import uk.blankaspect.common.string.StringUtils;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
 
@@ -116,10 +118,6 @@ public class ExceptionDialog
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The regular expression that is used to split the message into parts that have a {@linkplain #MESSAGE_GAP
-		vertical gap} between their labels. */
-	public static final		String	MESSAGE_SEPARATOR	= "\u000B";		// vertical tab
-
 	/** The vertical gap between adjacent message labels. */
 	private static final	double	MESSAGE_GAP	= 4.0;
 
@@ -156,46 +154,46 @@ public class ExceptionDialog
 			FxProperty.BACKGROUND_COLOUR,
 			Color.TRANSPARENT,
 			CssSelector.builder()
-						.cls(StyleClass.EXCEPTION_DIALOG)
-						.desc(StyleClass.DETAILS_BUTTON)
-						.build()
+					.cls(StyleClass.EXCEPTION_DIALOG)
+					.desc(StyleClass.DETAILS_BUTTON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.DETAILS_BUTTON_BACKGROUND_FOCUSED,
 			CssSelector.builder()
-						.cls(StyleClass.EXCEPTION_DIALOG)
-						.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
-						.build()
+					.cls(StyleClass.EXCEPTION_DIALOG)
+					.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.DETAILS_BUTTON_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.EXCEPTION_DIALOG)
-						.desc(StyleClass.DETAILS_BUTTON)
-						.build()
+					.cls(StyleClass.EXCEPTION_DIALOG)
+					.desc(StyleClass.DETAILS_BUTTON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.DETAILS_BUTTON_ARROWHEAD,
 			CssSelector.builder()
-						.cls(StyleClass.EXCEPTION_DIALOG)
-						.desc(StyleClass.DETAILS_BUTTON)
-						.desc(StyleClass.ARROWHEAD)
-						.build()
+					.cls(StyleClass.EXCEPTION_DIALOG)
+					.desc(StyleClass.DETAILS_BUTTON)
+					.desc(StyleClass.ARROWHEAD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.DETAILS_AREA_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.DETAILS_AREA)
-						.desc(FxStyleClass.CONTENT)
-						.build()
+					.cls(StyleClass.DETAILS_AREA)
+					.desc(FxStyleClass.CONTENT)
+					.build()
 		)
 	);
 
@@ -205,17 +203,17 @@ public class ExceptionDialog
 		RuleSetFactory.focusBorder
 		(
 			CssSelector.builder()
-						.cls(StyleClass.EXCEPTION_DIALOG)
-						.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
-						.build()
+					.cls(StyleClass.EXCEPTION_DIALOG)
+					.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
+					.build()
 		),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.DETAILS_AREA)
-									.desc(FxStyleClass.TEXT)
-									.build())
-						.grayFontSmoothing()
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.DETAILS_AREA)
+						.desc(FxStyleClass.TEXT)
+						.build())
+				.grayFontSmoothing()
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -337,7 +335,7 @@ public class ExceptionDialog
 	 *          the icon of the dialog.
 	 * @param exception
 	 *          the exception whose detail message and chain of causes will be displayed in the dialog.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -346,10 +344,10 @@ public class ExceptionDialog
 		String								title,
 		MessageIcon32						icon,
 		Throwable							exception,
-		Collection<? extends ButtonInfo>	buttons)
+		Collection<? extends ButtonInfo>	buttonInfos)
 	{
 		// Call alternative constructor
-		this(owner, title, icon, exception.getMessage(), exception.getCause(), buttons);
+		this(owner, title, icon, exception.getMessage(), exception.getCause(), buttonInfos);
 	}
 
 	//------------------------------------------------------------------
@@ -366,7 +364,7 @@ public class ExceptionDialog
 	 *          the icon of the dialog.
 	 * @param exception
 	 *          the exception whose detail message and chain of causes will be displayed in the dialog.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -375,10 +373,10 @@ public class ExceptionDialog
 		String			title,
 		MessageIcon32	icon,
 		Throwable		exception,
-		ButtonInfo...	buttons)
+		ButtonInfo...	buttonInfos)
 	{
 		// Call alternative constructor
-		this(owner, title, icon, exception.getMessage(), exception.getCause(), buttons);
+		this(owner, title, icon, exception.getMessage(), exception.getCause(), buttonInfos);
 	}
 
 	//------------------------------------------------------------------
@@ -397,7 +395,7 @@ public class ExceptionDialog
 	 *          the message that will be displayed in the dialog.
 	 * @param cause
 	 *          the exception that is the first element of the chain of causes that will be displayed in the dialog.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -407,13 +405,15 @@ public class ExceptionDialog
 		MessageIcon32						icon,
 		String								message,
 		Throwable							cause,
-		Collection<? extends ButtonInfo>	buttons)
+		Collection<? extends ButtonInfo>	buttonInfos)
 	{
 		// Call superclass constructor
 		super(owner, null, title);
 
 		// Validate arguments
-		if (buttons.isEmpty())
+		if (buttonInfos == null)
+			throw new IllegalArgumentException("Null buttons");
+		if (buttonInfos.isEmpty())
 			throw new IllegalArgumentException("No buttons");
 
 		// Initialise instance variables
@@ -426,14 +426,14 @@ public class ExceptionDialog
 		List<String> causes = ExceptionUtils.getStackTraceStrings(cause);
 
 		// Create text for copying to clipboard
-		String text = ((message == null) ? "" : message + "\n")
+		String text = ((message == null) ? "" : message.replace(MessageConstants.LABEL_SEPARATOR_CHAR, '\n') + "\n")
 						+ (causes.isEmpty() ? "" : STACK_TRACE_SEPARATOR + String.join(STACK_TRACE_SEPARATOR, causes));
 
 		// Create labels for messages
 		messageLabels = new ArrayList<>();
 		if (!StringUtils.isNullOrEmpty(message))
 		{
-			for (String message0 : message.split(MESSAGE_SEPARATOR))
+			for (String message0 : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
 			{
 				Label label = new Label(message0);
 				label.setMinWidth(MIN_MESSAGE_LABEL_WIDTH);
@@ -471,13 +471,13 @@ public class ExceptionDialog
 
 			// Create up arrowhead for 'details' button
 			double arrowheadSize = (double)((int)TextUtils.textHeight() / 4 * 4);
-			Polygon upArrowhead = Shapes.arrowhead01(VHDirection.UP, arrowheadSize);
+			Shape upArrowhead = Shapes.arrowhead01(VHDirection.UP, arrowheadSize);
 			upArrowhead.setFill(getColour(ColourKey.DETAILS_BUTTON_ARROWHEAD));
 			upArrowhead.getStyleClass().add(StyleClass.ARROWHEAD);
 			Group upIcon = Shapes.tile(upArrowhead, arrowheadSize);
 
 			// Create down arrowhead for 'details' button
-			Polygon downArrowhead = Shapes.arrowhead01(VHDirection.DOWN, arrowheadSize);
+			Shape downArrowhead = Shapes.arrowhead01(VHDirection.DOWN, arrowheadSize);
 			downArrowhead.setFill(getColour(ColourKey.DETAILS_BUTTON_ARROWHEAD));
 			downArrowhead.getStyleClass().add(StyleClass.ARROWHEAD);
 			Group downIcon = Shapes.tile(downArrowhead, arrowheadSize);
@@ -509,8 +509,9 @@ public class ExceptionDialog
 												? SceneUtils.createColouredBackground(
 														getColour(ColourKey.DETAILS_BUTTON_BACKGROUND_FOCUSED))
 												: null);
-				detailsButton.setBorder(focused ? SceneUtils.createFocusBorder()
-												: SceneUtils.createSolidBorder(getColour(ColourKey.DETAILS_BUTTON_BORDER)));
+				detailsButton.setBorder(focused
+											? SceneUtils.createFocusBorder()
+											: SceneUtils.createSolidBorder(getColour(ColourKey.DETAILS_BUTTON_BORDER)));
 			};
 
 			// Update 'details' button when its focus changes
@@ -547,7 +548,7 @@ public class ExceptionDialog
 		}
 
 		// Create button: copy
-		Button copyButton = new Button(COPY_STR);
+		Button copyButton = Buttons.hNoShrink(COPY_STR);
 		copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		copyButton.setOnAction(event ->
 		{
@@ -563,19 +564,19 @@ public class ExceptionDialog
 		addButton(copyButton, HPos.LEFT);
 
 		// Create buttons and add them to button pane
-		this.buttons = new ArrayList<>();
+		buttons = new ArrayList<>();
 		Button ctrlEnterButton = null;
-		for (ButtonInfo buttonInfo : buttons)
+		for (ButtonInfo buttonInfo : buttonInfos)
 		{
 			// Create button
-			Button button = new Button(buttonInfo.getText());
+			Button button = Buttons.hNoShrink(buttonInfo.getText());
 			button.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			button.setOnAction(event ->
 			{
-				result = this.buttons.indexOf(button);
+				result = buttons.indexOf(button);
 				hide();
 			});
-			this.buttons.add(button);
+			buttons.add(button);
 
 			// Add button to button pane
 			addButton(button, buttonInfo.getPosition());
@@ -631,7 +632,7 @@ public class ExceptionDialog
 	 *          the message that will be displayed in the dialog.
 	 * @param cause
 	 *          the exception that is the first element of the chain of causes that will be displayed in the dialog.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -641,10 +642,10 @@ public class ExceptionDialog
 		MessageIcon32	icon,
 		String			message,
 		Throwable		cause,
-		ButtonInfo...	buttons)
+		ButtonInfo...	buttonInfos)
 	{
 		// Call alternative constructor
-		this(owner, title, icon, message, cause, Arrays.asList(buttons));
+		this(owner, title, icon, message, cause, List.of(buttonInfos));
 	}
 
 	//------------------------------------------------------------------
@@ -652,6 +653,19 @@ public class ExceptionDialog
 ////////////////////////////////////////////////////////////////////////
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Creates and returns a new instance of a builder for an exception dialog.
+	 *
+	 * @return a new instance of a builder for an exception dialog.
+	 */
+
+	public static Builder builder()
+	{
+		return new Builder();
+	}
+
+	//------------------------------------------------------------------
 
 	/**
 	 * Creates and displays a new instance of a dialog with the specified owner, title and icon, for the specified
@@ -716,8 +730,10 @@ public class ExceptionDialog
 	 *           the title of the dialog.
 	 * @param  icon
 	 *           the icon of the dialog.  If it is {@code null}, the dialog will have no icon.
-	 * @param  throwable
+	 * @param  exception
 	 *           the exception whose detail message and chain of causes will be displayed in the dialog.
+	 * @param  buttonInfos
+	 *           information about the buttons of the dialog.
 	 * @return the index of the selected button, or -1 if no button was selected.
 	 */
 
@@ -726,9 +742,9 @@ public class ExceptionDialog
 		String								title,
 		MessageIcon32						icon,
 		Throwable							exception,
-		Collection<? extends ButtonInfo>	buttons)
+		Collection<? extends ButtonInfo>	buttonInfos)
 	{
-		return new ExceptionDialog(owner, title, icon, exception, buttons).showDialog();
+		return new ExceptionDialog(owner, title, icon, exception, buttonInfos).showDialog();
 	}
 
 	//------------------------------------------------------------------
@@ -743,8 +759,8 @@ public class ExceptionDialog
 	 *           the title of the dialog.
 	 * @param  icon
 	 *           the icon of the dialog.  If it is {@code null}, the dialog will have no icon.
-	 * @param  throwable
-	 *           the exception whose detail message and chain of causes will be displayed in the dialog.
+	 * @param  buttonInfos
+	 *           information about the buttons of the dialog.
 	 * @return the index of the selected button, or -1 if no button was selected.
 	 */
 
@@ -753,9 +769,9 @@ public class ExceptionDialog
 		String			title,
 		MessageIcon32	icon,
 		Throwable		exception,
-		ButtonInfo...	buttons)
+		ButtonInfo...	buttonInfos)
 	{
-		return new ExceptionDialog(owner, title, icon, exception, buttons).showDialog();
+		return new ExceptionDialog(owner, title, icon, exception, buttonInfos).showDialog();
 	}
 
 	//------------------------------------------------------------------
@@ -775,7 +791,7 @@ public class ExceptionDialog
 	 *           the message that will be displayed in the dialog.
 	 * @param  cause
 	 *           the exception that is the first element of the chain of causes that will be displayed in the dialog.
-	 * @param  buttons
+	 * @param  buttonInfos
 	 *           information about the buttons of the dialog.
 	 * @return the index of the selected button, or -1 if no button was selected.
 	 */
@@ -786,9 +802,9 @@ public class ExceptionDialog
 		MessageIcon32						icon,
 		String								message,
 		Throwable							cause,
-		Collection<? extends ButtonInfo>	buttons)
+		Collection<? extends ButtonInfo>	buttonInfos)
 	{
-		return new ExceptionDialog(owner, title, icon, message, cause, buttons).showDialog();
+		return new ExceptionDialog(owner, title, icon, message, cause, buttonInfos).showDialog();
 	}
 
 	//------------------------------------------------------------------
@@ -808,7 +824,7 @@ public class ExceptionDialog
 	 *           the message that will be displayed in the dialog.
 	 * @param  cause
 	 *           the exception that is the first element of the chain of causes that will be displayed in the dialog.
-	 * @param  buttons
+	 * @param  buttonInfos
 	 *           information about the buttons of the dialog.
 	 * @return the index of the selected button, or -1 if no button was selected.
 	 */
@@ -819,20 +835,20 @@ public class ExceptionDialog
 		MessageIcon32	icon,
 		String			message,
 		Throwable		cause,
-		ButtonInfo...	buttons)
+		ButtonInfo...	buttonInfos)
 	{
-		return new ExceptionDialog(owner, title, icon, message, cause, buttons).showDialog();
+		return new ExceptionDialog(owner, title, icon, message, cause, buttonInfos).showDialog();
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -900,6 +916,284 @@ public class ExceptionDialog
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: BUILDER FOR AN EXCEPTION DIALOG
+
+
+	/**
+	 * This class implements a builder for an {@linkplain ExceptionDialog exception dialog}.
+	 */
+
+	public static class Builder
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance variables
+	////////////////////////////////////////////////////////////////////
+
+		/** The owner of the dialog. */
+		private	Window				owner;
+
+		/** The title of the dialog. */
+		private	String				title;
+
+		/** The icon of the dialog. */
+		private	MessageIcon32		icon;
+
+		/** The message that will be displayed in the dialog. */
+		private	String				message;
+
+		/** The exception that is the first element of the chain of causes that will be displayed in the dialog. */
+		private	Throwable			cause;
+
+		/** A list of information about the buttons of the dialog. */
+		private	List<ButtonInfo>	buttonInfos;
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates a new instance of a builder for an {@linkplain ExceptionDialog exception dialog}.
+		 */
+
+		private Builder()
+		{
+			// Initialise instance variables
+			buttonInfos = new ArrayList<>();
+		}
+
+		//--------------------------------------------------------------
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Sets the owner of the dialog to the specified value.
+		 *
+		 * @param  owner
+		 *           the owner of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder owner(
+			Window	owner)
+		{
+			// Update instance variable
+			this.owner = owner;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the title of the dialog to the specified value.
+		 *
+		 * @param  title
+		 *           the title of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder title(
+			String	title)
+		{
+			// Update instance variable
+			this.title = title;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the icon of the dialog to the specified value.
+		 *
+		 * @param  icon
+		 *           the icon of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder icon(
+			MessageIcon32	icon)
+		{
+			// Update instance variable
+			this.icon = icon;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the message that will be displayed in the dialog to the specified value.
+		 *
+		 * @param  message
+		 *           the message that will be displayed in the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder message(
+			String	message)
+		{
+			// Update instance variable
+			this.message = message;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the exception that is the first element of the chain of causes that will be displayed in the dialog.
+		 *
+		 * @param  cause
+		 *           the exception that is the first element of the chain of causes that will be displayed in the
+		 *           dialog.
+		 * @return this builder.
+		 */
+
+		public Builder cause(
+			Throwable	cause)
+		{
+			// Update instance variable
+			this.cause = cause;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a left-positioned button with the specified text and adds it to the
+		 * list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addLeft(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.left(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a horizontally centred button with the specified text and adds it
+		 * to the list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addCentre(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.centre(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a right-positioned button with the specified text and adds it to
+		 * the list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addRight(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.right(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Adds the specified items of button information to the list of information about the buttons of the dialog.
+		 *
+		 * @param  buttonInfos
+		 *           the items that will be added to the list of button information.
+		 * @return this builder.
+		 */
+
+		public Builder addButtons(
+			Collection<? extends ButtonInfo>	buttonInfos)
+		{
+			// Append items to list
+			this.buttonInfos.addAll(buttonInfos);
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Adds the specified items of button information to the list of information about the buttons of the dialog.
+		 *
+		 * @param  buttonInfos
+		 *           the items that will be added to the list of button information.
+		 * @return this builder.
+		 */
+
+		public Builder addButtons(
+			ButtonInfo...	buttonInfos)
+		{
+			// Append items to list
+			Collections.addAll(this.buttonInfos, buttonInfos);
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates and returns a new instance of an exception dialog that is initialised from the state of this builder.
+		 *
+		 * @return a new instance of an exception dialog.
+		 */
+
+		public ExceptionDialog build()
+		{
+			return new ExceptionDialog(owner, title, icon, message, cause, buttonInfos);
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 ////////////////////////////////////////////////////////////////////////
 //  Member classes : inner classes
@@ -979,11 +1273,11 @@ public class ExceptionDialog
 			setOnShown(event ->
 			{
 				// Set background colour of text area
-				if (StyleManager.INSTANCE.notUsingStyleSheet())
+				if (StyleManager.INSTANCE.notUsingStyleSheet()
+						&& (textArea.lookup(StyleSelector.TEXT_AREA_CONTENT) instanceof Region region))
 				{
-					Node node = textArea.lookup(StyleSelector.TEXT_AREA_CONTENT);
-					if (node instanceof Region region)
-						region.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.DETAILS_AREA_BACKGROUND)));
+					region.setBackground(SceneUtils.createColouredBackground(
+							getColour(ColourKey.DETAILS_AREA_BACKGROUND)));
 				}
 
 				// Request focus on text area

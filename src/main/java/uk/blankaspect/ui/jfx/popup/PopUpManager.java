@@ -67,6 +67,13 @@ public class PopUpManager
 {
 
 ////////////////////////////////////////////////////////////////////////
+//  Constants
+////////////////////////////////////////////////////////////////////////
+
+	/** The key of the property of a pop-up window that prevents the pop-up window from being displayed. */
+	public static final	Object	SUPPRESS_POP_UP_PROPERTY_KEY	= new Object();
+
+////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
@@ -79,8 +86,8 @@ public class PopUpManager
 	/** The decorator that will be applied to a pop-up after the content is added to the pop-up. */
 	private	IProcedure1<Popup>							popUpDecorator;
 
-	/** A map of pop-up windows that are associated with nodes. */
-	private	Map<Node, MapEntry>							popUps;
+	/** A map from target nodes to information about their associated pop-up windows. */
+	private	Map<Node, PopUpInfo>						popUps;
 
 	/** The event handler that tracks the location of the mouse in the scene that contains the target of the pop-up
 		window. */
@@ -156,15 +163,15 @@ public class PopUpManager
 	 *
 	 * @param  node
 	 *           the node whose associated pop-up window is required.
-	 * @return the pop-up window that is associated with <i>node</i> in this pop-up manager's map of pop-up windows, or
-	 *         {@code null} if the map does not contain the key <i>node</i>.
+	 * @return the pop-up window that is associated with {@code node} in this pop-up manager's map of pop-up windows, or
+	 *         {@code null} if the map does not contain the key {@code node}.
 	 */
 
 	public Popup getPopUp(
 		Node	node)
 	{
-		MapEntry entry = popUps.get(node);
-		return (entry == null) ? null : entry.popUp;
+		PopUpInfo popUpInfo = popUps.get(node);
+		return (popUpInfo == null) ? null : popUpInfo.popUp;
 	}
 
 	//------------------------------------------------------------------
@@ -207,8 +214,8 @@ public class PopUpManager
 				popUpDecorator.invoke(popUp);
 
 			// Add pop-up to map
-			MapEntry entry = new MapEntry(popUp);
-			popUps.put(target, entry);
+			PopUpInfo popUpInfo = new PopUpInfo(popUp);
+			popUps.put(target, popUpInfo);
 
 			// Create procedure for displaying pop-up
 			IProcedure0 show = () ->
@@ -220,8 +227,8 @@ public class PopUpManager
 				if (locationEvent == null)
 					popUps.remove(target);
 
-				// ... otherwise, display pop-up
-				else
+				// ... otherwise, display pop-up if it is not suppressed
+				else if (!popUp.getProperties().containsKey(SUPPRESS_POP_UP_PROPERTY_KEY))
 				{
 					// Get window that contains pop-up target
 					Window window = SceneUtils.getWindow(target);
@@ -231,10 +238,10 @@ public class PopUpManager
 					{
 						// Add mouse-event handlers to root node
 						Node popUpRoot = popUp.getScene().getRoot();
-						popUpRoot.addEventHandler(MouseEvent.MOUSE_ENTERED, event -> entry.mouseWithinPopup = true);
+						popUpRoot.addEventHandler(MouseEvent.MOUSE_ENTERED, event -> popUpInfo.mouseWithinPopup = true);
 						popUpRoot.addEventHandler(MouseEvent.MOUSE_EXITED, event ->
 						{
-							entry.mouseWithinPopup = false;
+							popUpInfo.mouseWithinPopup = false;
 							hidePopUp(target);
 						});
 						popUpRoot.addEventHandler(MouseEvent.MOUSE_MOVED, event ->
@@ -242,7 +249,7 @@ public class PopUpManager
 							Bounds bounds = target.localToScreen(target.getLayoutBounds());
 							if ((bounds == null) || !bounds.contains(event.getScreenX(), event.getScreenY()))
 							{
-								entry.mouseWithinPopup = false;
+								popUpInfo.mouseWithinPopup = false;
 								hidePopUp(target);
 							}
 						});
@@ -287,10 +294,11 @@ public class PopUpManager
 					targetScene.addEventFilter(MouseEvent.MOUSE_MOVED, mouseTracker);
 
 				// Create timer to display pop-up after a delay
-				entry.delayTimer = new Timeline(new KeyFrame(Duration.millis((double)delay), event -> show.invoke()));
+				popUpInfo.delayTimer =
+						new Timeline(new KeyFrame(Duration.millis((double)delay), event -> show.invoke()));
 
 				// Start timer to display pop-up
-				entry.delayTimer.play();
+				popUpInfo.delayTimer.play();
 			}
 		}
 	}
@@ -325,15 +333,15 @@ public class PopUpManager
 	public void hidePopUp(
 		Node	node)
 	{
-		MapEntry entry = popUps.get(node);
-		if ((entry != null) && !entry.mouseWithinPopup)
+		PopUpInfo popUpInfo = popUps.get(node);
+		if ((popUpInfo != null) && !popUpInfo.mouseWithinPopup)
 		{
 			// Stop delay timer
-			if (entry.delayTimer != null)
-				entry.delayTimer.stop();
+			if (popUpInfo.delayTimer != null)
+				popUpInfo.delayTimer.stop();
 
 			// Hide pop-up
-			entry.popUp.hide();
+			popUpInfo.popUp.hide();
 
 			// Remove entry from map
 			popUps.remove(node);
@@ -351,7 +359,7 @@ public class PopUpManager
 	 *
 	 * @param  event
 	 *           the mouse event whose source is the node that is associated with the pop-up window of interest.
-	 * @return {@code true} if a pop-up window that is associated with the node that is the source of <i>event</i> has
+	 * @return {@code true} if a pop-up window that is associated with the node that is the source of {@code event} has
 	 *         been activated.
 	 */
 
@@ -369,7 +377,7 @@ public class PopUpManager
 	 *
 	 * @param  node
 	 *           the node whose associated pop-up window is of interest.
-	 * @return {@code true} if a pop-up window that is associated with <i>node</i> has been activated.
+	 * @return {@code true} if a pop-up window that is associated with {@code node} has been activated.
 	 */
 
 	public boolean isPopUpActivated(
@@ -390,11 +398,11 @@ public class PopUpManager
 	 * </p>
 	 *
 	 * @param key
-	 *          the key with which <i>handler</i> will be added to the map of mouse-event handlers.
+	 *          the key with which {@code handler} will be added to the map of mouse-event handlers.
 	 * @param eventKind
-	 *          the kind of mouse event that will be handled by <i>handler</i>.
+	 *          the kind of mouse event that will be handled by {@code handler}.
 	 * @param handler
-	 *          the handler for <i>eventKind</i> mouse events.
+	 *          the handler for {@code eventKind} mouse events.
 	 */
 
 	public void addMouseEventHandler(
@@ -456,18 +464,18 @@ public class PopUpManager
 	 *
 	 * @param  popUp
 	 *           the pop-up window whose associated node is required.
-	 * @return the node that is associated with <i>popUp</i> in this pop-up manager's map of pop-up windows, or {@code
-	 *         null} if the map does not contain the value <i>popUp</i>.
+	 * @return the node that is associated with {@code popUp} in this pop-up manager's map of pop-up windows, or {@code
+	 *         null} if the map does not contain the value {@code popUp}.
 	 */
 
 	public Node findNode(
 		Popup	popUp)
 	{
 		return popUps.entrySet().stream()
-								.filter(entry -> entry.getValue().popUp == popUp)
-								.map(entry -> entry.getKey())
-								.findFirst()
-								.orElse(null);
+				.filter(entry -> entry.getValue().popUp == popUp)
+				.map(entry -> entry.getKey())
+				.findFirst()
+				.orElse(null);
 	}
 
 	//------------------------------------------------------------------
@@ -479,9 +487,9 @@ public class PopUpManager
 	 * @param target
 	 *          the node to which the event handlers will be added.
 	 * @param targetPos
-	 *          the reference position of {@code target}, which is aligned with {@code popupPos} when the pop-up is
+	 *          the reference position of {@code target}, which is aligned with {@code popUpPos} when the pop-up is
 	 *          displayed.
-	 * @param popupPos
+	 * @param popUpPos
 	 *          the reference position of the label of the pop-up, which is aligned with {@code targetPos} when the
 	 *          pop-up is displayed.
 	 * @param showPopUp
@@ -492,7 +500,7 @@ public class PopUpManager
 	public void addEventHandlers(
 		Node					target,
 		VHPos					targetPos,
-		VHPos					popupPos,
+		VHPos					popUpPos,
 		IProcedure1<MouseEvent>	showPopUp)
 	{
 		// Create mouse-event handler
@@ -508,7 +516,7 @@ public class PopUpManager
 		// Add mouse-event handlers to show and hide pop-up
 		addEventHandlerManager(target, MouseEvent.MOUSE_ENTERED, mouseEventHandler).addHandler();
 		if ((targetPos == null)
-				|| !(targetPos.getV().isOpposite(popupPos.getV()) || targetPos.getH().isOpposite(popupPos.getH())))
+				|| !(targetPos.getV().isOpposite(popUpPos.getV()) || targetPos.getH().isOpposite(popUpPos.getH())))
 			addEventHandlerManager(target, MouseEvent.MOUSE_MOVED, mouseEventHandler).addHandler();
 		addEventHandlerManager(target, MouseEvent.MOUSE_EXITED, this::hidePopUp).addHandler();
 
@@ -620,14 +628,15 @@ public class PopUpManager
 ////////////////////////////////////////////////////////////////////////
 
 
-	// CLASS: POP-UP MAP ENTRY
+	// CLASS: POP-UP INFORMATION
 
 
 	/**
-	 * This class implements an entry in the {@linkplain PopUpManager#popUps map from nodes to pop-up windows}.
+	 * This class implements information about a pop-up window that may be added to the {@linkplain PopUpManager#popUps
+	 * map of pop-up windows}.
 	 */
 
-	private static class MapEntry
+	private static class PopUpInfo
 	{
 
 	////////////////////////////////////////////////////////////////////
@@ -648,13 +657,14 @@ public class PopUpManager
 	////////////////////////////////////////////////////////////////////
 
 		/**
-		 * Creates a new instance of an entry for the {@linkplain PopUpManager#popUps map from nodes to pop-up windows}.
+		 * Creates a new instance of information about the specified pop-up window that may be added to the {@linkplain
+		 * PopUpManager#popUps map of pop-up windows}.
 		 *
 		 * @param popUp
-		 *          the pop-up window of the entry.
+		 *          the pop-up window.
 		 */
 
-		private MapEntry(
+		private PopUpInfo(
 			Popup	popUp)
 		{
 			// Initialise instance variables

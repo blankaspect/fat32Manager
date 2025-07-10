@@ -68,7 +68,7 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  ColourUtils.colourToCssRgbaString(outerColour) + VALUE_SEPARATOR
-							+ ColourUtils.colourToCssRgbaString(innerColour))
+								+ ColourUtils.colourToCssRgbaString(innerColour))
 				.borderInsets(0, 1)
 				.build();
 	}
@@ -84,7 +84,7 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  StyleConstants.COLOUR_KEY_PREFIX + outerColourKey + VALUE_SEPARATOR
-							+ ColourUtils.colourToCssRgbaString(innerColour))
+								+ ColourUtils.colourToCssRgbaString(innerColour))
 				.borderInsets(0, 1)
 				.build();
 	}
@@ -100,7 +100,7 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  ColourUtils.colourToCssRgbaString(outerColour) + VALUE_SEPARATOR
-							+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
+								+ StyleConstants.COLOUR_KEY_PREFIX + innerColourKey)
 				.borderInsets(0, 1)
 				.build();
 	}
@@ -114,7 +114,7 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  ColourUtils.colourToCssRgbaString(Color.WHITE) + VALUE_SEPARATOR
-							+ ColourUtils.colourToCssRgbaString(Color.BLACK))
+								+ ColourUtils.colourToCssRgbaString(Color.BLACK))
 				.property(FxProperty.BORDER_STYLE,
 						  BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.DOTTED)
 				.borderInsets(0, 0)
@@ -131,10 +131,11 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  ColourUtils.colourToCssRgbaString(Color.WHITE) + VALUE_SEPARATOR
-							+ ColourUtils.colourToCssRgbaString(Color.BLACK) + VALUE_SEPARATOR
-							+ StyleConstants.COLOUR_KEY_PREFIX + colourKey)
+								+ ColourUtils.colourToCssRgbaString(Color.BLACK) + VALUE_SEPARATOR
+								+ StyleConstants.COLOUR_KEY_PREFIX + colourKey)
 				.property(FxProperty.BORDER_STYLE,
-						  BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.DOTTED + VALUE_SEPARATOR + BorderStyle.SOLID)
+						  BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.DOTTED + VALUE_SEPARATOR
+								+ BorderStyle.SOLID)
 				.borderInsets(0, 0, 1)
 				.build();
 	}
@@ -149,10 +150,11 @@ public class RuleSetFactory
 				.selector(selector)
 				.property(FxProperty.BORDER_COLOUR,
 						  StyleConstants.COLOUR_KEY_PREFIX + colourKey
-							+ ColourUtils.colourToCssRgbaString(Color.WHITE) + VALUE_SEPARATOR
-							+ ColourUtils.colourToCssRgbaString(Color.BLACK) + VALUE_SEPARATOR)
+								+ ColourUtils.colourToCssRgbaString(Color.WHITE) + VALUE_SEPARATOR
+								+ ColourUtils.colourToCssRgbaString(Color.BLACK) + VALUE_SEPARATOR)
 				.property(FxProperty.BORDER_STYLE,
-						  BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.DOTTED)
+						  BorderStyle.SOLID + VALUE_SEPARATOR + BorderStyle.SOLID + VALUE_SEPARATOR
+								+ BorderStyle.DOTTED)
 				.borderInsets(0, 1, 1)
 				.build();
 	}

@@ -22,10 +22,14 @@ import java.io.File;
 
 import java.lang.invoke.MethodHandles;
 
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 import java.util.List;
+
+import java.util.function.Predicate;
 
 import javafx.css.PseudoClass;
 
@@ -43,6 +47,7 @@ import javafx.scene.paint.Color;
 import uk.blankaspect.common.css.CssSelector;
 
 import uk.blankaspect.common.filesystem.PathnameUtils;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
@@ -100,7 +105,15 @@ public class PathnameField
 ////////////////////////////////////////////////////////////////////////
 
 	/** The default number of columns of the text field. */
-	public static final		int		DEFAULT_NUM_COLUMNS	= 40;
+	public static final		int	DEFAULT_NUM_COLUMNS	= 40;
+
+	/** A file-system location matcher that matches regular files. */
+	public static final		Predicate<Path>	FILE_MATCHER	=
+			location -> Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS);
+
+	/** A file-system location matcher that matches directories. */
+	public static final		Predicate<Path>	DIRECTORY_MATCHER	=
+			location -> Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS);
 
 	/** The pseudo-class that is associated with the <i>invalid</i> state. */
 	private static final	PseudoClass	INVALID_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
@@ -113,13 +126,13 @@ public class PathnameField
 			FxProperty.CONTROL_INNER_BACKGROUND,
 			ColourKey.BACKGROUND_INVALID,
 			CssSelector.builder()
-						.cls(StyleClass.PATHNAME_FIELD).pseudo(PseudoClassKey.INVALID)
-						.build()
+					.cls(StyleClass.PATHNAME_FIELD).pseudo(PseudoClassKey.INVALID)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	PATHNAME_FIELD	= StyleConstants.CLASS_PREFIX + "pathname-field";
 	}
@@ -147,6 +160,9 @@ public class PathnameField
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
+
+	/** The matcher that is applied to file-system locations by drag-and-drop event handlers and {@link #paste()}. */
+	private	Predicate<Path>	locationMatcher;
 
 	/** Flag: if {@code true}, {@link #getLocation()} displays an error message if an {@link InvalidPathException} is
 		thrown. */
@@ -263,8 +279,8 @@ public class PathnameField
 		// Handle DRAG_OVER drag events
 		setOnDragOver(event ->
 		{
-			// Test whether field is editable and clipboard contains files
-			if (isEditable() && event.getDragboard().hasFiles())
+			// Test whether field is editable and clipboard contains matching file-system locations
+			if (isEditable() && ClipboardUtils.locationMatches(event.getDragboard(), locationMatcher))
 				event.acceptTransferModes(TransferMode.COPY);
 
 			// Consume event
@@ -274,17 +290,17 @@ public class PathnameField
 		// Handle DRAG_DROPPED drag events
 		setOnDragDropped(event ->
 		{
-			// Get first file-system location from dragboard
-			Path location = ClipboardUtils.firstLocation(event.getDragboard());
+			// Get first matching file-system location from dragboard
+			Path location = ClipboardUtils.firstMatchingLocation(event.getDragboard(), locationMatcher);
 
 			// Indicate that drag-and-drop is complete
 			event.setDropCompleted(true);
 
-			// If there is a location, set text to its pathname
+			// If there is a location, set text to its absolute pathname
 			if (location != null)
 			{
-				// Set text to pathname of first file
-				setText(denormalisePathname(locationToPathname(location)));
+				// Set text to absolute pathname of first file
+				setLocation(location);
 
 				// Position caret at end of text
 				end();
@@ -362,7 +378,7 @@ public class PathnameField
 	private static String locationToPathname(
 		Path	location)
 	{
-		return (location == null) ? null : location.toAbsolutePath().toString();
+		return (location == null) ? null : PathUtils.absString(location);
 	}
 
 	//------------------------------------------------------------------
@@ -386,12 +402,12 @@ public class PathnameField
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -399,6 +415,44 @@ public class PathnameField
 		String	key)
 	{
 		return StyleManager.INSTANCE.getColourOrDefault(key);
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Instance methods : overriding methods
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * {@inheritDoc}
+	 */
+
+	@Override
+	public void paste()
+	{
+		// If system clipboard has a matching location, set it on this field ...
+		if (ClipboardUtils.locationMatches(locationMatcher))
+		{
+			// Get first matching location from system clipboard
+			Path location = ClipboardUtils.firstMatchingLocation(locationMatcher);
+
+			// If there is a location, set text to its absolute pathname
+			if (location != null)
+			{
+				// Set text to absolute pathname of first file
+				setLocation(location);
+
+				// Position caret at end of text
+				end();
+
+				// Notify listeners of import
+				fireEvent(new PathnameEvent(PathnameEvent.PATHNAME_IMPORTED, this));
+			}
+		}
+
+		// ... otherwise, call superclass method to paste text into this field
+		else
+			super.paste();
 	}
 
 	//------------------------------------------------------------------
@@ -461,7 +515,8 @@ public class PathnameField
 					invalidPathnamePopUp = new MessagePopUp(MessageIcon24.ERROR,
 															String.format(ErrorMsg.NOT_A_VALID_PATHNAME, pathname));
 					Bounds bounds = localToScreen(getLayoutBounds());
-					invalidPathnamePopUp.show(this, bounds.getMinX(), bounds.getMaxY() - 1.0);
+					if (bounds != null)
+						invalidPathnamePopUp.show(this, bounds.getMinX(), bounds.getMaxY() - 1.0);
 				}
 			}
 		}
@@ -510,6 +565,22 @@ public class PathnameField
 		Path	location)
 	{
 		setPathname(locationToPathname(location));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the matcher that is applied to file-system locations by drag-and-drop event handlers and {@link #paste()}.
+	 *
+	 * @param matcher
+	 *          the function that will be applied to file-system locations.  If it is {@code null}, all locations will
+	 *          match.
+	 */
+
+	public void setLocationMatcher(
+		Predicate<Path>	matcher)
+	{
+		locationMatcher = matcher;
 	}
 
 	//------------------------------------------------------------------

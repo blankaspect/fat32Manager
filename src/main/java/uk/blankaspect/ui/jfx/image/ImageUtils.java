@@ -97,10 +97,10 @@ public class ImageUtils
 	 *
 	 * @param  image
 	 *           the image for which an image view will be created.
-	 * @return an image view for <i>image</i>, with its <i>smooth</i> property set.
+	 * @return an image view for {@code image}, with its <i>smooth</i> property set.
 	 */
 
-	public static ImageView createSmoothImageView(
+	public static ImageView smoothImageView(
 		Image	image)
 	{
 		ImageView imageView = new ImageView(image);
@@ -116,13 +116,13 @@ public class ImageUtils
 	 *
 	 * @param  data
 	 *           the image data for which an image view will be created.
-	 * @return an image view for the image that is created from <i>data</i>, with its <i>smooth</i> property set.
+	 * @return an image view for the image that is created from {@code data}, with its <i>smooth</i> property set.
 	 */
 
-	public static ImageView createSmoothImageView(
+	public static ImageView smoothImageView(
 		byte[]	data)
 	{
-		return createSmoothImageView(new Image(new ByteArrayInputStream(data)));
+		return smoothImageView(new Image(new ByteArrayInputStream(data)));
 	}
 
 	//------------------------------------------------------------------
@@ -132,12 +132,12 @@ public class ImageUtils
 	 * the specified corner, and the size of the composite image is the size of the base image.
 	 *
 	 * @param  baseImage
-	 *           the base image on which <i>overlay</i> will be overlaid.
+	 *           the base image on which {@code overlay} will be overlaid.
 	 * @param  overlay
-	 *           the image that will be overlaid on <i>baseImage</i>.
+	 *           the image that will be overlaid on {@code baseImage}.
 	 * @param  corner
-	 *           the corner at which <i>baseImage</i> and <i>overlay</i> will be aligned.
-	 * @return the composite image formed by overlaying <i>overlay</i> on <i>baseImage</i>.
+	 *           the corner at which {@code baseImage} and {@code overlay} will be aligned.
+	 * @return the composite image formed by overlaying {@code overlay} on {@code baseImage}.
 	 */
 
 	public static Image overlayImage(
@@ -161,7 +161,7 @@ public class ImageUtils
 		switch (corner)
 		{
 			case TOP_LEFT:
-				// Do nothing
+				// do nothing
 				break;
 
 			case TOP_RIGHT:
@@ -193,19 +193,24 @@ public class ImageUtils
 
 		// Get pixel data of base image
 		int[] pixelBuffer = new int[baseImageWidth * baseImageHeight];
-		baseImage.getPixelReader().getPixels(0, 0, baseImageWidth, baseImageHeight, PixelFormat.getIntArgbInstance(), pixelBuffer, 0, baseImageWidth);
+		baseImage.getPixelReader().getPixels(0, 0, baseImageWidth, baseImageHeight, PixelFormat.getIntArgbInstance(),
+											 pixelBuffer, 0, baseImageWidth);
 
-		// Copy base image to buffer
-		WritableImage outBuffer = new WritableImage(baseImageWidth, baseImageHeight);
-		outBuffer.getPixelWriter().setPixels(0, 0, baseImageWidth, baseImageHeight, PixelFormat.getIntArgbInstance(), pixelBuffer, 0, baseImageWidth);
+		// Copy base image to output image
+		WritableImage outImage = new WritableImage(baseImageWidth, baseImageHeight);
+		outImage.getPixelWriter().setPixels(0, 0, baseImageWidth, baseImageHeight, PixelFormat.getIntArgbInstance(),
+											pixelBuffer, 0, baseImageWidth);
 
 		// Get pixel data of overlay
-		overlay.getPixelReader().getPixels(inX, inY, regionWidth, regionHeight, PixelFormat.getIntArgbInstance(), pixelBuffer, 0, baseImageWidth);
+		overlay.getPixelReader().getPixels(inX, inY, regionWidth, regionHeight, PixelFormat.getIntArgbInstance(),
+										   pixelBuffer, 0, baseImageWidth);
 
-		// Overwrite region of buffer with overlay
-		outBuffer.getPixelWriter().setPixels(outX, outY, regionWidth, regionHeight, PixelFormat.getIntArgbInstance(), pixelBuffer, 0, baseImageWidth);
+		// Overwrite region of output image with overlay
+		outImage.getPixelWriter().setPixels(outX, outY, regionWidth, regionHeight, PixelFormat.getIntArgbInstance(),
+											pixelBuffer, 0, baseImageWidth);
 
-		return outBuffer;
+		// Return output image
+		return outImage;
 	}
 
 	//------------------------------------------------------------------

@@ -18,15 +18,11 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
-import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javafx.application.Platform;
 
 import javafx.event.EventHandler;
 
@@ -61,7 +57,12 @@ import javafx.stage.WindowEvent;
 import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssSelector;
 
+import uk.blankaspect.common.os.OsUtils;
+
 import uk.blankaspect.ui.jfx.container.DialogButtonPane;
+import uk.blankaspect.ui.jfx.container.PaneStyle;
+
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
@@ -84,7 +85,7 @@ import uk.blankaspect.ui.jfx.text.TextUtils;
  * javafx.scene.control.Dialog}.
  * <p>
  * A dialog consists of components arranged vertically: a {@linkplain #getContent() content node} at the top and at
- * least one {@linkplain #getButtonPane() button pane} below it.  By default, the content node is a {@linkplain
+ * least one {@linkplain #getButtonPane(int) button pane} below it.  By default, the content node is a {@linkplain
  * #getContentPane() content pane} to which content may be added.
  * </p>
  * <p>
@@ -107,6 +108,15 @@ public abstract class SimpleDialog
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
+	/** Text that is commonly used in buttons. */
+	public static final		String	OK_STR		= "OK";
+	public static final		String	CANCEL_STR	= "Cancel";
+	public static final		String	APPLY_STR	= "Apply";
+	public static final		String	CLOSE_STR	= "Close";
+
+	/** The key of the <i>instance index</i> property of a dialog. */
+	public static final		String	INSTANCE_INDEX_KEY	= SimpleDialog.class.getSimpleName() + ".index";
+
 	/** The key of the <i>group</i> property of a button that is used when equalising button widths. */
 	public static final		String	BUTTON_GROUP_KEY	= DialogButtonPane.BUTTON_GROUP_KEY;
 
@@ -118,12 +128,6 @@ public abstract class SimpleDialog
 
 	/** An object that may be used as the value of the <i>group</i> property of a button, to equalise button widths. */
 	protected static final	Object	BUTTON_GROUP3	= new Object();
-
-	/** The text of commonly used buttons. */
-	protected static final	String	OK_STR		= "OK";
-	protected static final	String	CANCEL_STR	= "Cancel";
-	protected static final	String	APPLY_STR	= "Apply";
-	protected static final	String	CLOSE_STR	= "Close";
 
 	/** The default padding around the content pane. */
 	private static final	Insets	DEFAULT_CONTENT_PANE_PADDING	= new Insets(6.0, 8.0, 6.0, 8.0);
@@ -137,6 +141,15 @@ public abstract class SimpleDialog
 	/** The default minimum width of a button. */
 	private static final	double	DEFAULT_MIN_BUTTON_WIDTH	= 3.0 * TextUtils.textHeight();
 
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
+
+	/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
+	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+
 	/** The margins that are applied to the visual bounds of each screen when determining whether the saved location of
 		the window is within a screen. */
 	private static final	Insets	SCREEN_MARGINS	= new Insets(0.0, 32.0, 32.0, 0.0);
@@ -147,11 +160,11 @@ public abstract class SimpleDialog
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.CONTENT_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_DIALOG)
-						.desc(StyleClass.CONTENT_PANE)
-						.build()
+					.cls(StyleClass.SIMPLE_DIALOG_ROOT)
+					.desc(StyleClass.CONTENT_PANE)
+					.build()
 		)
 	);
 
@@ -159,38 +172,39 @@ public abstract class SimpleDialog
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SIMPLE_DIALOG)
-									.desc(StyleClass.CONTENT_PANE)
-									.build())
-						.borders(Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SIMPLE_DIALOG_ROOT)
+						.desc(StyleClass.CONTENT_PANE)
+						.build())
+				.borders(Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	CONTENT_PANE	= StyleConstants.CLASS_PREFIX + "content-pane";
-		String	SIMPLE_DIALOG	= StyleConstants.CLASS_PREFIX + "simple-dialog";
+		String	CONTENT_PANE		= StyleConstants.CLASS_PREFIX + "content-pane";
+		String	SIMPLE_DIALOG_ROOT	= StyleConstants.CLASS_PREFIX + "simple-dialog-root";
 	}
 
-	/** Keys of colours that are used in colour properties. */
-	private interface ColourKey
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
 	{
-		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
-
-		String	CONTENT_PANE_BORDER	= PREFIX + "contentPane.border";
+		String	WINDOW_SHOWN_DELAY	= "blankaspect.ui.jfx.simpleDialog.windowShownDelay";
 	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Class variables
 ////////////////////////////////////////////////////////////////////////
 
+	/** The index of the last instance of this class. */
+	private static	int							instanceIndex	= -1;
+
 	/** A map of the locations of dialogs. */
-	private static	Map<String, Point2D>		locations	= new HashMap<>();
+	private static	Map<String, Point2D>		locations		= new HashMap<>();
 
 	/** A map of the sizes of dialogs. */
-	private static	Map<String, Dimension2D>	sizes		= new HashMap<>();
+	private static	Map<String, Dimension2D>	sizes			= new HashMap<>();
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -217,8 +231,9 @@ public abstract class SimpleDialog
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(SimpleDialog.class, COLOUR_PROPERTIES, RULE_SETS);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(SimpleDialog.class, COLOUR_PROPERTIES, RULE_SETS,
+									   PaneStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -273,6 +288,7 @@ public abstract class SimpleDialog
 		if (title != null)
 			setTitle(title);
 		setResizable(false);
+		getProperties().put(INSTANCE_INDEX_KEY, ++instanceIndex);
 
 		// Make window invisible until it is displayed
 		setOpacity(0.0);
@@ -283,7 +299,7 @@ public abstract class SimpleDialog
 
 		// Create content pane
 		contentPane = new StackPane();
-		contentPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.CONTENT_PANE_BORDER), Side.BOTTOM));
+		contentPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER), Side.BOTTOM));
 		contentPane.setPadding(DEFAULT_CONTENT_PANE_PADDING);
 		contentPane.getStyleClass().add(StyleClass.CONTENT_PANE);
 		VBox.setVgrow(contentPane, Priority.ALWAYS);
@@ -291,7 +307,6 @@ public abstract class SimpleDialog
 
 		// Create main pane
 		mainPane = new VBox(contentPane);
-		mainPane.getStyleClass().add(StyleClass.SIMPLE_DIALOG);
 
 		// Create button panes
 		buttonPanes = new ArrayList<>();
@@ -318,135 +333,163 @@ public abstract class SimpleDialog
 		// Create scene and set it on this window
 		setScene(new Scene(mainPane));
 
+		// Set style class on root node of scene graph
+		getScene().getRoot().getStyleClass().add(StyleClass.SIMPLE_DIALOG_ROOT);
+
+		// Resize window to scene
+		sizeToScene();
+
 		// Apply style sheet to scene
 		applyStyleSheet();
 
-		// Update UI before window is displayed
-		boolean[] widthSet = { false };
-		addEventHandler(WindowEvent.WINDOW_SHOWING, event ->
+		// When window is shown, set its size and location after a delay
+		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 		{
 			// Update spacing of button groups
 			for (DialogButtonPane buttonPane : buttonPanes)
 				buttonPane.updateButtonSpacing();
 
-			// Set location of window to previous value
-			if (locationKey != null)
+			// Create container for dimensions of window
+			class Dimensions
 			{
-				Point2D location = locations.get(locationKey);
+				double	w;
+				double	h;
+
+				void update()
+				{
+					w = getWidth();
+					h = getHeight();
+				}
+			}
+			Dimensions dims = new Dimensions();
+			dims.update();
+
+			// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+			setMinWidth(dims.w);
+			setMinHeight(dims.h);
+
+			// Set size and location of window after a delay
+			ExecUtils.afterDelay(getWindowShownDelay(), () ->
+			{
+				// Set location of window to previous value
+				Point2D location = (locationKey == null) ? null : locations.get(locationKey);
 				if (location != null)
 				{
 					setX(location.getX());
 					setY(location.getY());
 				}
-			}
 
-			// If no size was provided, get previous size of window
-			Dimension2D size0 = size;
-			if ((size0 == null) && (sizeKey != null))
-				size0 = sizes.get(sizeKey);
+				// If no size was provided, get previous size of window
+				Dimension2D size0 = size;
+				if ((size0 == null) && (sizeKey != null))
+					size0 = sizes.get(sizeKey);
 
-			// Set dimensions of window
-			if (size0 != null)
-			{
-				// Set width
-				double width = size0.getWidth();
-				if (width > 0.0)
+				// Set dimensions of window
+				boolean widthSet = false;
+				if (size0 != null)
 				{
-					setWidth(width);
-					widthSet[0] = true;
+					// Set width
+					double width = size0.getWidth();
+					if (width > 0.0)
+					{
+						setWidth(width);
+						widthSet = true;
+					}
+
+					// Set height
+					double height = size0.getHeight();
+					setHeight((height > 0.0) ? height : dims.h);
 				}
 
-				// Set height
-				double height = size0.getHeight();
-				if (height > 0.0)
-					setHeight(height);
-			}
-		});
+				// Update dimensions
+				dims.update();
 
-		// Update UI after window is displayed
-		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
-		{
-			// If width has not been set, equalise widths of groups of buttons
-			double extraWidth = 0.0;
-			if (!widthSet[0])
-			{
-				// Equalise widths of groups of buttons
+				// Calculate extra width that will result from equalising widths of groups of buttons
+				double extraWidth = 0.0;
 				for (DialogButtonPane buttonPane : buttonPanes)
 				{
-					double ew = buttonPane.equaliseButtonWidths();
+					double ew = Math.max(0.0, buttonPane.equaliseButtonWidths(false));
 					if (extraWidth < ew)
 						extraWidth = ew;
 				}
 
-				// Increase width of window to accommodate extra width of buttons
-				if (extraWidth > 0.0)
+				// If width of window has not been set or button panes do not need to be widened, equalise widths of
+				// groups of buttons
+				if (!widthSet || (extraWidth == 0.0))
 				{
-					// Temporarily allow window to be resized
-					boolean fixedSize = !isResizable();
-					if (fixedSize)
-						setResizable(true);
+					for (DialogButtonPane buttonPane : buttonPanes)
+						buttonPane.equaliseButtonWidths(true);
+				}
 
+				// If width of window has been set, reset extra width ...
+				if (widthSet)
+					extraWidth = 0.0;
+
+				// ... otherwise, if button panes have been widened, increase width of window accordingly
+				else if (extraWidth > 0.0)
+				{
 					// Increase width of window
-					setWidth(getWidth() + extraWidth);
+					setWidth(dims.w + extraWidth);
 
-					// Prevent window from being resized
-					if (fixedSize)
-						setResizable(false);
+					// Restore height (Linux/GNOME)
+					setHeight(dims.h);
+
+					// Update dimensions
+					dims.update();
 				}
-			}
 
-			// Get dimensions of window
-			double width = getWidth();
-			double height = getHeight();
-
-			// If there is no previous location of window, get location from locator ...
-			Point2D location = (locationKey == null) ? null : locations.get(locationKey);
-			if (location == null)
-			{
-				if (locator != null)
-					location = locator.getLocation(width, height);
-			}
-
-			// ... otherwise, ensure that window rectangle intersects a screen
-			else if (Screen.getScreensForRectangle(getX(), getY(), width, height).isEmpty())
-			{
-				// Remove location from map
-				locations.remove(locationKey);
-
-				// Invalidate location
-				location = null;
-			}
-
-			// If there is a location, invalidate it if top centre of window is not within a screen
-			if ((location != null)
-					&& !SceneUtils.isWithinScreen(location.getX() + 0.5 * width, location.getY(), SCREEN_MARGINS))
-				location = null;
-
-			// If there is no location, locate window relative to owner
-			if (location == null)
-			{
-				// If owner is showing, locate window relative to owner ...
-				if ((owner != null) && owner.isShowing())
+				// If there is no previous location of window, get location from locator ...
+				if (location == null)
 				{
-					location = SceneUtils.getRelativeLocation(width, height, owner.getX(), owner.getY(),
-															  owner.getWidth(), owner.getHeight());
+					if (locator != null)
+						location = locator.getLocation(dims.w, dims.h);
 				}
 
-				// ... otherwise, if there is no screen, adjust x coordinate of window
-				else if (Screen.getScreens().isEmpty())
-					setX(getX() - 0.5 * extraWidth);
-			}
+				// ... otherwise, ensure that window rectangle intersects a screen
+				else if (Screen.getScreensForRectangle(getX(), getY(), dims.w, dims.h).isEmpty())
+				{
+					// Remove location from map
+					locations.remove(locationKey);
 
-			// If there is no location, centre window within primary screen
-			if (location == null)
-				location = SceneUtils.centreInScreen(width, height);
+					// Invalidate location
+					location = null;
+				}
 
-			// Set location of window
-			setX(location.getX());
-			setY(location.getY());
+				// If there is a location, invalidate it if top centre of window is not within a screen
+				if ((location != null)
+						&& !SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(), SCREEN_MARGINS))
+					location = null;
 
-			// Make window visible
-			Platform.runLater(() -> setOpacity(1.0));
+				// If there is no location, locate window relative to owner
+				if (location == null)
+				{
+					// If owner is showing, locate window relative to owner ...
+					if ((owner != null) && owner.isShowing())
+					{
+						location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
+																  owner.getWidth(), owner.getHeight());
+					}
+
+					// ... otherwise, if there is no screen, adjust x coordinate of window
+					else if (Screen.getScreens().isEmpty())
+						setX(getX() - 0.5 * extraWidth);
+				}
+
+				// If there is no location, centre window within primary screen
+				if (location == null)
+					location = SceneUtils.centreInScreen(dims.w, dims.h);
+
+				// Set location of window
+				setX(location.getX());
+				setY(location.getY());
+
+				// Restore minimum dimensions (Linux/GNOME)
+				setMinWidth(0.0);
+				setMinHeight(0.0);
+
+				// Make window visible after a delay
+				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () -> setOpacity(1.0));
+			});
 		});
 
 		// Save location and size of window when it is closed
@@ -552,12 +595,38 @@ public abstract class SimpleDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 *
+	 * @return the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 */
+
+	private static int getWindowShownDelay()
+	{
+		int delay = OsUtils.isWindows() ? WINDOW_SHOWN_DELAY_WINDOWS : WINDOW_SHOWN_DELAY;
+		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
+		if (value != null)
+		{
+			try
+			{
+				delay = Integer.parseInt(value);
+			}
+			catch (NumberFormatException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return delay;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -779,7 +848,7 @@ public abstract class SimpleDialog
 			throw new IllegalStateException("Cannot add button when window is showing");
 
 		// Set properties of button
-		if (minButtonWidth >= 0.0)
+		if ((minButtonWidth >= 0.0) && (button.getMinWidth() == Region.USE_COMPUTED_SIZE))
 			button.setMinWidth(minButtonWidth);
 		if (setPadding)
 			button.setPadding(getButtonPadding());

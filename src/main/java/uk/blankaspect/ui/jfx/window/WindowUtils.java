@@ -18,13 +18,6 @@ package uk.blankaspect.ui.jfx.window;
 // IMPORTS
 
 
-import java.io.File;
-
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-
-import javafx.application.Platform;
-
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 
@@ -33,7 +26,7 @@ import javafx.scene.Node;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import javafx.util.Duration;
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
@@ -49,6 +42,16 @@ import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
 public class WindowUtils
 {
+
+////////////////////////////////////////////////////////////////////////
+//  Constants
+////////////////////////////////////////////////////////////////////////
+
+	/** The delay (in milliseconds) before the height of a window is fixed by {@link #preventHeightChange(Stage)}. */
+	private static final	int	FIX_WINDOW_HEIGHT_DELAY	= 100;
+
+	/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
+	private static final	int	WINDOW_VISIBLE_DELAY	= 50;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -68,24 +71,17 @@ public class WindowUtils
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
 
+
 	public static void preventHeightChange(
 		Stage	window)
 	{
-		// Create code to be executed
-		Runnable fixHeight = () ->
+		// Fix the minimum and maximum height of the window after a delay
+		ExecUtils.afterDelay(FIX_WINDOW_HEIGHT_DELAY, () ->
 		{
 			double height = Math.ceil(window.getHeight());
 			window.setMinHeight(height);
 			window.setMaxHeight(height);
-		};
-
-		// If platform is Windows, run immediately ...
-		if (File.separatorChar == '\\')
-			fixHeight.run();
-
-		// ... otherwise, run after a delay of 100 ms
-		else
-			new Timeline(new KeyFrame(Duration.millis(100.0), event -> fixHeight.run())).play();
+		});
 	}
 
 	//------------------------------------------------------------------
@@ -111,8 +107,8 @@ public class WindowUtils
 			window.setX(location.getX());
 			window.setY(location.getY());
 
-			// Make window visible
-			Platform.runLater(() -> window.setOpacity(1.0));
+			// Make window visible after a delay
+			ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () -> window.setOpacity(1.0));
 		});
 
 		// Display window

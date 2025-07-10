@@ -19,7 +19,6 @@ package uk.blankaspect.ui.jfx.dialog;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +39,12 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import javafx.stage.Window;
+
+import uk.blankaspect.common.message.MessageConstants;
+
+import uk.blankaspect.common.string.StringUtils;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
 
 import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
@@ -63,10 +68,6 @@ public class MessageDialog
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
-
-	/** The regular expression that is used to split the message into parts that have a {@linkplain #MESSAGE_GAP
-		vertical gap} between their labels. */
-	public static final		String	MESSAGE_SEPARATOR	= "\u000B";		// vertical tab
 
 	/** The vertical gap between adjacent message labels. */
 	private static final	double	MESSAGE_GAP	= 4.0;
@@ -103,14 +104,14 @@ public class MessageDialog
 	 * @param owner
 	 *          the owner of the dialog.  If it is {@code null}, the dialog will have no owner.
 	 * @param title
-	 *          the title of the dialog.
+	 *          the title of the dialog, which may be {@code null}.
 	 * @param icon
 	 *          the icon of the dialog.  If it is {@code null}, the dialog will have no icon.
 	 * @param message
 	 *          the message that will be displayed in the dialog.
 	 * @param locator
 	 *          the function that returns the location of the dialog, which may be {@code null}.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -120,13 +121,17 @@ public class MessageDialog
 		Node								icon,
 		String								message,
 		ILocator							locator,
-		Collection<? extends ButtonInfo>	buttons)
+		Collection<? extends ButtonInfo>	buttonInfos)
 	{
 		// Call superclass constructor
 		super(owner, null, null, title, 1, locator, null);
 
 		// Validate arguments
-		if (buttons.isEmpty())
+		if (message == null)
+			throw new IllegalArgumentException("Null message");
+		if (buttonInfos == null)
+			throw new IllegalArgumentException("Null buttons");
+		if (buttonInfos.isEmpty())
 			throw new IllegalArgumentException("No buttons");
 
 		// Initialise instance variables
@@ -134,11 +139,8 @@ public class MessageDialog
 
 		// Create labels for messages
 		messageLabels = new ArrayList<>();
-		for (String message0 : message.split(MESSAGE_SEPARATOR))
-		{
-			Label label = new Label(message0);
-			messageLabels.add(label);
-		}
+		for (String message0 : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
+			messageLabels.add(new Label(message0));
 
 		// Create pane for message labels
 		VBox messagePane = new VBox(MESSAGE_GAP);
@@ -160,19 +162,19 @@ public class MessageDialog
 		getContentPane().setPadding((icon == null) ? CONTENT_PANE_PADDING_NO_ICON : CONTENT_PANE_PADDING);
 
 		// Create buttons and add them to button pane
-		this.buttons = new ArrayList<>();
+		buttons = new ArrayList<>();
 		Button ctrlEnterButton = null;
-		for (ButtonInfo buttonInfo : buttons)
+		for (ButtonInfo buttonInfo : buttonInfos)
 		{
 			// Create button
-			Button button = new Button(buttonInfo.getText());
+			Button button = Buttons.hNoShrink(buttonInfo.getText());
 			button.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			button.setOnAction(event ->
 			{
-				result = this.buttons.indexOf(button);
+				result = buttons.indexOf(button);
 				hide();
 			});
-			this.buttons.add(button);
+			buttons.add(button);
 
 			// Add button to button pane
 			addButton(button, buttonInfo.getPosition());
@@ -200,7 +202,8 @@ public class MessageDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a new instance of a dialog with the specified owner, title, optional icon, message and buttons.
+	 * Creates a new instance of a dialog with the specified owner, title, optional icon, message and buttons.  The
+	 * first button is the default button.
 	 *
 	 * @param owner
 	 *          the owner of the dialog.  If it is {@code null}, the dialog will have no owner.
@@ -212,7 +215,7 @@ public class MessageDialog
 	 *          the message that will be displayed in the dialog.
 	 * @param locator
 	 *          the function that returns the location of the dialog, which may be {@code null}.
-	 * @param buttons
+	 * @param buttonInfos
 	 *          information about the buttons of the dialog.
 	 */
 
@@ -222,10 +225,10 @@ public class MessageDialog
 		Node			icon,
 		String			message,
 		ILocator		locator,
-		ButtonInfo...	buttons)
+		ButtonInfo...	buttonInfos)
 	{
 		// Call alternative constructor
-		this(owner, title, icon, message, locator, Arrays.asList(buttons));
+		this(owner, title, icon, message, locator, List.of(buttonInfos));
 	}
 
 	//------------------------------------------------------------------
@@ -233,6 +236,19 @@ public class MessageDialog
 ////////////////////////////////////////////////////////////////////////
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Creates and returns a new instance of a builder for a message dialog.
+	 *
+	 * @return a new instance of a builder for a message dialog.
+	 */
+
+	public static Builder builder()
+	{
+		return new Builder();
+	}
+
+	//------------------------------------------------------------------
 
 	/**
 	 * Creates a new instance of a dialog with the specified owner, title, optional icon, message and buttons, displays
@@ -337,6 +353,283 @@ public class MessageDialog
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: BUILDER FOR A MESSAGE DIALOG
+
+
+	/**
+	 * This class implements a builder for a {@linkplain MessageDialog message dialog}.
+	 */
+
+	public static class Builder
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance variables
+	////////////////////////////////////////////////////////////////////
+
+		/** The owner of the dialog. */
+		private	Window				owner;
+
+		/** The title of the dialog. */
+		private	String				title;
+
+		/** The icon of the dialog. */
+		private	Node				icon;
+
+		/** The message that will be displayed in the dialog. */
+		private	String				message;
+
+		/** The function that returns the location of the dialog. */
+		private	ILocator			locator;
+
+		/** A list of information about the buttons of the dialog. */
+		private	List<ButtonInfo>	buttonInfos;
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates a new instance of a builder for a {@linkplain MessageDialog message dialog}.
+		 */
+
+		private Builder()
+		{
+			// Initialise instance variables
+			buttonInfos = new ArrayList<>();
+		}
+
+		//--------------------------------------------------------------
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Sets the owner of the dialog to the specified value.
+		 *
+		 * @param  owner
+		 *           the owner of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder owner(
+			Window	owner)
+		{
+			// Update instance variable
+			this.owner = owner;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the title of the dialog to the specified value.
+		 *
+		 * @param  title
+		 *           the title of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder title(
+			String	title)
+		{
+			// Update instance variable
+			this.title = title;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the icon of the dialog to the specified value.
+		 *
+		 * @param  icon
+		 *           the icon of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder icon(
+			Node	icon)
+		{
+			// Update instance variable
+			this.icon = icon;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the message that will be displayed in the dialog to the specified value.
+		 *
+		 * @param  message
+		 *           the message that will be displayed in the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder message(
+			String	message)
+		{
+			// Update instance variable
+			this.message = message;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the function that returns the location of the dialog to the specified value.
+		 *
+		 * @param  locator
+		 *           the function that returns the location of the dialog.
+		 * @return this builder.
+		 */
+
+		public Builder locator(
+			ILocator	locator)
+		{
+			// Update instance variable
+			this.locator = locator;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a left-positioned button with the specified text and adds it to the
+		 * list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addLeft(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.left(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a horizontally centred button with the specified text and adds it
+		 * to the list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addCentre(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.centre(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates an item of button information for a right-positioned button with the specified text and adds it to
+		 * the list of information about the buttons of the dialog.
+		 *
+		 * @param  text
+		 *           the text of the button.
+		 * @return this builder.
+		 */
+
+		public Builder addRight(
+			String	text)
+		{
+			// Append button info to list
+			buttonInfos.add(ButtonInfo.right(text));
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Adds the specified items of button information to the list of information about the buttons of the dialog.
+		 *
+		 * @param  buttonInfos
+		 *           the items that will be added to the list of button information.
+		 * @return this builder.
+		 */
+
+		public Builder addButtons(
+			Collection<? extends ButtonInfo>	buttonInfos)
+		{
+			// Append items to list
+			this.buttonInfos.addAll(buttonInfos);
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Adds the specified items of button information to the list of information about the buttons of the dialog.
+		 *
+		 * @param  buttonInfos
+		 *           the items that will be added to the list of button information.
+		 * @return this builder.
+		 */
+
+		public Builder addButtons(
+			ButtonInfo...	buttonInfos)
+		{
+			// Append items to list
+			Collections.addAll(this.buttonInfos, buttonInfos);
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates and returns a new instance of a message dialog that is initialised from the state of this builder.
+		 *
+		 * @return a new instance of a message dialog.
+		 */
+
+		public MessageDialog build()
+		{
+			return new MessageDialog(owner, title, icon, message, locator, buttonInfos);
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

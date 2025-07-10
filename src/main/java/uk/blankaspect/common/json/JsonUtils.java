@@ -33,6 +33,8 @@ import java.nio.file.attribute.PosixFilePermissions;
 
 import uk.blankaspect.common.basictree.AbstractNode;
 
+import uk.blankaspect.common.filesystem.PathUtils;
+
 //----------------------------------------------------------------------
 
 
@@ -72,14 +74,15 @@ public class JsonUtils
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns {@code true} if the specified {@linkplain AbstractNode node} represents a JSON value.
+	 * Returns {@code true} if the specified {@linkplain AbstractNode node} corresponds to a JSON value.
 	 *
 	 * @param  node
 	 *           the node of interest.
-	 * @return {@code true} if {@code node} represents a JSON value; {@code false} otherwise.
+	 * @return {@code true} if {@code node} corresponds to a JSON value; {@code false} otherwise.
 	 */
 
-	public static boolean isJsonValue(AbstractNode node)
+	public static boolean isJsonValue(
+		AbstractNode	node)
 	{
 		return node.getType().isAnyOf(JsonConstants.NODE_TYPES);
 	}
@@ -87,15 +90,17 @@ public class JsonUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns {@code true} if the specified {@linkplain AbstractNode node} represents a simple JSON value (ie, a null,
-	 * a Boolean, a number or a string).
+	 * Returns {@code true} if the specified {@linkplain AbstractNode node} corresponds to a simple JSON value (ie, a
+	 * null, a Boolean, a number or a string).
 	 *
 	 * @param  node
 	 *           the node of interest.
-	 * @return {@code true} if {@code node} represents a JSON null, Boolean, number or string; {@code false} otherwise.
+	 * @return {@code true} if {@code node} corresponds to a JSON null, Boolean, number or string; {@code false}
+	 *         otherwise.
 	 */
 
-	public static boolean isSimpleJsonValue(AbstractNode node)
+	public static boolean isSimpleJsonValue(
+		AbstractNode	node)
 	{
 		return node.getType().isAnyOf(JsonConstants.SIMPLE_NODE_TYPES);
 	}
@@ -103,17 +108,54 @@ public class JsonUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns {@code true} if the specified {@linkplain AbstractNode node} represents a JSON container (ie, an array or
-	 * object).
+	 * Returns {@code true} if the specified {@linkplain AbstractNode node} corresponds to a compound JSON value (ie, an
+	 * array or object).
 	 *
 	 * @param  node
 	 *           the node of interest.
-	 * @return {@code true} if {@code node} represents a JSON array or object; {@code false} otherwise.
+	 * @return {@code true} if {@code node} corresponds to a JSON array or object; {@code false} otherwise.
 	 */
 
-	public static boolean isJsonContainer(AbstractNode node)
+	public static boolean isCompoundJsonValue(
+		AbstractNode	node)
 	{
-		return node.getType().isAnyOf(JsonConstants.CONTAINER_NODE_TYPES);
+		return node.getType().isAnyOf(JsonConstants.COMPOUND_NODE_TYPES);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns {@code true} if the specified {@linkplain AbstractNode node} corresponds to a JSON number.
+	 *
+	 * @param  node
+	 *           the node of interest.
+	 * @return {@code true} if {@code node} corresponds to a JSON number; {@code false} otherwise.
+	 */
+
+	public static boolean isJsonNumber(
+		AbstractNode	node)
+	{
+		return node.getType().isAnyOf(JsonConstants.NUMBER_TYPES);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns {@code true} if the specified {@linkplain AbstractNode node} corresponds to a JSON container (ie, an
+	 * array or object).
+	 *
+	 * @deprecated
+	 *   This method has been replaced by {@link #isCompoundJsonValue} and will eventually be removed.
+	 * @param  node
+	 *           the node of interest.
+	 * @return {@code true} if {@code node} corresponds to a JSON array or object; {@code false} otherwise.
+	 */
+
+	@Deprecated
+	public static boolean isJsonContainer(
+		AbstractNode	node)
+	{
+		return isCompoundJsonValue(node);
 	}
 
 	//------------------------------------------------------------------
@@ -128,11 +170,12 @@ public class JsonUtils
 	 *           the sequence of characters that will be searched for in {@code file}.
 	 * @return {@code true} if {@code file} contains {@code target}.
 	 * @throws IOException
-	 *           if an error occurred when reading the file.
+	 *           if an error occurs when reading the file.
 	 */
 
-	public static boolean containsText(Path         file,
-									   CharSequence target)
+	public static boolean containsText(
+		Path			file,
+		CharSequence	target)
 		throws IOException
 	{
 		// Validate arguments
@@ -159,11 +202,12 @@ public class JsonUtils
 	 *           the sequence of characters that will be searched for in {@code inputSteam}.
 	 * @return {@code true} if {@code target} is found in {@code inputStream}.
 	 * @throws IOException
-	 *           if an error occurred when reading from the input stream.
+	 *           if an error occurs when reading from the input stream.
 	 */
 
-	public static boolean containsText(Reader       inputStream,
-									   CharSequence target)
+	public static boolean containsText(
+		Reader			inputStream,
+		CharSequence	target)
 		throws IOException
 	{
 		// Validate arguments
@@ -281,17 +325,18 @@ public class JsonUtils
 	 * @return the JSON value that results from parsing the content of {@code file}, if the file contains valid JSON
 	 *         text.
 	 * @throws IOException
-	 *           if an error occurred when reading the file.
+	 *           if an error occurs when reading the file.
 	 * @throws JsonParser.ParseException
-	 *           if an error occurred when parsing the content of the file.
+	 *           if an error occurs when parsing the content of the file.
 	 */
 
-	public static AbstractNode readFile(Path file)
+	public static AbstractNode readFile(
+		Path	file)
 		throws IOException, JsonParser.ParseException
 	{
 		try (BufferedReader reader = Files.newBufferedReader(file))
 		{
-			return new JsonParser().parse(reader);
+			return JsonParser.builder().build().parse(reader);
 		}
 	}
 
@@ -308,14 +353,15 @@ public class JsonUtils
 	 * @param  value
 	 *           the JSON value whose JSON text will be written to {@code file}.
 	 * @throws IOException
-	 *           if an error occurred when writing the file.
+	 *           if an error occurs when writing the file.
 	 */
 
-	public static void writeFile(Path         file,
-								 AbstractNode value)
+	public static void writeFile(
+		Path			file,
+		AbstractNode	value)
 		throws IOException
 	{
-		writeFile(file, value, new JsonGenerator());
+		writeFile(file, value, JsonGenerator.builder().build());
 	}
 
 	//------------------------------------------------------------------
@@ -332,16 +378,17 @@ public class JsonUtils
 	 * @param  generator
 	 *           the object that will generate the JSON text for {@code value}.
 	 * @throws IOException
-	 *           if an error occurred when writing the file.
+	 *           if an error occurs when writing the file.
 	 */
 
-	public static void writeFile(Path          file,
-								 AbstractNode  value,
-								 JsonGenerator generator)
+	public static void writeFile(
+		Path			file,
+		AbstractNode	value,
+		JsonGenerator	generator)
 		throws IOException
 	{
 		// Convert the JSON value to text; write the text to the file
-		writeText(file, generator.generate(value));
+		writeText(file, generator.generate(value).toString());
 	}
 
 	//------------------------------------------------------------------
@@ -355,11 +402,12 @@ public class JsonUtils
 	 * @param  text
 	 *           the text that will be written to {@code file}.
 	 * @throws IOException
-	 *           if an error occurred when reading permissions of an existing file or when writing the file.
+	 *           if an error occurs when reading permissions of an existing file or when writing the file.
 	 */
 
-	public static void writeText(Path   file,
-								 String text)
+	public static void writeText(
+		Path	file,
+		String	text)
 		throws IOException
 	{
 		Path tempFile = null;
@@ -381,7 +429,7 @@ public class JsonUtils
 			}
 
 			// Create the parent directories of the output file
-			Path parent = file.toAbsolutePath().getParent();
+			Path parent = PathUtils.absParent(file);
 			if (parent != null)
 				Files.createDirectories(parent);
 
@@ -416,7 +464,8 @@ public class JsonUtils
 	 * @return a temporary file-system location that has the same parent directory as {@code location}.
 	 */
 
-	public static Path tempLocation(Path location)
+	public static Path tempLocation(
+		Path	location)
 	{
 		// Get input name
 		String inName = location.getFileName().toString();
@@ -447,19 +496,20 @@ public class JsonUtils
 	 * @return a temporary-filename suffix for {@code index}.
 	 */
 
-	private static String indexToTempSuffix(int index)
+	private static String indexToTempSuffix(
+		int	index)
 	{
 		String prefix = "";
 		String str = Integer.toString(index);
 		switch (str.length())
 		{
-		case 1:
-			prefix = "00";
-			break;
+			case 1:
+				prefix = "00";
+				break;
 
-		case 2:
-			prefix = "0";
-			break;
+			case 2:
+				prefix = "0";
+				break;
 		}
 		return "." + prefix + str + TEMPORARY_FILENAME_EXTENSION;
 	}

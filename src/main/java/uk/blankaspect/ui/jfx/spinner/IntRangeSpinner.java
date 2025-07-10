@@ -122,9 +122,6 @@ public class IntRangeSpinner
 	/** The vertical inset of the text box. */
 	private static final	double	TEXT_BOX_V_INSET	= 3.0;
 
-	/** The default background colour of the text box. */
-	private static final	Color	DEFAULT_TEXT_BOX_BACKGROUND_COLOUR	= Color.rgb(252, 248, 232);
-
 	/** The preferred number of rows of the list view. */
 	private static final	int		LIST_VIEW_NUM_ROWS	= 10;
 
@@ -134,7 +131,7 @@ public class IntRangeSpinner
 	/** The padding at the top and bottom of a cell of the list view. */
 	private static final	double	LIST_VIEW_CELL_VERTICAL_PADDING	= 3.0;
 
-	/** The height of a <i>tick</i> icon. */
+	/** The logical size of a <i>tick</i> icon. */
 	private static final	double	LIST_VIEW_TICK_ICON_SIZE	= 0.85 * TextUtils.textHeight();
 
 	/** The opacity of a component when it is disabled. */
@@ -142,16 +139,6 @@ public class IntRangeSpinner
 
 	/** A map from button-icon orientation to button information. */
 	private static final	Map<Orientation, ButtonInfo>	BUTTON_INFOS;
-
-	/** The time (in nanoseconds) by which the delay between updates of the spinner value is reduced after each update,
-		until the minimum update is reached. */
-	private static final	long	DELTA_UPDATE_VALUE_DELAY	= 75_000_000;
-
-	/** The maximum delay (in nanoseconds) between updates of the spinner value. */
-	private static final	long	MAX_UPDATE_VALUE_DELAY	= 425_000_000;
-
-	/** The minimum delay (in nanoseconds) between updates of the spinner value. */
-	private static final	long	MIN_UPDATE_VALUE_DELAY	= MAX_UPDATE_VALUE_DELAY - 4 * DELTA_UPDATE_VALUE_DELAY;
 
 	/** Miscellaneous strings. */
 	private static final	String	MIN_MAX_OUT_OF_ORDER_STR	= "Minimum and maximum values out of order";
@@ -178,80 +165,80 @@ public class IntRangeSpinner
 			FxProperty.STROKE,
 			ColourKey.FRAME,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.FRAME)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.FRAME)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_BOX_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.TEXT)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.TEXT)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_BOX_TEXT_EMPTY,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.TEXT).pseudo(FxPseudoClass.EMPTY)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.TEXT).pseudo(FxPseudoClass.EMPTY)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_BOX_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.TEXT_BOX)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.TEXT_BOX)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.TEXT_BOX_BACKGROUND_EMPTY,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.TEXT_BOX).pseudo(FxPseudoClass.EMPTY)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.TEXT_BOX).pseudo(FxPseudoClass.EMPTY)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BUTTON_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.BUTTON)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.BUTTON)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BUTTON_BACKGROUND_PRESSED,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.BUTTON).pseudo(FxPseudoClass.PRESSED)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.BUTTON).pseudo(FxPseudoClass.PRESSED)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.FILL,
 			ColourKey.BUTTON_ICON,
 			CssSelector.builder()
-						.cls(StyleClass.INT_RANGE_SPINNER)
-						.desc(StyleClass.ARROWHEAD)
-						.build()
+					.cls(StyleClass.INT_RANGE_SPINNER)
+					.desc(StyleClass.ARROWHEAD)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
 			ColourKey.LIST_VIEW_TICK,
 			CssSelector.builder()
-						.cls(StyleClass.LIST_VIEW_TICK)
-						.build()
+					.cls(StyleClass.LIST_VIEW_TICK)
+					.build()
 		)
 	);
 
@@ -318,8 +305,14 @@ public class IntRangeSpinner
 	/** The background colour of the text box. */
 	private	Color					textBoxBackgroundColour;
 
+	/** The text colour of this spinner. */
+	private	Color					textColour;
+
 	/** The background node of the text box. */
 	private	Rectangle				textBoxBackground;
+
+	/** The text node of the text box. */
+	private	Text2					textNode;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -385,7 +378,8 @@ public class IntRangeSpinner
 		this.cyclic = cyclic;
 		value = new SimpleIntegerProperty();
 		converter = Integer::toString;
-		textBoxBackgroundColour = DEFAULT_TEXT_BOX_BACKGROUND_COLOUR;
+		textBoxBackgroundColour = getColour(ColourKey.TEXT_BOX_BACKGROUND);
+		textColour = getColour(ColourKey.TEXT_BOX_TEXT);
 
 		// Set properties
 		getStyleClass().add(StyleClass.INT_RANGE_SPINNER);
@@ -727,12 +721,12 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -878,24 +872,27 @@ public class IntRangeSpinner
 			textWidth = TextUtils.textWidth(prototypeText);
 
 		// Create text node
-		Text2 textNode = Text2.createCentred("");
+		textNode = Text2.createCentred("");
+		textNode.setFill(textColour);
 		textNode.getStyleClass().add(StyleClass.TEXT);
 
 		// Create background of text box
 		double textHeight = textNode.getHeight();
 		double boxWidth = Math.ceil(textWidth + 2.0 * TEXT_BOX_H_INSET);
 		double boxHeight = Math.ceil(textHeight + 2.0 * TEXT_BOX_V_INSET);
-		textBoxBackground = new Rectangle(boxWidth, boxHeight, StyleManager.INSTANCE.notUsingStyleSheet()
-																			? textBoxBackgroundColour
-																			: getColour(ColourKey.TEXT_BOX_BACKGROUND));
+		textBoxBackground = new Rectangle(boxWidth, boxHeight, textBoxBackgroundColour);
 		textBoxBackground.setStrokeWidth(0.0);
 		textBoxBackground.getStyleClass().add(StyleClass.TEXT_BOX);
 
 		// Create text box
 		Group textBox = new Group(textBoxBackground, textNode);
+		textBox.setFocusTraversable(true);
 
 		// Set initial position of text within text box
 		textNode.relocate(TEXT_BOX_H_INSET, TEXT_BOX_V_INSET);
+
+		// Create focus-indicator border of button
+		List<Rectangle> textBoxFocusedBorder = ShapeUtils.createFocusBorder(boxWidth, boxHeight);
 
 		// Create pop-up for list view
 		Popup popUp = new Popup();
@@ -946,8 +943,10 @@ public class IntRangeSpinner
 			// Set 'selected' pseudo-class of cell if it is selected or mouse is hovering over it
 			cell.getPseudoClassStates().addListener((InvalidationListener) observable ->
 			{
-				boolean selected = !cell.isEmpty() && (listView.getSelectionModel().getSelectedIndex() == cell.getIndex());
-				boolean hovered = cell.getPseudoClassStates().contains(PseudoClass.getPseudoClass(FxPseudoClass.HOVER));
+				boolean selected =
+						!cell.isEmpty() && (listView.getSelectionModel().getSelectedIndex() == cell.getIndex());
+				boolean hovered =
+						cell.getPseudoClassStates().contains(PseudoClass.getPseudoClass(FxPseudoClass.HOVERED));
 				cell.pseudoClassStateChanged(PseudoClass.getPseudoClass(FxPseudoClass.SELECTED), selected || hovered);
 			});
 
@@ -1069,20 +1068,13 @@ public class IntRangeSpinner
 		// Create factory for button
 		IFunction2<Group, Polygon, Integer> buttonFactory = (arrow, increment) ->
 		{
-			// Create container for local variables
-			class Vars
-			{
-				boolean timerRunning;
-			}
-			Vars vars = new Vars();
-
 			// Create background of button
 			Rectangle background = new Rectangle(buttonWidth, buttonHeight, getColour(ColourKey.BUTTON_BACKGROUND));
 			background.setStrokeWidth(0.0);
 			background.getStyleClass().add(StyleClass.BUTTON);
 
 			// Create focus-indicator border of button
-			Rectangle[] focusedBorder = ShapeUtils.createFocusBorder(buttonWidth, buttonHeight);
+			List<Rectangle> focusedBorder = ShapeUtils.createFocusBorder(buttonWidth, buttonHeight);
 
 			// Create button
 			Group button = new Group(background, arrow);
@@ -1090,62 +1082,7 @@ public class IntRangeSpinner
 			arrow.relocate(buttonInfo.horizontalInset, 0.5 * (buttonHeight - arrowHeight));
 
 			// Create timer to update value of spinner after interval
-			AnimationTimer updateTimer = new AnimationTimer()
-			{
-				long	updateTime;
-				long	updateInterval;
-
-				@Override
-				public void start()
-				{
-					// Reset update time and interval
-					updateTime = 0;
-					updateInterval = MAX_UPDATE_VALUE_DELAY;
-
-					// Set 'running' flag
-					vars.timerRunning = true;
-
-					// Call superclass method
-					super.start();
-				}
-
-				@Override
-				public void stop()
-				{
-					// Call superclass method
-					super.stop();
-
-					// Clear 'running' flag
-					vars.timerRunning = false;
-				}
-
-				@Override
-				public void handle(
-					long	time)
-				{
-					// If update interval has elapsed, update value and schedule next update
-					if (time >= updateTime)
-					{
-						// Update value
-						int value = getValue() + increment;
-						if (cyclic)
-						{
-							if (value < minValue)
-								value = maxValue;
-							else if (value > maxValue)
-								value = minValue;
-						}
-						setValue(value);
-
-						// Schedule next update
-						updateTime = time + updateInterval;
-
-						// Decrement interval between updates
-						if (updateInterval > MIN_UPDATE_VALUE_DELAY)
-							updateInterval -= DELTA_UPDATE_VALUE_DELAY;
-					}
-				}
-			};
+			UpdateTimer updateTimer = new UpdateTimer(increment);
 
 			// Create procedure to start updating value of spinner
 			IProcedure0 startUpdatingValue = () ->
@@ -1175,7 +1112,7 @@ public class IntRangeSpinner
 			// Handle 'mouse pressed' event
 			button.addEventHandler(MouseEvent.MOUSE_PRESSED, event ->
 			{
-				// if pop-up is showing, hide it ...
+				// If pop-up is showing, hide it ...
 				if (popUp.isShowing())
 					popUp.hide();
 
@@ -1222,7 +1159,7 @@ public class IntRangeSpinner
 					}
 
 					// ... otherwise, start updating value
-					else if (!button.isDisabled() && !vars.timerRunning)
+					else if (!button.isDisabled() && !updateTimer.running)
 						startUpdatingValue.invoke();
 
 					// Consume event
@@ -1248,10 +1185,7 @@ public class IntRangeSpinner
 			{
 				// If focused, add focus-indicator border ...
 				if (focused)
-				{
-					for (int i = 0; i < focusedBorder.length; i++)
-						button.getChildren().add(i + 1, focusedBorder[i]);
-				}
+					button.getChildren().addAll(1, focusedBorder);
 
 				// ... otherwise, remove focus-indicator border
 				else
@@ -1303,8 +1237,22 @@ public class IntRangeSpinner
 		separator2.setStrokeLineCap(StrokeLineCap.BUTT);
 		separator2.getStyleClass().add(StyleClass.FRAME);
 
-		// Set children
-		getChildren().setAll(frame, separator1, separator2, leftButton, rightButton, textBox);
+		// Add children
+		getChildren().setAll(frame, separator1, separator2);
+		switch (buttonPos)
+		{
+			case LEFT:
+				getChildren().addAll(leftButton, rightButton, textBox);
+				break;
+
+			case RIGHT:
+				getChildren().addAll(textBox, leftButton, rightButton);
+				break;
+
+			case LEFT_RIGHT:
+				getChildren().addAll(leftButton, textBox, rightButton);
+				break;
+		}
 
 		// Set location of children
 		double x = 1.0;
@@ -1368,9 +1316,14 @@ public class IntRangeSpinner
 		// Show or hide list-view pop-up when primary mouse button is clicked on text box
 		textBox.addEventHandler(MouseEvent.MOUSE_CLICKED, event ->
 		{
+			// If list-view pop-up is hidden, request focus on text box
+			if (!popUp.isShowing())
+				textBox.requestFocus();
+
+			// Show or hide list-view pop-up
 			if (event.getButton() == MouseButton.PRIMARY)
 			{
-				// Show or hide list-view pop-up
+				// Show or hide pop-up
 				if (popUp.isShowing())
 					popUp.hide();
 				else
@@ -1381,8 +1334,37 @@ public class IntRangeSpinner
 			}
 		});
 
+		// Show or hide list-view pop-up when space key is pressed on text box
+		textBox.addEventHandler(KeyEvent.KEY_PRESSED, event ->
+		{
+			if (event.getCode() == KeyCode.SPACE)
+			{
+				// Show or hide pop-up
+				if (popUp.isShowing())
+					popUp.hide();
+				else
+					showListView.invoke();
+
+				// Consume event
+				event.consume();
+			}
+		});
+
+		// Add or remove focus-indicator border when text box gains or loses focus
+		textBox.focusedProperty().addListener((observable, oldFocused, focused) ->
+		{
+			// If focused, add focus-indicator border ...
+			if (focused)
+				textBox.getChildren().addAll(1, textBoxFocusedBorder);
+
+			// ... otherwise, remove focus-indicator border
+			else
+				textBox.getChildren().removeAll(textBoxFocusedBorder);
+		});
+
 		// Update opacity of spinner when it is enabled or disabled
-		disabledProperty().addListener((observable, oldDisabled, disabled) -> setOpacity(disabled ? DISABLED_OPACITY : 1.0));
+		disabledProperty().addListener((observable, oldDisabled, disabled) ->
+				setOpacity(disabled ? DISABLED_OPACITY : 1.0));
 
 		// Update procedure to update UI when value of spinner changes
 		valueUpdater = value ->
@@ -1479,8 +1461,7 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the background colour of the text box of this spinner to the specified value.  This method is effective only
-	 * if no style sheet is being used.
+	 * Sets the background colour of the text box of this spinner to the specified value.
 	 *
 	 * @param  colour
 	 *           the value to which the background colour of the text box of this spinner will be set.
@@ -1503,6 +1484,29 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
+	 * Sets the text colour of this spinner to the specified value.
+	 *
+	 * @param  colour
+	 *           the value to which the text colour of this spinner will be set.
+	 * @return this spinner.
+	 */
+
+	public IntRangeSpinner textColour(
+		Color	colour)
+	{
+		// Update instance variable
+		textColour = colour;
+
+		// Update UI
+		textNode.setFill(colour);
+
+		// Return this spinner
+		return this;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Sets an empty range on this spinner.  The spinner has no buttons: it consists of a text box that contains the
 	 * specified text, and its value is fixed at zero.  This method is intended to be used only by subclasses.
 	 *
@@ -1517,7 +1521,8 @@ public class IntRangeSpinner
 		minValue = maxValue = 0;
 
 		// Create text node
-		Text2 textNode = Text2.createCentred(text);
+		textNode = Text2.createCentred(text);
+		textNode.setFill(getColour(ColourKey.TEXT_BOX_TEXT_EMPTY));
 		textNode.getStyleClass().add(StyleClass.TEXT);
 		textNode.pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, true);
 
@@ -1599,6 +1604,119 @@ public class IntRangeSpinner
 		double	widthFactor,
 		double	horizontalInset)
 	{ }
+
+	//==================================================================
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: TIMER FOR UPDATING VALUE OF SPINNER
+
+
+	private class UpdateTimer
+		extends AnimationTimer
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Constants
+	////////////////////////////////////////////////////////////////////
+
+		/** The time (in nanoseconds) by which the interval between updates of the spinner value is reduced after each
+			update, until the {@linkplain #MIN_INTERVAL minimum interval} is reached. */
+		private static final	long	DELTA_INTERVAL	= 75_000_000;
+
+		/** The maximum interval (in nanoseconds) between updates of the spinner value. */
+		private static final	long	MAX_INTERVAL	= 425_000_000;
+
+		/** The minimum interval (in nanoseconds) between updates of the spinner value. */
+		private static final	long	MIN_INTERVAL	= MAX_INTERVAL - 4 * DELTA_INTERVAL;
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance variables
+	////////////////////////////////////////////////////////////////////
+
+		private	int		increment;
+		private	long	updateTime;
+		private	long	interval;
+		private	boolean	running;
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		private UpdateTimer(
+			int	increment)
+		{
+			// Initialise instance variables
+			this.increment = increment;
+		}
+
+		//--------------------------------------------------------------
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance methods : overriding methods
+	////////////////////////////////////////////////////////////////////
+
+		@Override
+		public void start()
+		{
+			// Reset update time and interval
+			updateTime = 0;
+			interval = MAX_INTERVAL;
+
+			// Set 'running' flag
+			running = true;
+
+			// Call superclass method
+			super.start();
+		}
+
+		//--------------------------------------------------------------
+
+		@Override
+		public void stop()
+		{
+			// Call superclass method
+			super.stop();
+
+			// Clear 'running' flag
+			running = false;
+		}
+
+		//--------------------------------------------------------------
+
+		@Override
+		public void handle(
+			long	time)
+		{
+			// If update interval has elapsed, update value and schedule next update
+			if (time >= updateTime)
+			{
+				// Update value
+				int value = getValue() + increment;
+				if (cyclic)
+				{
+					if (value < minValue)
+						value = maxValue;
+					else if (value > maxValue)
+						value = minValue;
+				}
+				setValue(value);
+
+				// Schedule next update
+				updateTime = time + interval;
+
+				// Decrement interval between updates
+				if (interval > MIN_INTERVAL)
+					interval -= DELTA_INTERVAL;
+			}
+		}
+
+		//--------------------------------------------------------------
+
+	}
 
 	//==================================================================
 

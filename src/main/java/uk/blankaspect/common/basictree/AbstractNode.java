@@ -31,13 +31,21 @@ import uk.blankaspect.common.tree.TreeUtils;
 
 
 /**
+ * <p style="margin-bottom: 0.25em;">
  * This is the abstract base class of a node of a tree.  It is extended by concrete classes of the {@code
  * uk.blankaspect.common.basictree} package that implement
+ * </p>
  * <ul style="margin-top: 0.25em;">
- *   <li>a node that represents a null value,</li>
- *   <li>nodes that contain instances of fundamental Java types ({@code boolean}, {@code int}, {@code long}, {@code
- *       double} and {@code String}), and</li>
- *   <li>nodes that contain other nodes (a list and a map).</li>
+ *   <li>
+ *     a node that represents a null value,
+ *   </li>
+ *   <li>
+ *     nodes that contain instances of fundamental Java types ({@code boolean}, {@code int}, {@code long}, {@code
+ *     double} and {@code String}), and
+ *   </li>
+ *   <li>
+ *     nodes that contain other nodes (a list and a map).
+ *   </li>
  * </ul>
  * <p>
  * This class implements {@link ITreeNode} to allow the methods of {@link TreeUtils} to be used on a tree of {@code
@@ -240,6 +248,25 @@ public abstract class AbstractNode
 			}
 		}
 		return null;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a string representation of this node whose characters may optionally be escaped where necessary so that
+	 * the returned string contains only printable characters from the US-ASCII character encoding.
+	 *
+	 * @param  printableAsciiOnly
+	 *           if {@code true}, the characters of the string representation will be escaped where necessary so that
+	 *           the returned string contains only printable characters from the US-ASCII character encoding (ie,
+	 *           characters in the range U+0020 to U+007E inclusive).
+	 * @return a string representation of this node.
+	 */
+
+	public String toString(
+		boolean	printableAsciiOnly)
+	{
+		return toString();
 	}
 
 	//------------------------------------------------------------------

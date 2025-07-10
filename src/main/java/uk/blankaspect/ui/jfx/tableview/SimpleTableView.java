@@ -28,6 +28,8 @@ import javafx.beans.InvalidationListener;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 
+import javafx.collections.ObservableList;
+
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
@@ -83,6 +85,13 @@ import uk.blankaspect.ui.jfx.style.StyleSelector;
 // CLASS: SIMPLE TABLE VIEW
 
 
+/**
+ * This class implements a simple JavaFX {@linkplain TableView table view}.
+ *
+ * @param <S>
+ *          the type of the items that are displayed in the table view.
+ */
+
 public class SimpleTableView<S>
 	extends TableView<S>
 {
@@ -97,8 +106,8 @@ public class SimpleTableView<S>
 	/** The padding around the label of a header cell. */
 	private static final	Insets	HEADER_CELL_LABEL_PADDING	= new Insets(3.0, 4.0, 3.0, 4.0);
 
-	/** The delay (in milliseconds) before a pop-up for a header cell is displayed after it is activated. */
-	private static final	int		HEADER_CELL_POP_UP_DELAY	= 1000;
+	/** The default delay (in milliseconds) before a pop-up for a header cell is displayed after it is activated. */
+	private static final	int		DEFAULT_HEADER_CELL_POP_UP_DELAY	= 1000;
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -108,26 +117,26 @@ public class SimpleTableView<S>
 			FxProperty.BACKGROUND_COLOUR,
 			TableViewStyle.ColourKey.HEADER_CELL_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TABLE_VIEW)
-						.desc(FxStyleClass.COLUMN_HEADER)
-						.build(),
+					.cls(StyleClass.SIMPLE_TABLE_VIEW)
+					.desc(FxStyleClass.COLUMN_HEADER)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TABLE_VIEW)
-						.desc(FxStyleClass.FILLER)
-						.build()
+					.cls(StyleClass.SIMPLE_TABLE_VIEW)
+					.desc(FxStyleClass.FILLER)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			TableViewStyle.ColourKey.HEADER_CELL_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TABLE_VIEW)
-						.desc(FxStyleClass.COLUMN_HEADER)
-						.build(),
+					.cls(StyleClass.SIMPLE_TABLE_VIEW)
+					.desc(FxStyleClass.COLUMN_HEADER)
+					.build(),
 			CssSelector.builder()
-						.cls(StyleClass.SIMPLE_TABLE_VIEW)
-						.desc(FxStyleClass.FILLER)
-						.build()
+					.cls(StyleClass.SIMPLE_TABLE_VIEW)
+					.desc(FxStyleClass.FILLER)
+					.build()
 		)
 	);
 
@@ -135,19 +144,19 @@ public class SimpleTableView<S>
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SIMPLE_TABLE_VIEW)
-									.desc(FxStyleClass.COLUMN_HEADER)
-									.build())
-						.borders(Side.RIGHT, Side.BOTTOM)
-						.build(),
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SIMPLE_TABLE_VIEW)
+						.desc(FxStyleClass.COLUMN_HEADER)
+						.build())
+				.borders(Side.RIGHT, Side.BOTTOM)
+				.build(),
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.SIMPLE_TABLE_VIEW)
-									.desc(FxStyleClass.FILLER)
-									.build())
-						.borders(Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.SIMPLE_TABLE_VIEW)
+						.desc(FxStyleClass.FILLER)
+						.build())
+				.borders(Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -171,6 +180,9 @@ public class SimpleTableView<S>
 
 	/** A list of the cells of this table view. */
 	private	List<Cell<?>>		cells;
+
+	/** The delay (in milliseconds) before a pop-up for a header cell is displayed after it is activated. */
+	private	int					headerCellPopUpDelay;
 
 	/** The manager of pop-ups for the header cells of this table view. */
 	private	LabelPopUpManager	headerPopUpManager;
@@ -197,22 +209,52 @@ public class SimpleTableView<S>
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	/**
+	 * Creates a new instance of a simple table view with the specified columns.
+	 *
+	 * @param columns
+	 *          the columns of the table view.
+	 */
+
 	public SimpleTableView(
 		Collection<? extends IColumn<S, ?>>	columns)
 	{
+		// Call alternative constructor
+		this(columns, true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a new instance of a simple table view with the specified columns.
+	 *
+	 * @param columns
+	 *          the columns of the table view.
+	 * @param sortable
+	 *          if {@code true}, a column of the table can be sorted if its {@link TableColumn#sortableProperty()
+	 *          sortable} property is {@code true}; otherwise, none of the columns of the table can be sorted.
+	 */
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public SimpleTableView(
+		Collection<? extends IColumn<S, ?>>	columns,
+		boolean								sortable)
+	{
 		// Initialise instance variables
 		cellPopUpManager = new CellPopUpManager(Cell.POP_UP_DELAY);
-		itemList = new ElasticList<>(this);
+		if (sortable)
+			itemList = new ElasticList<>(this);
 		this.columns = new ArrayList<>(columns);
 		cells = new ArrayList<>();
+		headerCellPopUpDelay = DEFAULT_HEADER_CELL_POP_UP_DELAY;
 
 		// Create columns
 		double width = EXTRA_WIDTH;
 		for (IColumn<S, ?> column : columns)
 		{
 			// Get preferred width of column
-			double columnWidth = column.getPrefWidth() + Cell.LABEL_PADDING.getLeft() + Cell.LABEL_PADDING.getRight() + 1.0;
+			double columnWidth =
+					column.getPrefWidth() + Cell.LABEL_PADDING.getLeft() + Cell.LABEL_PADDING.getRight() + 1.0;
 
 			// Create table column
 			TableColumn<S, ?> tableColumn = column.createColumn(this);
@@ -221,6 +263,8 @@ public class SimpleTableView<S>
 			tableColumn.setId(column.getId());
 			tableColumn.setPrefWidth(columnWidth);
 			tableColumn.setCellFactory(column0 -> new Cell(column));
+			if (!sortable)
+				tableColumn.setSortable(false);
 
 			// Add column to list
 			getColumns().add(tableColumn);
@@ -266,7 +310,7 @@ public class SimpleTableView<S>
 		}
 
 		// Ensure cells are redrawn if scroll bar is hidden
-		widthProperty().addListener(observable -> Platform.runLater(() -> refresh()));
+		widthProperty().addListener(observable -> Platform.runLater(this::refresh));
 	}
 
 	//------------------------------------------------------------------
@@ -276,12 +320,12 @@ public class SimpleTableView<S>
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -325,8 +369,7 @@ public class SimpleTableView<S>
 			}
 
 			// Set background and border of filler
-			Node node = lookup(StyleSelector.FILLER);
-			if (node instanceof Region filler)
+			if (lookup(StyleSelector.FILLER) instanceof Region filler)
 			{
 				filler.setBackground(SceneUtils.createColouredBackground(backgroundColour));
 				filler.setBorder(SceneUtils.createSolidBorder(borderColour, Side.BOTTOM));
@@ -356,9 +399,10 @@ public class SimpleTableView<S>
 					label.setAlignment(FxGeomUtils.getPos(VPos.CENTER, hAlignment));
 					label.setPadding(HEADER_CELL_LABEL_PADDING);
 					label.setTextFill(getColour(TableViewStyle.ColourKey.CELL_TEXT));
+					label.getStyleClass().add(TableViewStyle.StyleClass.CELL_LABEL);
 
 					// Create pop-up for label
-					if (column != null)
+					if ((column != null) && (headerCellPopUpDelay >= 0))
 					{
 						// Create pop-up manager
 						if (headerPopUpManager == null)
@@ -374,7 +418,7 @@ public class SimpleTableView<S>
 								popUpLabel.getStyleClass().add(TableViewStyle.StyleClass.CELL_POPUP_LABEL);
 								return popUpLabel;
 							});
-							headerPopUpManager.setDelay(HEADER_CELL_POP_UP_DELAY);
+							headerPopUpManager.setDelay(headerCellPopUpDelay);
 						}
 
 						// Create pop-up for label
@@ -399,8 +443,7 @@ public class SimpleTableView<S>
 								break;
 						}
 						PopUpUtils.createPopUp(headerPopUpManager, label, VHPos.of(VHPos.V.TOP, hPos),
-											   VHPos.of(VHPos.V.BOTTOM, hPos), x, 0.0, () -> column.getLongTitle(),
-											   null);
+											   VHPos.of(VHPos.V.BOTTOM, hPos), x, 0.0, column::getLongTitle, null);
 					}
 				}
 			}
@@ -416,13 +459,79 @@ public class SimpleTableView<S>
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
 
-	public void setItems(
-		Collection<? extends S>	items)
+	/**
+	 * Returns an unsorted list of the items of this table view.
+	 *
+	 * @return an unsorted list of the items of this table view.
+	 */
+
+	public ObservableList<S> getItemList()
 	{
-		itemList.update(items);
+		return (itemList == null) ? getItems() : itemList.getBaseList();
 	}
 
 	//------------------------------------------------------------------
+
+	/**
+	 * Sets the specified items on this table view.
+	 *
+	 * @param items
+	 *          the items that will be set on this table view.
+	 */
+
+	public void setItems(
+		Collection<? extends S>	items)
+	{
+		if (itemList == null)
+			getItems().setAll(items);
+		else
+			itemList.update(items);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the delay (in milliseconds) before a pop-up for a header cell is displayed after it is activated.
+	 *
+	 * @return the delay (in milliseconds) before a pop-up for a header cell is displayed after it is activated.
+	 */
+
+	public int getHeaderCellPopupDelay()
+	{
+		return headerCellPopUpDelay;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the delay before a pop-up for a header cell is displayed after it is activated.
+	 *
+	 * @param delay
+	 *          the delay in milliseconds.  If it is negative, the pop-ups for header cells will be disabled.
+	 */
+
+	public void setHeaderCellPopupDelay(
+		int	delay)
+	{
+		// Update instance variable
+		headerCellPopUpDelay = delay;
+
+		// Set delay on pop-up manager
+		if (headerPopUpManager != null)
+			headerPopUpManager.setDelay(delay);
+
+		// Force layout
+		headerInitialised = false;
+		setNeedsLayout(true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the window that contains this table view.
+	 *
+	 * @return the window that contains this table view.
+	 */
 
 	private Window getWindow()
 	{
@@ -430,6 +539,10 @@ public class SimpleTableView<S>
 	}
 
 	//------------------------------------------------------------------
+
+	/**
+	 * Updates the backgrounds of the cells of this table view.
+	 */
 
 	private void updateCellBackgrounds()
 	{
@@ -446,6 +559,15 @@ public class SimpleTableView<S>
 
 	// INTERFACE: COLUMN
 
+
+	/**
+	 * This interface defines the methods that must be implemented by a column of a simple table view.
+	 *
+	 * @param <S>
+	 *          the type of the items that are displayed in the table view.
+	 * @param <T>
+	 *          the type of the items that are represented by the cells of the column.
+	 */
 
 	public interface IColumn<S, T>
 	{
@@ -464,13 +586,31 @@ public class SimpleTableView<S>
 	//  Methods
 	////////////////////////////////////////////////////////////////////
 
+		/**
+		 * Returns the identifier of this column.
+		 *
+		 * @return the identifier of this column.
+		 */
+
 		String getId();
 
 		//--------------------------------------------------------------
 
+		/**
+		 * Returns the title of this column.
+		 *
+		 * @return the title of this column.
+		 */
+
 		String getTitle();
 
 		//--------------------------------------------------------------
+
+		/**
+		 * Returns the long title of this column, which is used as the text of the pop-up of the column-header cell.
+		 *
+		 * @return the long title of this column.
+		 */
 
 		default String getLongTitle()
 		{
@@ -479,12 +619,24 @@ public class SimpleTableView<S>
 
 		//--------------------------------------------------------------
 
+		/**
+		 * Returns the gap between the graphic and the text of a cell of this column.
+		 *
+		 * @return the gap between the graphic and the text of a cell of this column.
+		 */
+
 		default double getGraphicTextGap()
 		{
 			return DEFAULT_GRAPHIC_TEXT_GAP;
 		}
 
 		//--------------------------------------------------------------
+
+		/**
+		 * Returns the horizontal alignment of the label of a cell of this column.
+		 *
+		 * @return the horizontal alignment of the label of a cell of this column.
+		 */
 
 		default HPos getHAlignment()
 		{
@@ -493,9 +645,23 @@ public class SimpleTableView<S>
 
 		//--------------------------------------------------------------
 
+		/**
+		 * Returns the preferred width of the label of a cell of this column.
+		 *
+		 * @return the preferred width of the label of a cell of this column.
+		 */
+
 		double getPrefWidth();
 
 		//--------------------------------------------------------------
+
+		/**
+		 * Creates and returns an instance of {@link TableColumn} for this column and the specified table view.
+		 *
+		 * @param  tableView
+		 *           the table view.
+		 * @return an instance of {@link TableColumn} for this column.
+		 */
 
 		default TableColumn<S, T> createColumn(
 			SimpleTableView<S>	tableView)
@@ -507,15 +673,39 @@ public class SimpleTableView<S>
 
 		//--------------------------------------------------------------
 
+		/**
+		 * Returns the value of this column for the specified item of the table view.
+		 *
+		 * @param  item
+		 *           the table-view item for which the value of this column is desired.
+		 * @return the value of this column for {@code item}.
+		 */
+
 		T getValue(
 			S	item);
 
 		//--------------------------------------------------------------
 
+		/**
+		 * Returns a string representation of the specified value from this column.
+		 *
+		 * @param  value
+		 *           the value for which a string representation is desired.
+		 * @return a string representation of {@code value}.
+		 */
+
 		String getText(
 			T	value);
 
 		//--------------------------------------------------------------
+
+		/**
+		 * Returns a graphical representation of the specified value from this column.
+		 *
+		 * @param  value
+		 *           the value for which a graphical representation is desired.
+		 * @return a graphical representation of {@code value}.
+		 */
 
 		default Node getGraphic(
 			T	value)
@@ -537,6 +727,10 @@ public class SimpleTableView<S>
 	// CLASS: CELL
 
 
+	/**
+	 * This class implements a cell for the enclosing instance of a table view.
+	 */
+
 	private class Cell<T>
 		extends TableCell<S, T>
 		implements CellPopUpManager.ICell<T>
@@ -556,11 +750,19 @@ public class SimpleTableView<S>
 	//  Instance variables
 	////////////////////////////////////////////////////////////////////
 
+		/** The column to which this cell belongs. */
 		private	IColumn<S, T>	column;
 
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
 	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates a new instance of a cell for the specified column.
+		 *
+		 * @param column
+		 *          the column to which the cell will belong.
+		 */
 
 		private Cell(
 			IColumn<S, T>	column)
@@ -589,7 +791,11 @@ public class SimpleTableView<S>
 			});
 
 			// When mouse leaves cell, deactivate any cell pop-up
-			addEventHandler(MouseEvent.MOUSE_EXITED, event -> cellPopUpManager.deactivate());
+			addEventHandler(MouseEvent.MOUSE_EXITED, event ->
+			{
+				if (CellPopUpManager.deactivatePopUpOnMouseExited())
+					cellPopUpManager.deactivate();
+			});
 
 			// When a mouse button is released, deactivate any cell pop-up
 			addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
@@ -693,6 +899,10 @@ public class SimpleTableView<S>
 	//  Instance methods : overriding methods
 	////////////////////////////////////////////////////////////////////
 
+		/**
+		 * {@inheritDoc}
+		 */
+
 		@Override
 		protected void updateItem(
 			T		item,
@@ -719,6 +929,10 @@ public class SimpleTableView<S>
 	//  Instance methods
 	////////////////////////////////////////////////////////////////////
 
+		/**
+		 * Updates the background of this cell.
+		 */
+
 		private void updateBackground()
 		{
 			if (StyleManager.INSTANCE.notUsingStyleSheet())
@@ -728,14 +942,14 @@ public class SimpleTableView<S>
 // WORKAROUND
 //				boolean focused = getTableView().isFocused();
 				Color colour = isEmpty()
-									? null
-									: selected
-											? focused
-													? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
-													: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
-											: (index % 2 == 0)
-													? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
-													: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_ODD);
+								? null
+								: selected
+										? focused
+												? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
+												: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_SELECTED)
+										: (index % 2 == 0)
+												? getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_EVEN)
+												: getColour(TableViewStyle.ColourKey.CELL_BACKGROUND_ODD);
 				if (!selected && focused && (getFocusModel().getFocusedIndex() == index))
 				{
 					setBackground(SceneUtils.createColouredBackground(

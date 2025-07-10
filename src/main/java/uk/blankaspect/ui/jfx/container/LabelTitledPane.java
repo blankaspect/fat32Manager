@@ -20,7 +20,6 @@ package uk.blankaspect.ui.jfx.container;
 
 import java.lang.invoke.MethodHandles;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javafx.geometry.Insets;
@@ -31,6 +30,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -76,18 +76,18 @@ public class LabelTitledPane
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.TITLE_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.LABEL_TITLED_PANE)
-						.desc(AbstractTitledPane.StyleClass.TITLE)
-						.build()
+					.cls(StyleClass.LABEL_TITLED_PANE)
+					.desc(AbstractTitledPane.StyleClass.TITLE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.TITLE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LABEL_TITLED_PANE)
-						.desc(AbstractTitledPane.StyleClass.TITLE)
-						.build()
+					.cls(StyleClass.LABEL_TITLED_PANE)
+					.desc(AbstractTitledPane.StyleClass.TITLE)
+					.build()
 		)
 	);
 
@@ -95,16 +95,16 @@ public class LabelTitledPane
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LABEL_TITLED_PANE)
-									.desc(AbstractTitledPane.StyleClass.TITLE)
-									.build())
-						.borders(Side.RIGHT, Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LABEL_TITLED_PANE)
+						.desc(AbstractTitledPane.StyleClass.TITLE)
+						.build())
+				.borders(Side.RIGHT, Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	LABEL_TITLED_PANE	= StyleConstants.CLASS_PREFIX + "label-titled-pane";
 	}
@@ -151,7 +151,7 @@ public class LabelTitledPane
 	{
 		// Create label
 		label = new Label(text);
-		label.setMaxWidth(Label.USE_PREF_SIZE);
+		label.setMaxWidth(Region.USE_PREF_SIZE);
 
 		// Add label to title
 		getTitle().getChildren().add(label);
@@ -160,7 +160,8 @@ public class LabelTitledPane
 		setTitleBackgroundColour(getColour(ColourKey.TITLE_BACKGROUND));
 		setTitleBorderColour(getColour(ColourKey.TITLE_BORDER));
 		getTitle().setPadding(TITLE_PADDING);
-		StyleUtils.replaceStyleClass(this, AbstractTitledPane.StyleClass.TITLED_HEADER_PANE, StyleClass.LABEL_TITLED_PANE);
+		StyleUtils.replaceStyleClass(this, AbstractTitledPane.StyleClass.TITLED_HEADER_PANE,
+									 StyleClass.LABEL_TITLED_PANE);
 
 		// Update title, header and content pane
 		update();
@@ -209,7 +210,7 @@ public class LabelTitledPane
 		String	text,
 		Side...	borders)
 	{
-		return createTitleLabel(text, Arrays.asList(borders));
+		return createTitleLabel(text, List.of(borders));
 	}
 
 	//------------------------------------------------------------------
@@ -229,7 +230,7 @@ public class LabelTitledPane
 		Iterable<Side>	borders)
 	{
 		Label label = new Label(text);
-		label.setMaxWidth(Label.USE_PREF_SIZE);
+		label.setMaxWidth(Region.USE_PREF_SIZE);
 		label.setPadding(TITLE_PADDING);
 		label.setBackground(SceneUtils.createColouredBackground(getColour(ColourKey.TITLE_BACKGROUND)));
 		label.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.TITLE_BORDER), borders));
@@ -239,12 +240,12 @@ public class LabelTitledPane
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

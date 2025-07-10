@@ -176,18 +176,18 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which both buttons are on the left of the text box, and the arrowhead
 	 *         icons of the buttons point left and right.
 	 */
 
 	public static <T> CollectionSpinner<T> leftH(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
@@ -229,7 +229,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which both buttons are on the left of the text box, and the arrowhead
 	 *         icons of the buttons point left and right.
@@ -282,18 +282,18 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which both buttons are on the left of the text box, and the arrowhead
 	 *         icons of the buttons point down and up.
 	 */
 
 	public static <T> CollectionSpinner<T> leftV(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
@@ -334,7 +334,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which both buttons are on the left of the text box, and the arrowhead
 	 *         icons of the buttons point down and up.
@@ -387,18 +387,18 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which both buttons are on the right of the text box, and the arrowhead
 	 *         icons of the buttons point left and right.
 	 */
 
 	public static <T> CollectionSpinner<T> rightH(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
@@ -440,7 +440,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which both buttons are on the right of the text box, and the arrowhead
 	 *         icons of the buttons point left and right.
@@ -493,18 +493,18 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which both buttons are on the right of the text box, and the arrowhead
 	 *         icons of the buttons point down and up.
 	 */
 
 	public static <T> CollectionSpinner<T> rightV(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
@@ -546,7 +546,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which both buttons are on the right of the text box, and the arrowhead
 	 *         icons of the buttons point down and up.
@@ -600,19 +600,19 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which the <i>decrement</i> button is on the left of the text box, the
 	 *         <i>increment</i> button is on the right of the text box, and the arrowhead icons of the buttons point
 	 *         left and right.
 	 */
 
 	public static <T> CollectionSpinner<T> leftRightH(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
@@ -654,7 +654,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which the <i>decrement</i> button is on the left of the text box, the
 	 *         <i>increment</i> button is on the right of the text box, and the arrowhead icons of the buttons point
@@ -709,19 +709,19 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return a new instance of a spinner in which the <i>decrement</i> button is on the left of the text box, the
 	 *         <i>increment</i> button is on the right of the text box, and the arrowhead icons of the buttons point
 	 *         down and up.
 	 */
 
 	public static <T> CollectionSpinner<T> leftRightV(
-		HPos				textAlignment,
-		boolean				cyclic,
-		Collection<T>		items,
-		T					initialItem,
-		String				prototypeText,
-		Function<T, String>	converter)
+		HPos					textAlignment,
+		boolean					cyclic,
+		Collection<? extends T>	items,
+		T						initialItem,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
@@ -763,7 +763,7 @@ public class CollectionSpinner<T>
 	 *           string representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given {@code enum} constant that will be
-	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString(int)},
+	 *           displayed in the text box.  If it is {@code null}, the default converter, {@link Object#toString()},
 	 *           will be used.
 	 * @return a new instance of a spinner in which the <i>decrement</i> button is on the left of the text box, the
 	 *         <i>increment</i> button is on the right of the text box, and the arrowhead icons of the buttons point
@@ -886,7 +886,7 @@ public class CollectionSpinner<T>
 	 */
 
 	public void setItems(
-		Collection<T>	items)
+		Collection<? extends T>	items)
 	{
 		setItems(items, null, T::toString);
 	}
@@ -904,13 +904,13 @@ public class CollectionSpinner<T>
 	 *          representations that are returned by {@code converter}.
 	 * @param converter
 	 *          the function that returns the string representation of a given item that will be displayed in the text
-	 *          box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *          box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 */
 
 	public void setItems(
-		Collection<T>		items,
-		String				prototypeText,
-		Function<T, String>	converter)
+		Collection<? extends T>	items,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		// Validate argument
 		if (items == null)
@@ -944,6 +944,19 @@ public class CollectionSpinner<T>
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns an unmodifiable list of the items that may be selected by this spinner.
+	 *
+	 * @return an unmodifiable list of the items that may be selected by this spinner.
+	 */
+
+	public List<T> items()
+	{
+		return Collections.unmodifiableList(items);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Sets the items that may be selected by this spinner to the specified collection.
 	 *
 	 * @param  items
@@ -952,7 +965,7 @@ public class CollectionSpinner<T>
 	 */
 
 	public CollectionSpinner<T> items(
-		Collection<T>	items)
+		Collection<? extends T>	items)
 	{
 		return items(items, null, T::toString);
 	}
@@ -970,20 +983,33 @@ public class CollectionSpinner<T>
 	 *           representations that are returned by {@code converter}.
 	 * @param  converter
 	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString(int)}, will be used.
+	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
 	 * @return this spinner.
 	 */
 
 	public CollectionSpinner<T> items(
-		Collection<T>		items,
-		String				prototypeText,
-		Function<T, String>	converter)
+		Collection<? extends T>	items,
+		String					prototypeText,
+		Function<T, String>		converter)
 	{
 		// Set items
 		setItems(items, prototypeText, converter);
 
 		// Return this spinner
 		return this;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns {@code true} if this spinner has no items that may be selected.
+	 *
+	 * @return {@code true} if this spinner has no items that may be selected.
+	 */
+
+	public boolean isEmpty()
+	{
+		return items.isEmpty();
 	}
 
 	//------------------------------------------------------------------

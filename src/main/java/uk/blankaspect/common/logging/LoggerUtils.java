@@ -22,6 +22,8 @@ import java.nio.file.Path;
 
 import uk.blankaspect.common.exception2.ExceptionUtils;
 
+import uk.blankaspect.common.filesystem.PathUtils;
+
 //----------------------------------------------------------------------
 
 
@@ -177,7 +179,7 @@ public class LoggerUtils
 			String[] strs = value.split(FIELD_SEPARATOR);
 			for (String str : strs)
 			{
-				Logger.Field field = Logger.Field.forKey(str.trim());
+				Logger.Field field = Logger.Field.forKey(str.strip());
 				if (field == null)
 				{
 					if (message != null)
@@ -232,7 +234,7 @@ public class LoggerUtils
 			}
 			catch (Logger.LoggerException e)
 			{
-				ExceptionUtils.printStderrLocated(ErrorMsg.FAILED_TO_OPEN_LOG_FILE + file.toAbsolutePath());
+				ExceptionUtils.printStderrLocated(ErrorMsg.FAILED_TO_OPEN_LOG_FILE + PathUtils.abs(file));
 			}
 		}
 	}

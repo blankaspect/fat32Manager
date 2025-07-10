@@ -36,6 +36,8 @@ import uk.blankaspect.common.comparator.CompoundStringComparator;
 
 import uk.blankaspect.common.text.Tabulator;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 
 import uk.blankaspect.ui.jfx.style.FxProperty;
@@ -99,7 +101,7 @@ public class InvalidClusterDialog
 
 		// Create table view
 		List<SimpleTableView.IColumn<Fat32Volume.InvalidCluster, ?>> columns =
-				List.of(createPathnameColumn(), createIndexColumn(), createValueColumn());
+				List.of(pathnameColumn(), indexColumn(), valueColumn());
 		SimpleTableView<Fat32Volume.InvalidCluster> tableView = new SimpleTableView<>(columns);
 		tableView.setPrefHeight(TABLE_VIEW_HEIGHT);
 		tableView.setItems(invalidClusters);
@@ -114,7 +116,7 @@ public class InvalidClusterDialog
 		StyleUtils.setProperty(getContentPane(), FxProperty.BORDER_WIDTH.getName(), "0");
 
 		// Create button: copy
-		Button copyButton = new Button(COPY_STR);
+		Button copyButton = Buttons.hNoShrink(COPY_STR);
 		copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		copyButton.setOnAction(event ->
 		{
@@ -162,7 +164,7 @@ public class InvalidClusterDialog
 		addButton(copyButton, HPos.LEFT);
 
 		// Create button: close
-		Button closeButton = new Button(CLOSE_STR);
+		Button closeButton = Buttons.hNoShrink(CLOSE_STR);
 		closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		closeButton.setOnAction(event -> requestClose());
 		addButton(closeButton, HPos.RIGHT);
@@ -198,7 +200,7 @@ public class InvalidClusterDialog
 
 	//------------------------------------------------------------------
 
-	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, String> createPathnameColumn()
+	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, String> pathnameColumn()
 	{
 		return new SimpleTableView.IColumn<>()
 		{
@@ -217,14 +219,15 @@ public class InvalidClusterDialog
 			@Override
 			public double getPrefWidth()
 			{
-				return TextUtils.textWidthCeil("M".repeat(40));
+				return TextUtils.textHeightCeil(25.0);
 			}
 
 			@Override
 			public TableColumn<Fat32Volume.InvalidCluster, String> createColumn(
 				SimpleTableView<Fat32Volume.InvalidCluster>	tableView)
 			{
-				TableColumn<Fat32Volume.InvalidCluster, String> column = SimpleTableView.IColumn.super.createColumn(tableView);
+				TableColumn<Fat32Volume.InvalidCluster, String> column =
+						SimpleTableView.IColumn.super.createColumn(tableView);
 				column.setComparator(CompoundStringComparator.ignoreCase(Fat32Directory.NAME_SEPARATOR_CHAR));
 				return column;
 			}
@@ -247,7 +250,7 @@ public class InvalidClusterDialog
 
 	//------------------------------------------------------------------
 
-	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, Integer> createIndexColumn()
+	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, Integer> indexColumn()
 	{
 		return new SimpleTableView.IColumn<>()
 		{
@@ -293,7 +296,7 @@ public class InvalidClusterDialog
 
 	//------------------------------------------------------------------
 
-	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, Integer> createValueColumn()
+	private static SimpleTableView.IColumn<Fat32Volume.InvalidCluster, Integer> valueColumn()
 	{
 		return new SimpleTableView.IColumn<>()
 		{

@@ -12,6 +12,12 @@ Enumeration: cluster alignment.
 
 package uk.blankaspect.fat32manager;
 
+//----------------------------------------------------------------------
+
+
+// IMPORTS
+
+
 import java.util.stream.Stream;
 
 import uk.blankaspect.common.string.StringUtils;
@@ -71,9 +77,9 @@ public enum ClusterAlignment
 		String	key)
 	{
 		return Stream.of(values())
-						.filter(value -> value.getKey().equals(key))
-						.findFirst()
-						.orElse(null);
+				.filter(value -> value.getKey().equals(key))
+				.findFirst()
+				.orElse(null);
 	}
 
 	//------------------------------------------------------------------

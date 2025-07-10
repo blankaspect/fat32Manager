@@ -26,10 +26,11 @@ import javafx.scene.control.OverrunStyle;
 
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 
 import javafx.scene.text.Font;
 
-import uk.blankaspect.common.task.ITaskStatus;
+import uk.blankaspect.common.message.MessageConstants;
 
 //----------------------------------------------------------------------
 
@@ -58,7 +59,7 @@ public class CompoundPathnameLabel
 
 	/** The default value of the regular expression that is used to split the text of a label into a prefix and a
 		pathname. */
-	public static final		String	DEFAULT_SEPARATOR	= ITaskStatus.MESSAGE_SEPARATOR;
+	public static final		String	DEFAULT_SEPARATOR	= MessageConstants.SEPARATOR;
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -108,7 +109,7 @@ public class CompoundPathnameLabel
 
 		// Create prefix label
 		prefixLabel = new Label();
-		prefixLabel.setMinWidth(USE_PREF_SIZE);
+		prefixLabel.setMinWidth(Region.USE_PREF_SIZE);
 
 		// Create pathname label
 		pathnameLabel = new Label();

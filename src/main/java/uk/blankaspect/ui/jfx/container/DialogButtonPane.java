@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javafx.collections.ObservableList;
-
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -51,8 +49,8 @@ import javafx.scene.layout.Region;
  * </p>
  * <p>
  * The widths of groups of buttons in a button pane may be equalised by setting the preferred width of each button in
- * the group to the width of the widest button.  Membership of a group is conferred on a button by its having a property
- * with the key {@link #BUTTON_GROUP_KEY}; the group is identified by the value of the property.
+ * the group to the width of the widest button.  A button is a member of a group if it has a property whose key is
+ * {@link #BUTTON_GROUP_KEY}.  The group is identified by the value of the property.
  * </p>
  */
 
@@ -73,8 +71,8 @@ public class DialogButtonPane
 	/** The default padding around a button pane. */
 	private static final	Insets	DEFAULT_PADDING	= new Insets(6.0, 10.0, 6.0, 10.0);
 
-	/** The object that is used as the value of the user-data property of a spacer between groups of buttons. */
-	private static final	Object	SPACER	= new Object();
+	/** The object that is used as the value of the user-data property of a filler between groups of buttons. */
+	private static final	Object	FILLER	= new Object();
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -115,7 +113,7 @@ public class DialogButtonPane
 		// Call superclass constructor
 		super(buttonGap);
 
-		// Set attributes
+		// Set properties
 		setAlignment(Pos.CENTER);
 		setPadding(DEFAULT_PADDING);
 	}
@@ -159,42 +157,53 @@ public class DialogButtonPane
 	//------------------------------------------------------------------
 
 	/**
-	 * Adds horizontal spacers to the child list of this button pane to separate the groups of buttons.
+	 * Adds horizontal fillers to the child list of this button pane to separate the groups of buttons.
 	 */
 
 	public void updateButtonSpacing()
 	{
-		// Remove current spacers
+		// Remove current fillers
 		Iterator<Node> it = getChildren().iterator();
 		while (it.hasNext())
 		{
-			if (it.next().getUserData() == SPACER)
+			if (it.next().getUserData() == FILLER)
 				it.remove();
 		}
 
-		// Add spacers
-		addSpacer(numButtonsLeft);
+		// Add filler
+		addFiller(numButtonsLeft);
 		if (numButtonsCentre > 0)
-			addSpacer(numButtonsLeft + numButtonsCentre + 1);
+			addFiller(numButtonsLeft + numButtonsCentre + 1);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Equalises the widths of the members of groups of buttons in this button pane.  The preferred width of each button
-	 * in the group is set to the width of the widest button.  A button group is denoted by a property with the key
-	 * {@link #BUTTON_GROUP_KEY}.
+	 * Returns the total increase in the the widths of all the buttons in this button pane as a result of equalising
+	 * their widths.  The widths of the members of groups of buttons in this button pane may optionally be equalised by
+	 * setting the preferred width of each button in the group to the width of the widest button.  A button group is
+	 * denoted by a property with the key {@link #BUTTON_GROUP_KEY}.
 	 *
+	 * @param  apply
+	 *           if {@code true}, the widths of the members of groups of buttons in this button pane will be equalised.
 	 * @return the total increase in the the widths of all the buttons in this button pane as a result of equalising
 	 *         their widths.
 	 */
 
-	public double equaliseButtonWidths()
+	public double equaliseButtonWidths(
+		boolean	apply)
 	{
+		// Create list of fillers
+		List<Region> fillers = new ArrayList<>();
+		for (Node child : getChildren())
+		{
+			if ((child instanceof Region region) && (region.getUserData() == FILLER))
+				fillers.add(region);
+		}
+
 		// Create map of groups of buttons
 		Map<Object, List<Region>> groups = new HashMap<>();
-		ObservableList<Node> children = getChildren();
-		for (Node child : children)
+		for (Node child : getChildren())
 		{
 			if (child instanceof Region region)
 			{
@@ -236,18 +245,16 @@ public class DialogButtonPane
 				// Set width of each button to width of widest button
 				for (Region button : buttons)
 				{
-					button.setPrefWidth(maxWidth);
+					if (apply)
+						button.setPrefWidth(maxWidth);
 					extraWidth += maxWidth - button.getWidth();
 				}
 			}
 		}
 
-		// Reduce extra button width by width of spacers
-		for (Node child : getChildren())
-		{
-			if ((child instanceof Region region) && (region.getUserData() == SPACER))
-				extraWidth -= region.getWidth();
-		}
+		// Reduce extra button width by width of fillers
+		for (Region filler : fillers)
+			extraWidth -= filler.getWidth();
 
 		// Return extra width of buttons
 		return extraWidth;
@@ -256,19 +263,19 @@ public class DialogButtonPane
 	//------------------------------------------------------------------
 
 	/**
-	 * Adds a horizontal spacer to the child list of this button pane at the specified index.
+	 * Adds a horizontal filler to the child list of this button pane at the specified index.
 	 *
 	 * @param index
-	 *          the index at which the spacer will be added to the child list of this button pane.
+	 *          the index at which the filler will be added to the child list of this button pane.
 	 */
 
-	private void addSpacer(
+	private void addFiller(
 		int	index)
 	{
-		Region spacer = new Region();
-		spacer.setUserData(SPACER);
-		HBox.setHgrow(spacer, Priority.ALWAYS);
-		getChildren().add(index, spacer);
+		Region filler = new Region();
+		filler.setUserData(FILLER);
+		HBox.setHgrow(filler, Priority.ALWAYS);
+		getChildren().add(index, filler);
 	}
 
 	//------------------------------------------------------------------

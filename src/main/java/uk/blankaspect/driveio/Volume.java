@@ -32,6 +32,9 @@ public class Volume
 		FIXED
 	}
 
+	private static final	int		OPEN_VOLUME_NUM_ATTEMPTS	= 10;
+	private static final	long	OPEN_VOLUME_INTERVAL		= 200;
+
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
@@ -114,21 +117,18 @@ public class Volume
 		Access	access)
 		throws VolumeException
 	{
-		final	int		NUM_ATTEMPTS	= 10;
-		final	long	INTERVAL		= 200;
-
 		// Initialise exception
 		VolumeException exception = null;
 
 		// Make multiple attempts to open volume
-		for (int i = 0; i < NUM_ATTEMPTS; i++)
+		for (int i = 0; i < OPEN_VOLUME_NUM_ATTEMPTS; i++)
 		{
 			// Wait until time for next attempt
 			if (i > 0)
 			{
 				try
 				{
-					Thread.sleep(INTERVAL);
+					Thread.sleep(OPEN_VOLUME_INTERVAL);
 				}
 				catch (InterruptedException e)
 				{
@@ -148,7 +148,14 @@ public class Volume
 			}
 
 			// Close volume
-			accessor.closeVolume();
+			try
+			{
+				accessor.closeVolume();
+			}
+			catch (VolumeException e)
+			{
+				// ignore
+			}
 		}
 
 		// Throw exception

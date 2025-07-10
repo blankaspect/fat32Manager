@@ -45,9 +45,10 @@ import uk.blankaspect.common.css.CssSelector;
 
 import uk.blankaspect.common.function.IFunction0;
 
-import uk.blankaspect.ui.jfx.font.FontUtils;
+import uk.blankaspect.ui.jfx.label.Labels;
 
 import uk.blankaspect.ui.jfx.listview.FilteredListView;
+import uk.blankaspect.ui.jfx.listview.ListViewStyle;
 
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
@@ -80,7 +81,7 @@ public class SuggestionFilterPane<T>
 
 	/** The factor by which the size of the default font is multiplied to give the size of the font of the
 		placeholder label for the list view. */
-	private static final	double	LIST_VIEW_PLACEHOLDER_LABEL_FONT_FACTOR	= 1.2;
+	private static final	double	LIST_VIEW_PLACEHOLDER_LABEL_FONT_SIZE_FACTOR	= 1.2;
 
 	/** The preferred number of rows of the list view. */
 	private static final	int		LIST_VIEW_NUM_ROWS	= 8;
@@ -107,21 +108,32 @@ public class SuggestionFilterPane<T>
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
 	(
+		/** The background colour of the placeholder label of the list view. */
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			ListViewStyle.ColourKey.CELL_BACKGROUND_EMPTY,
+			CssSelector.builder()
+					.cls(StyleClass.PLACEHOLDER_LABEL)
+					.build()
+		),
+
 		/** The text colour of the placeholder label of the list view. */
 		ColourProperty.of
 		(
 			FxProperty.TEXT_FILL,
 			ColourKey.LIST_VIEW_PLACEHOLDER_TEXT,
 			CssSelector.builder()
-						.cls(StyleClass.PLACEHOLDER_LABEL)
-						.build()
+					.cls(StyleClass.PLACEHOLDER_LABEL)
+					.build()
 		)
 	);
 
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	PLACEHOLDER_LABEL	= StyleConstants.CLASS_PREFIX + "suggestion-filter-pane-list-view-placeholder-label";
+		String	PLACEHOLDER_LABEL =
+				StyleConstants.CLASS_PREFIX + "suggestion-filter-pane-list-view-placeholder-label";
 	}
 
 	/** Keys of colours that are used in colour properties. */
@@ -177,7 +189,7 @@ public class SuggestionFilterPane<T>
 		FilterMode						filterMode)
 	{
 		// Call alternative constructor
-		this(converter, filterMode, false, false);
+		this(converter, null, filterMode, false, false);
 	}
 
 	//------------------------------------------------------------------
@@ -202,8 +214,38 @@ public class SuggestionFilterPane<T>
 		boolean							hasClearButton,
 		boolean							hasFilterModeButton)
 	{
+		// Call alternative constructor
+		this(converter, null, initialFilterMode, hasClearButton, hasFilterModeButton);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a new instance of a suggestion text-field pane with an optional button for clearing the text field and an
+	 * optional <i>filter mode</i> button.
+	 *
+	 * @param converter
+	 *          the provider of a string representation and a graphical representation of each item of the list view.
+	 * @param filterField
+	 *          the text field for a filter that will appear in this pane.  If it is {@code null}, a new instance of a
+	 *          text field will be created.
+	 * @param initialFilterMode
+	 *          the initial filter mode of the pane, which can be changed only if the pane has a filter-mode button.
+	 * @param hasClearButton
+	 *          if {@code true}, the pane will have a button for clearing the text field.
+	 * @param hasFilterModeButton
+	 *          if {@code true}, the pane will have a button for changing the filter mode.
+	 */
+
+	public SuggestionFilterPane(
+		FilteredListView.IConverter<T>	converter,
+		TextField						filterField,
+		FilterMode						initialFilterMode,
+		boolean							hasClearButton,
+		boolean							hasFilterModeButton)
+	{
 		// Call superclass constructor
-		super(initialFilterMode, hasClearButton, hasFilterModeButton);
+		super(filterField, initialFilterMode, hasClearButton, hasFilterModeButton);
 
 		// Initialise instance variables
 		redirectHomeEndKeys = true;
@@ -217,13 +259,14 @@ public class SuggestionFilterPane<T>
 		listView.setFilterMode(initialFilterMode);
 		listView.prefWidthProperty().bind(textField.widthProperty());
 		listView.setPrefHeight((double)LIST_VIEW_NUM_ROWS
-									* (TextUtils.textHeight() + 2.0 * FilteredListView.DEFAULT_CELL_VERTICAL_PADDING + 1.0)
-									+ 2.0);
+								* (TextUtils.textHeight() + 2.0 * FilteredListView.DEFAULT_CELL_VERTICAL_PADDING + 1.0)
+								+ 2.0);
 
 		// Set placeholder on list view
-		Label placeholderLabel = new Label(NO_SUGGESTIONS_STR);
-		placeholderLabel.setFont(FontUtils.defaultFont(LIST_VIEW_PLACEHOLDER_LABEL_FONT_FACTOR));
-		placeholderLabel.setTextFill(getColour(ColourKey.LIST_VIEW_PLACEHOLDER_TEXT));
+		Label placeholderLabel =
+				Labels.expansive(NO_SUGGESTIONS_STR, LIST_VIEW_PLACEHOLDER_LABEL_FONT_SIZE_FACTOR,
+								 getColour(ColourKey.LIST_VIEW_PLACEHOLDER_TEXT),
+								 getColour(ListViewStyle.ColourKey.CELL_BACKGROUND_EMPTY));
 		placeholderLabel.getStyleClass().add(StyleClass.PLACEHOLDER_LABEL);
 		listView.setPlaceholder(placeholderLabel);
 
@@ -259,7 +302,7 @@ public class SuggestionFilterPane<T>
 				if (KEY_COMBO_LIST_TRIGGER.match(event))
 					return true;
 
-				if (Stream.of(LIST_NON_TRIGGER_KEY_COMBINATIONS).anyMatch(keyCombination -> keyCombination.match(event)))
+				if (Stream.of(LIST_NON_TRIGGER_KEY_COMBINATIONS).anyMatch(keyCombo -> keyCombo.match(event)))
 					return false;
 
 				if (event.isControlDown() || event.isAltDown())
@@ -411,12 +454,12 @@ public class SuggestionFilterPane<T>
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

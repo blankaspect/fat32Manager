@@ -268,8 +268,10 @@ public final class NodeType
 		for (NodeType child : children)
 		{
 			if (nodeType.nodeClass == child.nodeClass)
+			{
 				throw new IllegalArgumentException("The node type for " + this + " already has a child type for "
 														+ nodeType);
+			}
 		}
 		children.add(nodeType);
 	}
@@ -324,8 +326,10 @@ public final class NodeType
 				superclass = superclass.getSuperclass();
 			}
 			if (!found)
+			{
 				throw new IllegalArgumentException("The node class of the parent type is not a superclass of "
 														+ nodeClass);
+			}
 
 			// Add this node type to its parent
 			parent.addChild(this);

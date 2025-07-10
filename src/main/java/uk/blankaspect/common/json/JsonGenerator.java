@@ -2,7 +2,7 @@
 
 JsonGenerator.java
 
-Class: JSON generator.
+Class: generator of JSON text.
 
 \*====================================================================*/
 
@@ -18,201 +18,115 @@ package uk.blankaspect.common.json;
 // IMPORTS
 
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
 import uk.blankaspect.common.basictree.AbstractNode;
+import uk.blankaspect.common.basictree.BooleanNode;
 import uk.blankaspect.common.basictree.ListNode;
 import uk.blankaspect.common.basictree.MapNode;
 import uk.blankaspect.common.basictree.NodeTypeException;
+import uk.blankaspect.common.basictree.NullNode;
+import uk.blankaspect.common.basictree.StringNode;
 
 //----------------------------------------------------------------------
 
 
-// CLASS: JSON GENERATOR
+// CLASS: GENERATOR OF JSON TEXT
 
 
 /**
  * This class implements a generator that transforms a tree of values that are represented by {@linkplain AbstractNode
- * nodes} into JSON text.  The generator operates in one of several {@linkplain Mode <i>modes</i>}, which control the
- * way in which whitespace is written between the tokens of the JSON text.
+ * nodes} into JSON text.  The generator operates in one of several {@linkplain OutputMode <i>output modes</i>}, which
+ * control the way in which whitespace is written between the tokens of the JSON text.
  */
 
 public class JsonGenerator
 {
 
 ////////////////////////////////////////////////////////////////////////
-//  Constants
-////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * This is an enumeration of the modes that control the way in which whitespace is written between the tokens of the
-	 * JSON text.
-	 */
-
-	public enum Mode
-	{
-		/**
-		 * JSON text is written on a single line with no space between tokens.
-		 */
-		DENSE,
-
-		/**
-		 * JSON text is written on a single line with a space between some tokens.
-		 */
-		COMPACT,
-
-		/**
-		 * JSON text may be written on multiple lines with a space between some tokens.  Compound values (array and
-		 * object) are written on a single line in some cases:
-		 * <ul>
-		 *   <li>The opening and closing brackets and elements of an array are written on a single line if they all fit
-		 *       on the line; otherwise, they are split over multiple lines, as necessary.</li>
-		 *   <li>An object is written on a single line if it is empty or contains a single property that fits on the
-		 *       line along with its opening and closing braces; otherwise, its properties and closing brace are each
-		 *       written on a separate line, and its opening brace is written on a separate line if the <i>opening
-		 *       bracket on the same line</i> flag is {@code false}.</li>
-		 * </ul>
-		 */
-		NORMAL,
-
-		/**
-		 * JSON text may be written on multiple lines with a space between some tokens.  Compound values (array and
-		 * object) are written on a single line in some cases:
-		 * <ul>
-		 *   <li>An empty array is written on a single line.  The elements and closing bracket of a non-empty array are
-		 *       each written on a separate line, and the opening bracket is written on a separate line if the
-		 *       <i>opening bracket on same line</i> flag is {@code false}.</li>
-		 *   <li>An empty object is written on a single line.  The properties and closing brace of a non-empty object
-		 *       are each written on a separate line, and the opening brace is written on a separate line if the
-		 *       <i>opening bracket on the same line</i> flag is {@code false}.</li>
-		 * </ul>
-		 */
-		EXPANDED
-	}
-
-	/** The default mode of a generator. */
-	private static final	Mode	DEFAULT_MODE	= Mode.NORMAL;
-
-	/** The default number of spaces by which indentation will be increased from one level to the next. */
-	private static final	int		DEFAULT_INDENT_INCREMENT	= 2;
-
-	/** The default maximum line length. */
-	private static final	int		DEFAULT_MAX_LINE_LENGTH		= 80;
-
-////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
-	/** The mode of this generator, which controls the way in which whitespace is written between the tokens of the JSON
-		text. */
-	private	Mode	mode;
+	/** The way in which whitespace is written between the tokens of the JSON text. */
+	private	OutputMode					outputMode;
 
-	/** Flag: if {@code true}, the opening bracket of a JSON object or array is written on the same line as the
-		non-whitespace text that precedes it. */
-	private	boolean	openingBracketOnSameLine;
+	/** The circumstance in which a new line is written before the opening bracket of a JSON array or the opening brace
+		of a JSON object. */
+	private	NewLineBeforeLeftBracket	newLineBeforeLeftBracket;
 
 	/** The number of spaces by which indentation is increased from one level to the next. */
-	private	int		indentIncrement;
+	private	int							indentIncrement;
 
-	/** The maximum length of a line of JSON text. */
-	private int		maxLineLength;
+	/** The maximum length of a line of JSON text without wrapping. */
+	private	int							maxLineLength;
 
-	/** An array of spaces that is used to indent line of generated JSON text. */
-	private	char[]	spaces;
+	/** Flag: if {@code true}, the values of JSON strings and the names of the members of JSON objects will be escaped
+		so that they contain only printable characters from the US-ASCII character encoding (ie, characters in the range
+		U+0020 to U+007E inclusive). */
+	private	boolean						printableAsciiOnly;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates a new instance of a JSON generator with default values for the mode ({@link Mode#NORMAL NORMAL}), the
-	 * <i>opening bracket on the same line</i> flag ({@code false}), the indent increment (2) and the maximum line
-	 * length (80).
-	 */
-
-	public JsonGenerator()
-	{
-		// Call alternative constructor
-		this(DEFAULT_MODE, false, DEFAULT_INDENT_INCREMENT, DEFAULT_MAX_LINE_LENGTH);
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * Creates a new instance of a JSON generator with the specified mode.  Default values will be used for the
-	 * <i>opening bracket on the same line</i> flag ({@code false}), the indent increment (2) and the maximum line
-	 * length (80), which are applicable only in a multi-line mode ({@link Mode#NORMAL NORMAL} or {@link Mode#EXPANDED
-	 * EXPANDED}).
+	 * Creates a new instance of a JSON generator that is initialised from the state of the specified builder.
 	 *
-	 * @param mode
-	 *          the mode of the generator, which controls the way in which whitespace is written between the tokens of
-	 *          the JSON text.
+	 * @param builder
+	 *          the builder from whose state the generator will be initialised.
 	 */
 
-	public JsonGenerator(
-		Mode	mode)
-	{
-		// Call alternative constructor
-		this(mode, false, DEFAULT_INDENT_INCREMENT, DEFAULT_MAX_LINE_LENGTH);
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * Creates a new instance of a JSON generator with the specified mode and <i>opening bracket on the same line</i>
-	 * flag.  Default values will be used for the indent increment (2) and the maximum line length (80), which are
-	 * applicable only in a multi-line mode ({@link Mode#NORMAL NORMAL} or {@link Mode#EXPANDED EXPANDED}).
-	 *
-	 * @param mode
-	 *          the mode of the generator, which controls the way in which whitespace is written between the tokens of
-	 *          the JSON text.
-	 * @param openingBracketOnSameLine
-	 *          if {@code true}, the opening bracket of a JSON object or array will be written on the same line as the
-	 *          non-whitespace text that precedes it.
-	 */
-
-	public JsonGenerator(
-		Mode	mode,
-		boolean	openingBracketOnSameLine)
-	{
-		// Call alternative constructor
-		this(mode, openingBracketOnSameLine, DEFAULT_INDENT_INCREMENT, DEFAULT_MAX_LINE_LENGTH);
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * Creates a new instance of a JSON generator with the specified mode, <i>opening bracket on the same line</i> flag,
-	 * indent increment and maximum line length.
-	 *
-	 * @param mode
-	 *          the mode of the generator, which controls the way in which whitespace is written between the tokens of
-	 *          the JSON text.
-	 * @param openingBracketOnSameLine
-	 *          if {@code true}, the opening bracket of a JSON object or array will be written on the same line as the
-	 *          non-whitespace text that precedes it.
-	 * @param indentIncrement
-	 *          the number of spaces by which indentation will be increased from one level to the next.  This parameter
-	 *          has no effect in a single-line mode ({@link Mode#DENSE DENSE} or {@link Mode#COMPACT COMPACT}).
-	 * @param maxLineLength
-	 *          the maximum length of a line of JSON text.  This parameter has no effect in a single-line mode ({@link
-	 *          Mode#DENSE DENSE} or {@link Mode#COMPACT COMPACT}).
-	 */
-
-	public JsonGenerator(
-		Mode	mode,
-		boolean	openingBracketOnSameLine,
-		int		indentIncrement,
-		int		maxLineLength)
+	private JsonGenerator(
+		Builder	builder)
 	{
 		// Initialise instance variables
-		this.mode = mode;
-		this.openingBracketOnSameLine = openingBracketOnSameLine;
-		this.indentIncrement = indentIncrement;
-		this.maxLineLength = maxLineLength;
-		spaces = new char[0];
+		outputMode = builder.outputMode;
+		newLineBeforeLeftBracket = builder.newLineBeforeLeftBracket;
+		indentIncrement = builder.indentIncrement;
+		maxLineLength = builder.maxLineLength;
+		printableAsciiOnly = builder.printableAsciiOnly;
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Class methods
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Creates and returns a new instance of a builder for a JSON generator.
+	 *
+	 * @return a new instance of a builder for a JSON generator.
+	 */
+
+	public static Builder builder()
+	{
+		return new Builder();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the {@linkplain JsonText.Token JSON token} that corresponds to the specified value.
+	 *
+	 * @param  value
+	 *           the value whose corresponding JSON token is sought.
+	 * @return the JSON token that corresponds to {@code value}, or {@code null} if there is no such token.
+	 */
+
+	public static JsonText.Token getToken(
+		AbstractNode	value)
+	{
+		if (value instanceof NullNode)
+			return JsonText.Token.NULL_VALUE;
+		if (value instanceof BooleanNode)
+			return JsonText.Token.BOOLEAN_VALUE;
+		if (JsonUtils.isJsonNumber(value))
+			return JsonText.Token.NUMBER_VALUE;
+		if (value instanceof StringNode)
+			return JsonText.Token.STRING_VALUE;
+		return null;
 	}
 
 	//------------------------------------------------------------------
@@ -222,87 +136,161 @@ public class JsonGenerator
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Generates and returns JSON text for the specified {@linkplain AbstractNode JSON value} in accordance with the
+	 * Generates and returns JSON text for the specified {@linkplain AbstractNode value} in accordance with the
 	 * properties of this generator:
 	 * <ul>
-	 *   <li>mode,</li>
-	 *   <li><i>opening bracket on the same line</i> flag,</li>
+	 *   <li>output mode,</li>
+	 *   <li><i>new line before left bracket</i> parameter,</li>
 	 *   <li>indent increment,</li>
 	 *   <li>maximum line length.</li>
 	 * </ul>
 	 *
 	 * @param  value
-	 *           the JSON value for which JSON text will be generated.
-	 * @return JSON text for <i>value</i>.
+	 *           the value for which JSON text will be generated.
+	 * @return the JSON text that was generated for {@code value}.
 	 * @throws NodeTypeException
-	 *           if any node in the tree whose root is <i>value</i> does not represent a JSON value.
+	 *           if any node in the tree whose root is {@code value} does not correspond to a JSON value.
 	 */
 
-	public String generate(
+	public JsonText generate(
 		AbstractNode	value)
 	{
-		StringBuilder buffer = new StringBuilder(256);
-		appendValue(value, 0, buffer);
+		// Initialise JSON text
+		JsonText text = new JsonText();
+
+		// Append JSON text for value
+		appendValue(value, 0, text);
+
+		// Append new line in multi-line mode
 		if (isMultilineMode())
-			buffer.append('\n');
-		return buffer.toString();
+			text.appendNewLine();
+
+		// Return JSON text
+		return text;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a JSON string representation of the name of the specified member of an object.
+	 *
+	 * @param  member
+	 *           the object member of interest.
+	 * @return a JSON string representation of the name of {@code member}.
+	 */
+
+	private String memberNameToString(
+		Map.Entry<String, AbstractNode>	member)
+	{
+		return MapNode.keyToString(member.getKey(), printableAsciiOnly);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the maximum length that is available to append the JSON text of the specified node to the last line of
+	 * the specified JSON text.
+	 *
+	 * @param  node
+	 *           the node whose JSON text is considered for appending to the last line of {@code text}.
+	 * @param  text
+	 *           the JSON text whose last line would have the JSON text of {@code node} appended to it.
+	 * @return the maximum length that is available to append the JSON text of {@code node} to the last line of {@code
+	 *         text}.
+	 */
+
+	private int computeMaxLineLength(
+		AbstractNode	node,
+		JsonText		text)
+	{
+		int maxLength = maxLineLength - text.lastLineLength() - 2;
+		if (node.getParent() instanceof ListNode listNode)
+		{
+			if (listNode.get(listNode.getNumElements() - 1) == node)
+				++maxLength;
+		}
+		else if (node.getParent() instanceof MapNode mapNode)
+		{
+			Iterator<Map.Entry<String, AbstractNode>> it = mapNode.getPairIterator();
+			while (it.hasNext())
+			{
+				if (it.next().getValue() == node)
+				{
+					if (!it.hasNext())
+						++maxLength;
+					break;
+				}
+			}
+		}
+		return Math.max(0, maxLength);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
 	 * Returns {@code true} if this generator should write the JSON text for the specified {@linkplain JsonValue JSON
-	 * value} on a single line.  This method always returns {@code true} for simple values (null, Boolean, number and
-	 * string); for compound values (array and object), it applies a heuristic that takes into account the mode and
-	 * maximum line length of this generator and the specified indentation.
+	 * value} on a single line.  This method always returns {@code true} in single-line output mode and for simple
+	 * values (null, Boolean, number and string).  For compound values (array and object), it applies a heuristic that
+	 * takes into account the output mode and the specified maximum length of a line of text.
 	 *
 	 * @param  value
 	 *           the JSON value of interest.
-	 * @param  indent
-	 *           the number of spaces by which the JSON text is indented.
-	 * @return {@code true} if this generator should write the JSON text for {@ode value} on a single line.
+	 * @param  maxLength
+	 *           the maximum length of a line of text.
+	 * @return {@code true} if this generator should write the JSON text for {@code value} on a single line.
 	 */
 
 	private boolean isValueOnSingleLine(
 		AbstractNode	value,
-		int				indent)
+		int				maxLength)
 	{
+		// Always on a single line in single-line output mode
+		if (!isMultilineMode())
+			return true;
+
+		// Assume a single line
 		boolean singleLine = true;
-		if (isMultilineMode())
+
+		// Case: array
+		if (value instanceof ListNode listNode)
 		{
-			// Case: array
-			if (value instanceof ListNode)
+			int numElements = listNode.getNumElements();
+			if (((outputMode == OutputMode.EXPANDED) && (numElements > 0))
+					|| listNode.getElements().stream().anyMatch(element -> !isValueOnSingleLine(element, maxLength)))
+				singleLine = false;
+			else if (numElements > 1)
 			{
-				ListNode list = (ListNode)value;
-				int numElements = list.getNumElements();
-				if (((mode == Mode.EXPANDED) && (numElements > 0))
-					|| list.getElements().stream().anyMatch(element -> !isValueOnSingleLine(element, indent + 2)))
-					singleLine = false;
-				else if (numElements > 1)
+				int length = 0;
+				for (int i = 0; i < numElements; i++)
 				{
-					int lineLength = indent + 2 + 2 * numElements;
-					for (int i = 0; i < numElements; i++)
+					length += listNode.get(i).toString(printableAsciiOnly).length() + 2;
+					if (length > maxLength)
 					{
-						lineLength += list.get(i).toString().length();
-						if (lineLength > maxLineLength)
-						{
-							singleLine = false;
-							break;
-						}
+						singleLine = false;
+						break;
 					}
 				}
 			}
-
-			// Case: object
-			else if (value instanceof MapNode)
-			{
-				MapNode map = (MapNode)value;
-				int numProperties = map.getNumPairs();
-				singleLine = (numProperties == 0)
-								|| ((mode != Mode.EXPANDED) && (numProperties == 1)
-									&& isValueOnSingleLine(map.getPairIterator().next().getValue(), indent + 2));
-			}
 		}
+
+		// Case: object
+		else if (value instanceof MapNode mapNode)
+		{
+			singleLine = switch (mapNode.getNumPairs())
+			{
+				case 0 -> true;
+				case 1 ->
+				{
+					if (outputMode == OutputMode.EXPANDED)
+						yield false;
+					Map.Entry<String, AbstractNode> member = mapNode.getPairIterator().next();
+					yield isValueOnSingleLine(member.getValue(), maxLength - memberNameToString(member).length());
+				}
+				default -> false;
+			};
+		}
+
+		// Return result
 		return singleLine;
 	}
 
@@ -310,120 +298,106 @@ public class JsonGenerator
 
 	/**
 	 * Generates the JSON text for the specified {@linkplain AbstractNode JSON value} and appends it to the specified
-	 * buffer.
+	 * text.
 	 *
 	 * @param  value
-	 *           the JSON value for which JSON text will be generated.
+	 *           the node corresponding to a JSON value for which JSON text will be generated.
 	 * @param  indent
 	 *           the number of spaces by which a line of the JSON text is indented.
-	 * @param  buffer
-	 *           the buffer to which the JSON text will be appended.
+	 * @param  text
+	 *           the JSON text to which the text that is generated by this method will be appended.
 	 * @throws NodeTypeException
-	 *           if <i>value</i> does not represent a JSON value.
+	 *           if {@code value} does not represent a JSON value.
 	 */
 
 	private void appendValue(
 		AbstractNode	value,
 		int				indent,
-		StringBuilder	buffer)
+		JsonText		text)
 	{
-		// Update array of spaces for indent; append indent
+		// Append indent
 		if (isMultilineMode())
-		{
-			// Get indent of children of target value
-			int childIndent = indent + indentIncrement;
+			text.appendSpaces(indent);
 
-			// Update array of spaces
-			if (spaces.length < childIndent)
-			{
-				spaces = new char[childIndent];
-				Arrays.fill(spaces, ' ');
-			}
+		// Case: array
+		if (value instanceof ListNode listNode)
+			appendArray(listNode, indent, text);
 
-			// Append indent
-			buffer.append(spaces, 0, indent);
-		}
+		// Case: object
+		else if (value instanceof MapNode mapNode)
+			appendObject(mapNode, indent, text);
 
-		// Append array
-		if (value instanceof ListNode)
-			appendArray((ListNode)value, indent, buffer);
-
-		// Append object
-		else if (value instanceof MapNode)
-			appendObject((MapNode)value, indent, buffer);
-
-		// Append simple value
-		else if (JsonUtils.isSimpleJsonValue(value))
-			buffer.append(value);
-
-		// Not a JSON value
+		// Case: simple value
 		else
-			throw new NodeTypeException(value.getType());
+		{
+			// Get token
+			JsonText.Token token = getToken(value);
+			if (token == null)
+				throw new NodeTypeException(value.getType());
+
+			// Append JSON text of value
+			text.append(value.toString(printableAsciiOnly), token);
+		}
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Generates the JSON text for the specified {@linkplain ListNode JSON array} and appends it to the specified
-	 * buffer.
+	 * Generates the JSON text for the specified {@linkplain ListNode JSON array} and appends it to the specified text.
 	 *
 	 * @param array
-	 *          the JSON array for which JSON text will be generated.
+	 *          the node corresponding to a JSON array for which JSON text will be generated.
 	 * @param indent
 	 *          the number of spaces by which a line of the JSON text is indented.
-	 * @param buffer
-	 *          the buffer to which the JSON text will be appended.
+	 * @param text
+	 *          the JSON text to which the text that is generated by this method will be appended.
 	 */
 
 	private void appendArray(
-		ListNode		array,
-		int				indent,
-		StringBuilder	buffer)
+		ListNode	array,
+		int			indent,
+		JsonText	text)
 	{
-		// Get number of elements
-		int numElements = array.getNumElements();
-
-		// If required, remove LF and indent before opening bracket
-		if (openingBracketOnSameLine)
-			removeLineFeedAndIndent(buffer);
+		// If required, remove line break and indent before opening bracket
+		removeLineBreakAndIndent(text);
 
 		// Append opening bracket
-		buffer.append(JsonConstants.ARRAY_START_CHAR);
+		text.append(JsonConstants.ARRAY_START_CHAR, JsonText.Token.ARRAY_DELIMITER);
+
+		// Get number of array elements
+		int numElements = array.getNumElements();
 
 		// Case: elements of array are on a single line
-		if (isValueOnSingleLine(array, indent))
+		if (isValueOnSingleLine(array, computeMaxLineLength(array, text)))
 		{
 			// Append elements
 			for (int i = 0; i < numElements; i++)
 			{
 				// Append separator between elements
 				if (i > 0)
-					buffer.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR);
+					text.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR, JsonText.Token.ITEM_SEPARATOR);
 
 				// Append space after separator
-				if (mode != Mode.DENSE)
-					buffer.append(' ');
+				if (outputMode != OutputMode.DENSE)
+					text.appendSpace();
 
 				// Append element
-				appendValue(array.get(i), 0, buffer);
+				appendValue(array.get(i), 0, text);
 			}
 
 			// Append space before closing bracket
-			if (mode != Mode.DENSE)
-				buffer.append(' ');
+			if (outputMode != OutputMode.DENSE)
+				text.appendSpace();
 		}
 
 		// Case: elements of array are not on a single line
 		else
 		{
-			// Append LF after opening brace
-			buffer.append('\n');
+			// Append new line after opening brace
+			text.appendNewLine();
 
 			// Get indent of children of target value
 			int childIndent = indent + indentIncrement;
-
-			// Initialise line length
-			int lineLength = 0;
 
 			// Append elements
 			for (int i = 0; i < numElements; i++)
@@ -431,35 +405,22 @@ public class JsonGenerator
 				// Get element
 				AbstractNode element = array.get(i);
 
+				// Get length of current line
+				int lineLength = text.lastLineLength();
+
 				// Set 'more elements' flag
 				boolean moreElements = (i < numElements - 1);
 
-				// Case: element is a container
-				if (element.isContainer())
-				{
-					// Append LF after previous element
-					if (lineLength > 0)
-						buffer.append('\n');
+				// Calculate maximum length of single line of text
+				int maxLength = maxLineLength - ((lineLength == 0) ? childIndent : lineLength + 1) - 2;
+				if (moreElements)
+					--maxLength;
 
-					// Append indent and element
-					appendValue(element, childIndent, buffer);
-
-					// Append separator between elements
-					if (moreElements)
-						buffer.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR);
-
-					// Append LF after element
-					buffer.append('\n');
-
-					// Reset line length
-					lineLength = 0;
-				}
-
-				// Case: element is not a container
-				else
+				// Case: element is on a single line
+				if (isValueOnSingleLine(element, maxLength))
 				{
 					// Convert element to string
-					String elementStr = element.toString();
+					String elementStr = element.toString(printableAsciiOnly);
 
 					// If not start of line, wrap line if necessary
 					if (lineLength > 0)
@@ -472,228 +433,448 @@ public class JsonGenerator
 						// If line would be too long, wrap it
 						if (lineLength > maxLineLength)
 						{
-							buffer.append('\n');
+							text.appendNewLine();
 							lineLength = 0;
 						}
 					}
 
-					// Case: start of line
+					// Append indent or space before element
 					if (lineLength == 0)
-					{
-						// Get index of start of element
-						int index = buffer.length();
-
-						// Append indent
-						buffer.append(spaces, 0, childIndent);
-
-						// Append element
-						buffer.append(elementStr);
-
-						// Append separator between elements
-						if (moreElements)
-							buffer.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR);
-
-						// If expanded mode, append LF after separator ...
-						if (mode == Mode.EXPANDED)
-							buffer.append('\n');
-
-						// ... otherwise, increment line length
-						else
-							lineLength = buffer.length() - index;
-					}
-
-					// Case: not start of line
+						text.appendSpaces(childIndent);
 					else
-					{
-						// Append space before element
-						buffer.append(' ');
+						text.appendSpace();
 
-						// Append element
-						buffer.append(elementStr);
+					// Append element
+					text.append(elementStr, getToken(element));
 
-						// Append separator between elements
-						if (moreElements)
-							buffer.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR);
-					}
+					// Append separator between elements
+					if (moreElements)
+						text.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR, JsonText.Token.ITEM_SEPARATOR);
+
+					// If expanded mode, append new line after element
+					if (outputMode == OutputMode.EXPANDED)
+						text.appendNewLine();
+				}
+
+				// Case: element is not on a single line
+				else
+				{
+					// Append new line after previous element
+					if (lineLength > 0)
+						text.appendNewLine();
+
+					// Append indent and element
+					appendValue(element, childIndent, text);
+
+					// Append separator between elements
+					if (moreElements)
+						text.append(JsonConstants.ARRAY_ELEMENT_SEPARATOR_CHAR, JsonText.Token.ITEM_SEPARATOR);
+
+					// Append new line after element
+					text.appendNewLine();
 				}
 			}
 
-			// If not start of line, append LF
-			if (lineLength > 0)
-				buffer.append('\n');
+			// If not start of line, append new line
+			if (text.lastLineLength() > 0)
+				text.appendNewLine();
 
 			// Append indent before closing bracket
-			buffer.append(spaces, 0, indent);
+			text.appendSpaces(indent);
 		}
 
 		// Append closing bracket
-		buffer.append(JsonConstants.ARRAY_END_CHAR);
+		text.append(JsonConstants.ARRAY_END_CHAR, JsonText.Token.ARRAY_DELIMITER);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Generates the JSON text for the specified {@linkplain MapNode JSON object} and appends it to the specified
-	 * buffer.
+	 * Generates the JSON text for the specified {@linkplain MapNode JSON object} and appends it to the specified text.
 	 *
 	 * @param object
-	 *          the JSON object for which JSON text will be generated.
+	 *          the node corresponding to a JSON object for which JSON text will be generated.
 	 * @param indent
 	 *          the number of spaces by which a line of the JSON text is indented.
-	 * @param buffer
-	 *          the buffer to which the JSON text will be appended.
+	 * @param text
+	 *          the JSON text to which the text that is generated by this method will be appended.
 	 */
 
 	private void appendObject(
-		MapNode			object,
-		int				indent,
-		StringBuilder	buffer)
+		MapNode		object,
+		int			indent,
+		JsonText	text)
 	{
-		// If required, remove LF and indent before opening brace
-		if (openingBracketOnSameLine)
-			removeLineFeedAndIndent(buffer);
+		// If required, remove line break and indent before opening brace
+		removeLineBreakAndIndent(text);
 
 		// Append opening brace
-		buffer.append(JsonConstants.OBJECT_START_CHAR);
+		text.append(JsonConstants.OBJECT_START_CHAR, JsonText.Token.OBJECT_DELIMITER);
 
-		// Case: properties of object are on a single line
-		if (isValueOnSingleLine(object, indent))
+		// Case: members of object are on a single line
+		if (isValueOnSingleLine(object, computeMaxLineLength(object, text)))
 		{
-			// Append properties
+			// Append members of object
 			Iterator<Map.Entry<String, AbstractNode>> it = object.getPairIterator();
 			while (it.hasNext())
 			{
 				// Append space after separator
-				if (mode != Mode.DENSE)
-					buffer.append(' ');
+				if (outputMode != OutputMode.DENSE)
+					text.appendSpace();
 
-				// Get property
-				Map.Entry<String, AbstractNode> property = it.next();
+				// Get member of object
+				Map.Entry<String, AbstractNode> member = it.next();
 
-				// Append name of property
-				buffer.append(object.keyToString(property.getKey()));
+				// Append name of member
+				text.append(memberNameToString(member), JsonText.Token.OBJECT_MEMBER_NAME);
 
 				// Append separator between name and value
-				buffer.append(JsonConstants.OBJECT_NAME_VALUE_SEPARATOR_CHAR);
+				text.append(JsonConstants.OBJECT_NAME_VALUE_SEPARATOR_CHAR, JsonText.Token.OBJECT_NAME_VALUE_SEPARATOR);
 
 				// Append space after separator
-				if (mode != Mode.DENSE)
-					buffer.append(' ');
+				if (outputMode != OutputMode.DENSE)
+					text.appendSpace();
 
-				// Append value of property
-				appendValue(property.getValue(), 0, buffer);
+				// Append value of member
+				appendValue(member.getValue(), 0, text);
 
-				// Append separator between properties
+				// Append separator between members of object
 				if (it.hasNext())
-					buffer.append(JsonConstants.OBJECT_PROPERTY_SEPARATOR_CHAR);
+					text.append(JsonConstants.OBJECT_MEMBER_SEPARATOR_CHAR, JsonText.Token.ITEM_SEPARATOR);
 			}
 
 			// Append space before closing brace
-			if (mode != Mode.DENSE)
-				buffer.append(' ');
+			if (outputMode != OutputMode.DENSE)
+				text.appendSpace();
 		}
 
-		// Case: properties of object are not on a single line
+		// Case: members of object are not on a single line
 		else
 		{
 			// Get indent of children of target value
 			int childIndent = indent + indentIncrement;
 
-			// Append LF after opening brace
-			buffer.append('\n');
+			// Append new line after opening brace
+			text.appendNewLine();
 
-			// Append properties
+			// Append members of object
 			Iterator<Map.Entry<String, AbstractNode>> it = object.getPairIterator();
 			while (it.hasNext())
 			{
-				// Get index of start of property
-				int index = buffer.length();
+				// Append indent before name of member
+				text.appendSpaces(childIndent);
 
-				// Append indent before name of property
-				buffer.append(spaces, 0, childIndent);
+				// Get member
+				Map.Entry<String, AbstractNode> member = it.next();
 
-				// Get property
-				Map.Entry<String, AbstractNode> property = it.next();
-
-				// Append name of property
-				buffer.append(object.keyToString(property.getKey()));
+				// Append name of member
+				text.append(memberNameToString(member), JsonText.Token.OBJECT_MEMBER_NAME);
 
 				// Append separator between name and value
-				buffer.append(JsonConstants.OBJECT_NAME_VALUE_SEPARATOR_CHAR);
+				text.append(JsonConstants.OBJECT_NAME_VALUE_SEPARATOR_CHAR, JsonText.Token.OBJECT_NAME_VALUE_SEPARATOR);
 
-				// Get value of property
-				AbstractNode value = property.getValue();
+				// Get value of member
+				AbstractNode value = member.getValue();
 
-				// If value of property is on single line, append it with a single space before it ...
-				if (isValueOnSingleLine(value, buffer.length() - index + 1))
-					appendValue(value, 1, buffer);
+				// Calculate maximum length of single line of text
+				int maxLength = maxLineLength - text.lastLineLength() - 3;
+				if (it.hasNext())
+					--maxLength;
 
-				// ... otherwise, append LF, indent and value of property
+				// If value of member is on single line, append it with a single space before it ...
+				if (isValueOnSingleLine(value, maxLength))
+					appendValue(value, 1, text);
+
+				// ... otherwise, append new line, indent and value of member
 				else
 				{
-					buffer.append('\n');
-					appendValue(value, childIndent, buffer);
+					text.appendNewLine();
+					appendValue(value, childIndent, text);
 				}
 
-				// Append separator between properties
+				// Append separator between members of object
 				if (it.hasNext())
-					buffer.append(JsonConstants.OBJECT_PROPERTY_SEPARATOR_CHAR);
+					text.append(JsonConstants.OBJECT_MEMBER_SEPARATOR_CHAR, JsonText.Token.ITEM_SEPARATOR);
 
-				// Append LF after property
-				buffer.append('\n');
+				// Append new line after member
+				text.appendNewLine();
 			}
 
 			// Append indent before closing brace
-			buffer.append(spaces, 0, indent);
+			text.appendSpaces(indent);
 		}
 
 		// Append closing brace
-		buffer.append(JsonConstants.OBJECT_END_CHAR);
+		text.append(JsonConstants.OBJECT_END_CHAR, JsonText.Token.OBJECT_DELIMITER);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Removes a line feed and indent from the end of the specified buffer.
+	 * Removes a line break and indent from the end of the specified JSON text.
 	 *
-	 * @param buffer
-	 *          the buffer from which a line feed and indent will be removed.
+	 * @param text
+	 *          the JSON text from which a line break and indent will be removed.
 	 */
 
-	private void removeLineFeedAndIndent(
-		StringBuilder	buffer)
+	private void removeLineBreakAndIndent(
+		JsonText	text)
 	{
-		int index = buffer.length();
-		while (--index >= 0)
+		// Do nothing if there are fewer than two lines of JSON text or there should always be a new line before a left
+		// bracket
+		if ((text.lines().size() < 2) || (newLineBeforeLeftBracket == NewLineBeforeLeftBracket.ALWAYS))
+			return;
+
+		// Get last line of text
+		JsonText.Line line = text.lastLine();
+
+		// Consolidate adjacent spans of spaces
+		line.normaliseSpans();
+
+		// Get offset to start of last line
+		int offset = line.offset();
+
+		// If the last line contains only spaces and the penultimate line has an unwanted LF, replace the LF and the
+		// spaces after it with a single space
+		if ((line.spans().size() == 1) && (line.spans().get(0).token() == JsonText.Token.SPACE)
+				&& ((newLineBeforeLeftBracket == NewLineBeforeLeftBracket.NEVER)
+						|| ((offset > 1)
+							&& (text.buffer().charAt(offset - 2) == JsonConstants.OBJECT_NAME_VALUE_SEPARATOR_CHAR))))
 		{
-			char ch = buffer.charAt(index);
-			if (ch != ' ')
-			{
-				if (ch == '\n')
-				{
-					buffer.setLength(index);
-					buffer.append(' ');
-				}
-				break;
-			}
+			// Remove last line of spaces
+			text.lines().remove(text.lines().size() - 1);
+
+			// Get new last line
+			line = text.lastLine();
+
+			// Remove LF from last line
+			line.spans().remove(line.spans().size() - 1);
+			text.buffer().setLength(offset - 1);
+
+			// Replace removed LF with space
+			text.appendSpace();
 		}
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns {@code true} if the current mode of this generator allows JSON text to be written on more than one line.
+	 * Returns {@code true} if the output mode of this generator allows JSON text to be written on more than one line.
 	 *
-	 * @return {@code true} if the current mode of this generator allows JSON text to be written on more than one line;
+	 * @return {@code true} if the output mode of this generator allows JSON text to be written on more than one line;
 	 *         {@code false} otherwise.
 	 */
 
 	private boolean isMultilineMode()
 	{
-		return (mode == Mode.NORMAL) || (mode == Mode.EXPANDED);
+		return (outputMode == OutputMode.NORMAL) || (outputMode == OutputMode.EXPANDED);
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: BUILDER FOR JSON GENERATOR
+
+
+	/**
+	 * This class implements a builder for a {@linkplain JsonGenerator JSON generator}.
+	 */
+
+	public static class Builder
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Constants
+	////////////////////////////////////////////////////////////////////
+
+		/** The default output mode of a generator. */
+		private static final	OutputMode	DEFAULT_OUTPUT_MODE	= OutputMode.NORMAL;
+
+		/** The default circumstance in which a new line is written before the opening bracket of a JSON array or the
+			opening brace of a JSON object. */
+		private static final	NewLineBeforeLeftBracket	DEFAULT_NEW_LINE_BEFORE_LEFT_BRACKET	=
+				NewLineBeforeLeftBracket.EXCEPT_AFTER_NAME;
+
+		/** The default number of spaces by which indentation will be increased from one level to the next. */
+		private static final	int		DEFAULT_INDENT_INCREMENT	= 2;
+
+		/** The default maximum line length. */
+		private static final	int		DEFAULT_MAX_LINE_LENGTH		= 96;
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance variables
+	////////////////////////////////////////////////////////////////////
+
+		/** The way in which whitespace is written between the tokens of the JSON text. */
+		private	OutputMode					outputMode;
+
+		/** The circumstance in which a new line is written before the opening bracket of a JSON array or the opening
+			brace of a JSON object. */
+		private	NewLineBeforeLeftBracket	newLineBeforeLeftBracket;
+
+		/** The number of spaces by which indentation is increased from one level to the next. */
+		private	int							indentIncrement;
+
+		/** The maximum length of a line of JSON text without wrapping. */
+		private	int							maxLineLength;
+
+		/** Flag: if {@code true}, the values of JSON strings and the names of the members of JSON objects will be
+			escaped so that they contain only printable characters from the US-ASCII character encoding (ie, characters
+			in the range U+0020 to U+007E inclusive). */
+		private	boolean						printableAsciiOnly;
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates a new instance of a builder for a {@linkplain JsonGenerator JSON generator}.
+		 */
+
+		private Builder()
+		{
+			// Initialise instance variables
+			outputMode = DEFAULT_OUTPUT_MODE;
+			newLineBeforeLeftBracket = DEFAULT_NEW_LINE_BEFORE_LEFT_BRACKET;
+			indentIncrement = DEFAULT_INDENT_INCREMENT;
+			maxLineLength = DEFAULT_MAX_LINE_LENGTH;
+			printableAsciiOnly = true;
+		}
+
+		//--------------------------------------------------------------
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Sets the way in which whitespace is written between the tokens of the JSON text.  The default value is {@link
+		 * OutputMode#NORMAL NORMAL}.
+		 *
+		 * @param  outputMode
+		 *           the way in which whitespace is written between the tokens of the JSON text.
+		 * @return this builder.
+		 */
+
+		public Builder outputMode(
+			OutputMode	outputMode)
+		{
+			// Update instance variable
+			this.outputMode = outputMode;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the circumstance in which a new line is written before the opening bracket of a JSON array or the
+		 * opening brace of a JSON object.  The default value is {@link NewLineBeforeLeftBracket#EXCEPT_AFTER_NAME
+		 * EXCEPT_AFTER_NAME}.
+		 *
+		 * @param  newLineBeforeLeftBracket
+		 *           the circumstance in which a new line is written before the opening bracket of a JSON array or the
+		 *           opening brace of a JSON object.
+		 * @return this builder.
+		 */
+
+		public Builder newLineBeforeLeftBracket(
+			NewLineBeforeLeftBracket	newLineBeforeLeftBracket)
+		{
+			// Update instance variable
+			this.newLineBeforeLeftBracket = newLineBeforeLeftBracket;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the number of spaces by which indentation is increased from one level to the next.  The default value is
+		 * 2.
+		 *
+		 * @param  indentIncrement
+		 *           the number of spaces by which indentation is increased from one level to the next.
+		 * @return this builder.
+		 */
+
+		public Builder indentIncrement(
+			int	indentIncrement)
+		{
+			// Update instance variable
+			this.indentIncrement = indentIncrement;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the maximum length of a line of JSON text without wrapping.  The default value is 96.
+		 *
+		 * @param  maxLineLength
+		 *           the maximum length of a line of JSON text without wrapping.
+		 * @return this builder.
+		 */
+
+		public Builder maxLineLength(
+			int	maxLineLength)
+		{
+			// Update instance variable
+			this.maxLineLength = maxLineLength;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Sets the flag that determines whether JSON string values and the names of the members of JSON objects will be
+		 * escaped so that they contain only printable characters from the US-ASCII character encoding (ie, characters
+		 * in the range U+0020 to U+007E inclusive).  The default value is {@code true}.
+		 *
+		 * @param  printableAsciiOnly
+		 *           if {@code true}, the values of JSON strings and the names of the members of JSON objects will be
+		 *           escaped so that they contain only printable characters from the US-ASCII character encoding.
+		 * @return this builder.
+		 */
+
+		public Builder printableAsciiOnly(
+			boolean	printableAsciiOnly)
+		{
+			// Update instance variable
+			this.printableAsciiOnly = printableAsciiOnly;
+
+			// Return this builder
+			return this;
+		}
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Creates and returns a new instance of a JSON generator that is initialised from the state of this builder.
+		 *
+		 * @return a new instance of a JSON generator.
+		 */
+
+		public JsonGenerator build()
+		{
+			return new JsonGenerator(this);
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

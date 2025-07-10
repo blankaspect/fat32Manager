@@ -18,10 +18,6 @@ package uk.blankaspect.ui.jfx.locationchooser;
 // IMPORTS
 
 
-import java.io.File;
-
-import java.lang.invoke.MethodHandles;
-
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -31,8 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javafx.application.Platform;
 
 import javafx.beans.InvalidationListener;
 
@@ -67,8 +61,19 @@ import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssSelector;
 
 import uk.blankaspect.common.filesystem.PathnameUtils;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.function.IProcedure0;
+
+import uk.blankaspect.common.os.OsUtils;
+
+import uk.blankaspect.common.stack.StackUtils;
+
+import uk.blankaspect.ui.jfx.button.Buttons;
+
+import uk.blankaspect.ui.jfx.container.PaneStyle;
+
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
@@ -91,6 +96,15 @@ public class LocationChooser
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
+	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
+
+	/** The delay (in milliseconds) before making the dialog window visible by restoring its opacity. */
+	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+
 	/** Miscellaneous strings. */
 	private static final	String	SELECT_STR	= "Select";
 	private static final	String	OPEN_STR	= "Open";
@@ -102,11 +116,11 @@ public class LocationChooser
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
-			ColourKey.DIALOG_OUTER_BUTTON_PANE_BORDER,
+			PaneStyle.ColourKey.PANE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.LOCATION_CHOOSER_DIALOG)
-						.desc(StyleClass.OUTER_BUTTON_PANE)
-						.build()
+					.cls(StyleClass.LOCATION_CHOOSER_DIALOG)
+					.desc(StyleClass.OUTER_BUTTON_PANE)
+					.build()
 		)
 	);
 
@@ -114,27 +128,25 @@ public class LocationChooser
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.LOCATION_CHOOSER_DIALOG)
-									.desc(StyleClass.OUTER_BUTTON_PANE)
-									.build())
-						.borders(Side.LEFT)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.LOCATION_CHOOSER_DIALOG)
+						.desc(StyleClass.OUTER_BUTTON_PANE)
+						.build())
+				.borders(Side.LEFT)
+				.build()
 	);
 
 	/** CSS style classes. */
-	public interface StyleClass
+	private interface StyleClass
 	{
 		String	LOCATION_CHOOSER_DIALOG	= StyleConstants.CLASS_PREFIX + "location-chooser-dialog";
 		String	OUTER_BUTTON_PANE		= StyleConstants.CLASS_PREFIX + "outer-button-pane";
 	}
 
-	/** Keys of colours that are used in colour properties. */
-	private interface ColourKey
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
 	{
-		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
-
-		String	DIALOG_OUTER_BUTTON_PANE_BORDER	= PREFIX + "dialog.outerButtonPane.border";
+		String	WINDOW_SHOWN_DELAY	= "blankaspect.ui.jfx.locationChooser.windowShownDelay";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -167,8 +179,9 @@ public class LocationChooser
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(LocationChooser.class, COLOUR_PROPERTIES, RULE_SETS);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(LocationChooser.class, COLOUR_PROPERTIES, RULE_SETS,
+									   PaneStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -186,8 +199,8 @@ public class LocationChooser
 		this.scope = scope;
 		filterIndex = -1;
 		filters = new ArrayList<>();
-		ignoreFilenameCase = (File.separatorChar == '\\');
-		showHiddenEntries = (File.separatorChar == '/');
+		ignoreFilenameCase = OsUtils.isWindows();
+		showHiddenEntries = OsUtils.isUnixLike();
 	}
 
 	//------------------------------------------------------------------
@@ -238,12 +251,38 @@ public class LocationChooser
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 *
+	 * @return the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 */
+
+	private static int getWindowShownDelay()
+	{
+		int delay = OsUtils.isWindows() ? WINDOW_SHOWN_DELAY_WINDOWS : WINDOW_SHOWN_DELAY;
+		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
+		if (value != null)
+		{
+			try
+			{
+				delay = Integer.parseInt(value);
+			}
+			catch (NumberFormatException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return delay;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 
@@ -330,7 +369,7 @@ public class LocationChooser
 	public void initDirectoryWithParent(
 		Path	location)
 	{
-		initDirectory((location == null) ? null : location.toAbsolutePath().getParent());
+		initDirectory((location == null) ? null : PathUtils.absParent(location));
 	}
 
 	//------------------------------------------------------------------
@@ -349,7 +388,7 @@ public class LocationChooser
 		Path	location,
 		Path	defaultDirectory)
 	{
-		initDirectory((location == null) ? null : location.toAbsolutePath().getParent(), defaultDirectory);
+		initDirectory((location == null) ? null : PathUtils.absParent(location), defaultDirectory);
 	}
 
 	//------------------------------------------------------------------
@@ -483,8 +522,16 @@ public class LocationChooser
 
 	public void setDialogStateKey()
 	{
-		StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
-		dialogStateKey = ste.getClassName() + "-" + ste.getMethodName();
+		setDialogStateKey(-1);
+	}
+
+	//------------------------------------------------------------------
+
+	public void setDialogStateKey(
+		int	index)
+	{
+		StackWalker.StackFrame sf = StackUtils.stackFrame(1);
+		dialogStateKey = sf.getClassName() + "." + sf.getMethodName() + ((index < 0) ? "" : "-" + index);
 	}
 
 	//------------------------------------------------------------------
@@ -729,7 +776,7 @@ public class LocationChooser
 			if (dialogTitle != null)
 				setTitle(dialogTitle);
 
-			// Make window invisible until it is displayed
+			// Make window invisible and prevent it from being resized until it is displayed
 			setOpacity(0.0);
 
 			// Set icons to those of owner
@@ -737,9 +784,8 @@ public class LocationChooser
 				getIcons().addAll(stage.getIcons());
 
 			// Create location-chooser pane
-			LocationChooserPane chooserPane =
-					new LocationChooserPane(scope, selectionMode, initialDirectory, initialFilename, this,
-											ignoreFilenameCase, showHiddenEntries, true, filterIndex, filters);
+			LocationChooserPane chooserPane = new LocationChooserPane(scope, selectionMode, ignoreFilenameCase,
+																	  showHiddenEntries, true, filterIndex, filters);
 			chooserPane.getStyleClass().add(StyleClass.LOCATION_CHOOSER_DIALOG);
 			chooserPane.addEventHandler(LocationChooserEvent.LOCATIONS_CHOSEN, event ->
 			{
@@ -755,8 +801,7 @@ public class LocationChooser
 			HBox.setHgrow(chooserPane.getNamePane(), Priority.SOMETIMES);
 
 			// Button: accept
-			Button acceptButton = new Button(acceptText);
-			acceptButton.setMaxWidth(Double.MAX_VALUE);
+			Button acceptButton = Buttons.hExpansive(acceptText);
 			acceptButton.setOnAction(event -> chooserPane.notifyLocationsChosen());
 
 			// Create procedure to update 'accept' button
@@ -771,8 +816,7 @@ public class LocationChooser
 					updateAcceptButton.invoke());
 
 			// Button: cancel
-			Button cancelButton = new Button(CANCEL_STR);
-			cancelButton.setMaxWidth(Double.MAX_VALUE);
+			Button cancelButton = Buttons.hExpansive(CANCEL_STR);
 			cancelButton.setOnAction(event -> requestClose());
 
 			// Create button pane
@@ -783,87 +827,105 @@ public class LocationChooser
 
 			// Get outer button pane from location-chooser pane
 			StackPane outerButtonPane = chooserPane.getBottomRightPane();
-			outerButtonPane.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.DIALOG_OUTER_BUTTON_PANE_BORDER),
+			outerButtonPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER),
 																   Side.LEFT));
 			outerButtonPane.getStyleClass().add(StyleClass.OUTER_BUTTON_PANE);
 			outerButtonPane.getChildren().add(buttonPane);
 
 			// Create scene and set it on this window
 			setScene(new Scene(chooserPane));
+			sizeToScene();
 
 			// Add style sheet to scene
 			StyleManager.INSTANCE.addStyleSheet(getScene());
 
-			// Set state of window and chooser pane to stored value
-			if (dialogStateKey != null)
+			// When window is shown, set its size and location after a delay
+			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 			{
-				addEventHandler(WindowEvent.WINDOW_SHOWING, event ->
+				// Create container for dimensions of window
+				class Dimensions
 				{
-					DialogState state = dialogStates.get(dialogStateKey);
+					double	w;
+					double	h;
+
+					void update()
+					{
+						w = getWidth();
+						h = getHeight();
+					}
+				}
+				Dimensions dims = new Dimensions();
+				dims.update();
+
+				// Set location and size of window after a delay
+				ExecUtils.afterDelay(getWindowShownDelay(), () ->
+				{
+					// Set state of window and chooser pane to stored value
+					DialogState state = (dialogStateKey == null) ? null : dialogStates.get(dialogStateKey);
 					if (state != null)
 					{
+						chooserPane.setSplitPaneDividerPosition(state.splitPaneDividerPosition());
+						chooserPane.setTableViewColumnWidths(state.tableViewColumnWidths());
 						setX(state.x());
 						setY(state.y());
 						setWidth(state.width());
 						setHeight(state.height());
-						chooserPane.setSplitPaneDividerPosition(state.splitPaneDividerPosition());
-						chooserPane.setTableViewColumnWidths(state.tableViewColumnWidths());
+						dims.update();
 					}
-				});
-			}
 
-			// Update location of window after window is displayed, and make window visible
-			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
-			{
-				// Get dimensions of window
-				double width = getWidth();
-				double height = getHeight();
-
-				// If there is no stored dialog state, set location of window relative to owner or in centre of
-				// screen ...
-				Point2D location = null;
-				if ((dialogStateKey == null) || !dialogStates.containsKey(dialogStateKey))
-				{
-					// If there is a locator, locate window relative to it ...
-					if (dialogLocator != null)
-						location = dialogLocator.getLocation(width, height);
-
-					// ... otherwise, if there is no owner that is showing, locate window relative to screen ...
-					else if ((owner == null) || !owner.isShowing())
-						location = SceneUtils.centreInScreen(width, height);
-
-					// ... otherwise, locate window relative to owner
-					else
+					// If there is no stored dialog state, set location of window relative to owner or in centre of
+					// screen ...
+					Point2D location = null;
+					if (state == null)
 					{
-						location = SceneUtils.getRelativeLocation(width, height, owner.getX(), owner.getY(),
-																  owner.getWidth(), owner.getHeight());
+						// If there is a locator, locate window relative to it ...
+						if (dialogLocator != null)
+							location = dialogLocator.getLocation(dims.w, dims.h);
+
+						// ... otherwise, if there is no owner that is showing, locate window relative to screen ...
+						else if ((owner == null) || !owner.isShowing())
+							location = SceneUtils.centreInScreen(dims.w, dims.h);
+
+						// ... otherwise, locate window relative to owner
+						else
+						{
+							location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
+																	  owner.getWidth(), owner.getHeight());
+						}
 					}
-				}
 
-				// ... otherwise, ensure that window rectangle intersects a screen
-				else if (Screen.getScreensForRectangle(getX(), getY(), width, height).isEmpty())
-				{
-					// Remove dialog state from map
-					dialogStates.remove(dialogStateKey);
+					// ... otherwise, ensure that window rectangle intersects a screen
+					else if (Screen.getScreensForRectangle(getX(), getY(), dims.w, dims.h).isEmpty())
+					{
+						// Remove dialog state from map
+						dialogStates.remove(dialogStateKey);
 
-					// Get location of window within primary screen
-					location = SceneUtils.centreInScreen(width, height);
-				}
-
-				// Set location of window
-				if (location != null)
-				{
-					// If top centre of window is not within a screen, centre window within primary screen
-					if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * width, location.getY(), SCREEN_MARGINS))
-						location = SceneUtils.centreInScreen(width, height);
+						// Get location of window within primary screen
+						location = SceneUtils.centreInScreen(dims.w, dims.h);
+					}
 
 					// Set location of window
-					setX(location.getX());
-					setY(location.getY());
-				}
+					if (location != null)
+					{
+						// If top centre of window is not within a screen, centre window within primary screen
+						if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(), SCREEN_MARGINS))
+							location = SceneUtils.centreInScreen(dims.w, dims.h);
 
-				// Make window visible
-				Platform.runLater(() -> setOpacity(1.0));
+						// Set location of window
+						setX(location.getX());
+						setY(location.getY());
+					}
+
+					// Perform remaining initialisation after a delay
+					ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () ->
+					{
+						// Make window visible
+						setOpacity(1.0);
+
+						// Initialise directory tree in chooser pane
+						chooserPane.initDirectoryTree(initialDirectory, initialFilename);
+					});
+				});
 			});
 
 			// Save state of dialog when it is closed

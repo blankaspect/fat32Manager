@@ -30,6 +30,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import uk.blankaspect.ui.jfx.button.Buttons;
+
 //----------------------------------------------------------------------
 
 
@@ -89,7 +91,7 @@ public class PathnamePane
 		HBox.setHgrow(pathnameField, Priority.ALWAYS);
 
 		// Create button
-		button = new Button(ELLIPSIS_STR);
+		button = Buttons.hNoShrink(ELLIPSIS_STR);
 		button.setPadding(BUTTON_PADDING);
 		button.prefHeightProperty().bind(pathnameField.heightProperty());
 

@@ -18,8 +18,6 @@ package uk.blankaspect.ui.jfx.listview;
 // IMPORTS
 
 
-import javafx.scene.Node;
-
 import javafx.scene.control.ListView;
 
 import javafx.scene.control.skin.VirtualFlow;
@@ -73,8 +71,7 @@ public class ListViewUtils
 		ListView<?>	listView)
 	{
 		int numCells = 0;
-		Node node = listView.lookup(StyleSelector.VIRTUAL_FLOW);
-		if (node instanceof VirtualFlow<?> container)
+		if (listView.lookup(StyleSelector.VIRTUAL_FLOW) instanceof VirtualFlow<?> container)
 		{
 			numCells = container.getCellCount();
 			if (numCells > 0)

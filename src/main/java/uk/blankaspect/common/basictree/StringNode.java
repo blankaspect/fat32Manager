@@ -69,6 +69,9 @@ public class StringNode
 		prefix}. */
 	public static final		char	UNICODE_ESCAPE_CHAR	= 'u';
 
+	/** Hexadecimal-digit characters. */
+	public static final		char[]	HEX_DIGITS	= "0123456789ABCDEF".toCharArray();
+
 	/** The type of a string node. */
 	public static final	NodeType	TYPE	= new NodeType(NodeType.ANY, StringNode.class);
 
@@ -83,9 +86,6 @@ public class StringNode
 		{ '\f', 'f' },
 		{ '\r', 'r' }
 	};
-
-	/** Hexadecimal-digit characters. */
-	private static final	char[]	HEX_DIGITS	= "0123456789ABCDEF".toCharArray();
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -153,7 +153,7 @@ public class StringNode
 	 * characters.
 	 *
 	 * @param  ch
-	 *           the character whose string representation of its Unicode value is required.
+	 *           the character whose string representation of its Unicode value is desired.
 	 * @return the representation of the Unicode value of {@code ch} as a string of four hexadecimal-digit characters.
 	 */
 
@@ -177,7 +177,7 @@ public class StringNode
 	 * Returns the Unicode escape sequence of the specified character.
 	 *
 	 * @param  ch
-	 *           the character whose Unicode escape sequence is required.
+	 *           the character whose Unicode escape sequence is desired.
 	 * @return the Unicode escape sequence of {@code ch}.
 	 */
 
@@ -277,6 +277,111 @@ public class StringNode
 	public static String escape(
 		CharSequence	seq)
 	{
+		return escape(seq, true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Transforms the specified character sequence to a string, replacing each occurrence of one of the following
+	 * characters with an escape sequence, and returns the resulting string:
+	 * <ul>
+	 *   <li>a quotation mark ("),</li>
+	 *   <li>a reverse solidus (\),</li>
+	 *   <li>a character in the range U+0000 to U+001F inclusive,</li>
+	 *   <li>a character in the range U+007F to U+009F inclusive,</li>
+	 *   <li>optionally, a character whose code is greater than or equal to U+00A0.</li>
+	 * </ul>
+	 * <p>
+	 * Each occurrence of the following characters in the input sequence is replaced by the corresponding two-character
+	 * escape sequence in the rightmost column of the table:
+	 * </p>
+	 * <table>
+	 *   <caption><i>Two-character escape sequences</i></caption>
+	 *   <tbody>
+	 *     <tr>
+	 *       <td>U+0008</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>backspace</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \b}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+0009</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>tab</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \t}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+000A</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>line feed</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \n}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+000C</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>form feed</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \f}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+000D</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>carriage return</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \r}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+0022</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>quotation mark (")</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \"}</td>
+	 *     </tr>
+	 *     <tr>
+	 *       <td>U+005C</td>
+	 *       <td>&nbsp;</td>
+	 *       <td>reverse solidus (\)</td>
+	 *       <td>&nbsp;&nbsp;&nbsp;</td>
+	 *       <td>{@code \\}</td>
+	 *     </tr>
+	 *   </tbody>
+	 * </table>
+	 * <p>
+	 * In addition, each <i>control character</i> in the input sequence (that is, each character in the range U+0000 to
+	 * U+001F inclusive or in the range U+007F to U+009F inclusive) is replaced by its six-character Unicode escape
+	 * sequence, {@code \}{@code u}<i>{@code nnnn}</i>, where <i>{@code n}</i> is a hexadecimal-digit character.
+	 * </p>
+	 * <p>
+	 * If the {@code printableAsciiOnly} flag is {@code true}, each character in the input sequence whose code is
+	 * greater than or equal to U+00A0 is replaced by its six-character Unicode escape sequence.  In this case, the
+	 * returned string will contain only printable characters from the US-ASCII character encoding (ie, characters in
+	 * the range U+0020 to U+007E inclusive).
+	 * </p>
+	 * <p>
+	 * Characters in the input sequence that are not escaped appear in the output string unchanged.
+	 * </p>
+	 * <p>
+	 * If the {@code printableAsciiOnly} flag is {@code true},
+	 * </p>
+	 *
+	 * @param  seq
+	 *           the character sequence that will be escaped.
+	 * @param  printableAsciiOnly
+	 *           if {@code true}, the characters of {@code seq} will be escaped where necessary so that the returned
+	 *           string contains only printable characters from the US-ASCII character encoding (ie, characters in the
+	 *           range U+0020 to U+007E inclusive).
+	 * @return a string in which each character in {@code seq} that must be escaped or that satisfies any of the
+	 *         conditions described above is replaced by an escape sequence.
+	 */
+
+	public static String escape(
+		CharSequence	seq,
+		boolean			printableAsciiOnly)
+	{
 		// Initialise buffer for output string
 		int inLength = seq.length();
 		StringBuilder buffer = new StringBuilder(inLength + inLength / 2);
@@ -307,7 +412,9 @@ public class StringNode
 			}
 
 			// ... otherwise, if character is not printable ASCII, replace it with its Unicode escape sequence ...
-			else if ((ch < '\u0020') || (ch > '\u007E'))
+			else if ((printableAsciiOnly && ((ch < '\u0020') || (ch > '\u007E')))
+						|| ((ch >= '\u0000') && (ch <= '\u001F'))
+						|| ((ch >= '\u007F') && (ch <= '\u009F')))
 				buffer.append(unicodeEscape(ch));
 
 			// ... otherwise, append the character unchanged
@@ -333,7 +440,29 @@ public class StringNode
 	public static String escapeAndQuote(
 		CharSequence	seq)
 	{
-		return START_CHAR + escape(seq) + END_CHAR;
+		return escapeAndQuote(seq, true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Calls {@link #escape(CharSequence, boolean)} on the specified character sequence, encloses the returned string in
+	 * quotation marks and returns the resulting string.
+	 *
+	 * @param  seq
+	 *           the character sequence that will be escaped and quoted.
+	 * @param  printableAsciiOnly
+	 *           if {@code true}, the characters of {@code seq} will be escaped where necessary so that the returned
+	 *           string contains only printable characters from the US-ASCII character encoding (ie, characters in the
+	 *           range U+0020 to U+007E inclusive).
+	 * @return a string consisting of {@code seq} escaped and enclosed in quotation marks.
+	 */
+
+	public static String escapeAndQuote(
+		CharSequence	seq,
+		boolean			printableAsciiOnly)
+	{
+		return START_CHAR + escape(seq, printableAsciiOnly) + END_CHAR;
 	}
 
 	//------------------------------------------------------------------
@@ -465,7 +594,7 @@ public class StringNode
 	public boolean equals(
 		Object	obj)
 	{
-		return (obj == this) || ((obj instanceof StringNode other) && value.equals(other.value));
+		return (this == obj) || ((obj instanceof StringNode other) && value.equals(other.value));
 	}
 
 	//------------------------------------------------------------------
@@ -507,7 +636,20 @@ public class StringNode
 	@Override
 	public String toString()
 	{
-		return escapeAndQuote(value);
+		return escapeAndQuote(value, true);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * {@inheritDoc}
+	 */
+
+	@Override
+	public String toString(
+		boolean	printableAsciiOnly)
+	{
+		return escapeAndQuote(value, printableAsciiOnly);
 	}
 
 	//------------------------------------------------------------------

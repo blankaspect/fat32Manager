@@ -39,6 +39,7 @@ import uk.blankaspect.common.bytechannel.ChannelUtils;
 import uk.blankaspect.common.exception2.FileException;
 
 import uk.blankaspect.common.filesystem.FilenameUtils;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 //----------------------------------------------------------------------
 
@@ -56,16 +57,32 @@ public class IOUtils
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_OPEN_FILE				= "Failed to open the file.";
-		String	FAILED_TO_CLOSE_FILE			= "Failed to close the file.";
-		String	FAILED_TO_LOCK_FILE				= "Failed to lock the file.";
-		String	FAILED_TO_READ_FILE_ATTRIBUTES	= "Failed to read the attributes of the file.";
-		String	FAILED_TO_CREATE_DIRECTORY		= "Failed to create the directory.";
-		String	FAILED_TO_CREATE_TEMPORARY_FILE	= "Failed to create a temporary file.";
-		String	FAILED_TO_DELETE_FILE			= "Failed to delete the existing file.";
-		String	FAILED_TO_RENAME_FILE			= "Temporary file: %s\n"
-													+ "Failed to rename the temporary file to the specified filename.";
-		String	ERROR_WRITING_FILE				= "An error occurred when writing the file.";
+		String	FAILED_TO_OPEN_FILE =
+				"Failed to open the file.";
+
+		String	FAILED_TO_CLOSE_FILE =
+				"Failed to close the file.";
+
+		String	FAILED_TO_LOCK_FILE =
+				"Failed to lock the file.";
+
+		String	FAILED_TO_READ_FILE_ATTRIBUTES =
+				"Failed to read the attributes of the file.";
+
+		String	FAILED_TO_CREATE_DIRECTORY =
+				"Failed to create the directory.";
+
+		String	FAILED_TO_CREATE_TEMPORARY_FILE =
+				"Failed to create a temporary file.";
+
+		String	FAILED_TO_DELETE_FILE =
+				"Failed to delete the existing file.";
+
+		String	FAILED_TO_RENAME_FILE =
+				"Temporary file: %s\nFailed to rename the temporary file to the specified filename.";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred when writing the file.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -116,7 +133,7 @@ public class IOUtils
 			}
 
 			// Create parent directory
-			Path directory = file.toAbsolutePath().getParent();
+			Path directory = PathUtils.absParent(file);
 			try
 			{
 				Files.createDirectories(directory);
@@ -200,8 +217,7 @@ public class IOUtils
 			}
 			catch (Exception e)
 			{
-				String pathname = tempFile.toAbsolutePath().toString();
-				throw new FileException(ErrorMsg.FAILED_TO_RENAME_FILE, e, file, pathname);
+				throw new FileException(ErrorMsg.FAILED_TO_RENAME_FILE, e, file, PathUtils.abs(tempFile));
 			}
 		}
 		catch (FileException e)

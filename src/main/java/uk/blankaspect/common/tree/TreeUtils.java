@@ -18,17 +18,13 @@ package uk.blankaspect.common.tree;
 // IMPORTS
 
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import uk.blankaspect.common.treetraversal.TreeTraversal;
 
 //----------------------------------------------------------------------
 
@@ -38,6 +34,10 @@ import java.util.function.Predicate;
 
 /**
  * This class contains utility methods that relate to trees whose nodes implement the {@link ITreeNode} interface.
+ * <p>
+ * Calls to methods of this class are forwarded to corresponding methods of the {@link TreeTraversal} class along with
+ * functions that map a node to its parent or to a list of its children, as required.
+ * </p>
  */
 
 public class TreeUtils
@@ -62,7 +62,8 @@ public class TreeUtils
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the root node of the tree to which the specified {@linkplain ITreeNode node} belongs.
+	 * Returns the root node of the tree to which the specified {@linkplain ITreeNode node} belongs.  The root node is
+	 * assumed to be the first ancestor of the specified node whose parent is {@code null}.
 	 *
 	 * @param  <T>
 	 *           the type of the nodes of the tree.
@@ -74,13 +75,7 @@ public class TreeUtils
 	public static <T extends ITreeNode<T>> T getRoot(
 		T	node)
 	{
-		while (true)
-		{
-			T parent = node.getParent();
-			if (parent == null)
-				return node;
-			node = parent;
-		}
+		return TreeTraversal.getRoot(node, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -98,12 +93,7 @@ public class TreeUtils
 	public static <T extends ITreeNode<T>> List<T> getSiblings(
 		T	node)
 	{
-		T parent = node.getParent();
-		return (parent == null) ? Collections.emptyList()
-								: parent.getChildren().stream()
-														.filter(child -> (child != node))
-														.map(child -> child)
-														.toList();
+		return TreeTraversal.getSiblings(node, ITreeNode::getParent, ITreeNode::getChildren);
 	}
 
 	//------------------------------------------------------------------
@@ -156,14 +146,7 @@ public class TreeUtils
 		T		target,
 		boolean	testForIdentity)
 	{
-		T target0 = testForIdentity ? target : target.getParent();
-		while (target0 != null)
-		{
-			if (node == target0)
-				return true;
-			target0 = target0.getParent();
-		}
-		return false;
+		return TreeTraversal.isAncestor(node, target, testForIdentity, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -183,16 +166,7 @@ public class TreeUtils
 	public static <T extends ITreeNode<T>> int getDepth(
 		T	node)
 	{
-		int depth = 0;
-		while (true)
-		{
-			T parent = node.getParent();
-			if (parent == null)
-				break;
-			node = parent;
-			++depth;
-		}
-		return depth;
+		return TreeTraversal.getDepth(node, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -214,28 +188,7 @@ public class TreeUtils
 		T	root,
 		T	node)
 	{
-		int depth = 0;
-		while (depth >= 0)
-		{
-			// Test for root
-			if (node == root)
-				break;
-
-			// Get parent of node
-			T parent = node.getParent();
-
-			// If no parent, invalidate depth ...
-			if (parent == null)
-				depth = -1;
-
-			// ... otherwise, ascend tree
-			else
-			{
-				node = parent;
-				++depth;
-			}
-		}
-		return depth;
+		return TreeTraversal.getDepth(root, node, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -255,18 +208,7 @@ public class TreeUtils
 	public static <T extends ITreeNode<T>> List<T> getPath(
 		T	node)
 	{
-		// Initialise list of nodes
-		LinkedList<T> path = new LinkedList<>();
-
-		// Add target node and its ancestors to list
-		visitAscending(node, node0 ->
-		{
-			path.addFirst(node0);
-			return true;
-		});
-
-		// Return list of nodes
-		return path;
+		return TreeTraversal.getPath(node, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -294,18 +236,7 @@ public class TreeUtils
 		T	root,
 		T	node)
 	{
-		// Initialise list of nodes
-		LinkedList<T> path = new LinkedList<>();
-
-		// Add target node and its ancestors to list
-		visitAscending(node, root, true, node0 ->
-		{
-			path.addFirst(node0);
-			return true;
-		});
-
-		// Return list of nodes
-		return path;
+		return TreeTraversal.getPath(root, node, ITreeNode::getParent);
 	}
 
 	//------------------------------------------------------------------
@@ -324,30 +255,14 @@ public class TreeUtils
 	 * @param  baseIndex
 	 *           the base index that is added to each valid index in the list of indices.
 	 * @return a list of nodes that denotes the path to {@code node} from the root of the tree to which it belongs.
-	 * @see    #getPath(ITreeNode)
+	 * @see    #getIndices(ITreeNode, ITreeNode, boolean, int)
 	 */
 
 	public static <T extends ITreeNode<T>> List<Integer> getIndices(
 		T	node,
 		int	baseIndex)
 	{
-		// Initialise list of indices
-		LinkedList<Integer> indices = new LinkedList<>();
-
-		// Add indices of target node and its ancestors to list
-		visitAscending(node, null, false, node0 ->
-		{
-			T parent = node0.getParent();
-			if (parent != null)
-			{
-				int index = parent.getChildren().indexOf(node0);
-				indices.addFirst((index < 0) ? -1 : baseIndex + index);
-			}
-			return true;
-		});
-
-		// Return list of indices
-		return indices;
+		return TreeTraversal.getIndices(node, baseIndex, ITreeNode::getParent, ITreeNode::getChildren);
 	}
 
 	//------------------------------------------------------------------
@@ -362,9 +277,13 @@ public class TreeUtils
 	 * If the specified root node is not an ancestor of the target node, the list of indices will start at
 	 * </p>
 	 * <ul>
-	 *   <li>the root of the tree to which the target node belongs, if {@code includeRoot} is {@code true}, or</li>
-	 *   <li>the ancestor of the target node that is a child of the root of the tree to which the target node belongs,
-	 *       if {@code includeRoot} is {@code false}.</li>
+	 *   <li>
+	 *     the root of the tree to which the target node belongs, if {@code includeRoot} is {@code true}, or
+	 *   </li>
+	 *   <li>
+	 *     the ancestor of the target node that is a child of the root of the tree to which the target node belongs, if
+	 *     {@code includeRoot} is {@code false}.
+	 *   </li>
 	 * </ul>
 	 *
 	 * @param  <T>
@@ -378,7 +297,7 @@ public class TreeUtils
 	 * @param  baseIndex
 	 *           the base index that is added to each valid index in the list of indices.
 	 * @return a list of nodes that denotes the path from {@code root} to {@code node}.
-	 * @see    #getPath(ITreeNode)
+	 * @see    #getIndices(ITreeNode, int)
 	 */
 
 	public static <T extends ITreeNode<T>> List<Integer> getIndices(
@@ -387,26 +306,14 @@ public class TreeUtils
 		boolean	includeRoot,
 		int		baseIndex)
 	{
-		// Initialise list of indices
-		LinkedList<Integer> indices = new LinkedList<>();
-
-		// Add indices of target node and its ancestors to list
-		visitAscending(node, root, includeRoot, node0 ->
-		{
-			T parent = node0.getParent();
-			int index = (parent == null) ? -1 : parent.getChildren().indexOf(node0);
-			indices.addFirst((index < 0) ? -1 : baseIndex + index);
-			return true;
-		});
-
-		// Return list of indices
-		return indices;
+		return TreeTraversal.getIndices(root, node, includeRoot, baseIndex, ITreeNode::getParent,
+										ITreeNode::getChildren);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Searches a tree of {@link ITreeNode}s, starting from the specified root node, for a node whose path from the root
+	 * Searches a tree of {@link ITreeNode}s, starting from the specified node, for a node whose path from the root
 	 * matches the specified path descriptor.  The first element of the path descriptor is tested against the root node
 	 * with the specified matcher: if there is no match, the search terminates immediately; otherwise, the root node
 	 * becomes the current node, and the search proceeds by descending the tree, testing successive elements against the
@@ -418,7 +325,7 @@ public class TreeUtils
 	 * @param  <U>
 	 *           the type of the elements of the path.
 	 * @param  root
-	 *           the node at the root of a tree of {@code ITreeNode}s at which the search will start.
+	 *           the node at which the search will start.
 	 * @param  path
 	 *           a path descriptor whose elements are tested sequentially against {@code root} and its descendants with
 	 *           {@code matcher}.
@@ -432,23 +339,7 @@ public class TreeUtils
 		Iterable<U>			path,
 		BiPredicate<T, U>	matcher)
 	{
-		T result = null;
-		Iterator<U> it = path.iterator();
-		if (it.hasNext() && matcher.test(root, it.next()))
-		{
-			result = root;
-			while (it.hasNext())
-			{
-				U target = it.next();
-				result = result.getChildren().stream()
-												.filter(child -> matcher.test(child, target))
-												.findFirst()
-												.orElse(null);
-				if (result == null)
-					break;
-			}
-		}
-		return result;
+		return TreeTraversal.findNode(root, ITreeNode::getChildren, path, matcher);
 	}
 
 	//------------------------------------------------------------------
@@ -480,91 +371,7 @@ public class TreeUtils
 		boolean					includeRoot,
 		Function<T, Boolean>	action)
 	{
-		// Initialise stack
-		Deque<T> stack = new ArrayDeque<>();
-
-		// Push root onto stack
-		stack.addFirst(root);
-
-		// Case: preorder
-		if (preorder)
-		{
-			// While there are nodes on stack, visit them
-			while (!stack.isEmpty())
-			{
-				// Pop node from stack
-				T node = stack.removeFirst();
-
-				// Visit node
-				if (((node != root) || includeRoot) && !action.apply(node))
-					return false;
-
-				// Push children onto stack
-				List<T> children = node.getChildren();
-				for (int i = children.size() - 1; i >= 0; i--)
-					stack.addFirst(children.get(i));
-			}
-		}
-
-		// Case: postorder
-		else
-		{
-			// Initialise list of pending nodes
-			List<T> pendingNodes = new ArrayList<>();
-
-			// While there are nodes on stack, visit them
-			while (!stack.isEmpty())
-			{
-				// Pop node from stack
-				T node = stack.removeFirst();
-
-				// Assume visit is not pending
-				boolean pending = false;
-
-				// If node is not excluded, visit it if visit is pending
-				if ((node != root) || includeRoot)
-				{
-					// Test whether visit is pending
-					for (int i = pendingNodes.size() - 1; i >= 0; i--)
-					{
-						if (pendingNodes.get(i) == node)
-						{
-							pending = true;
-							pendingNodes.remove(i);
-							break;
-						}
-					}
-
-					// If visit is pending, visit node ...
-					if (pending)
-					{
-						if (!action.apply(node))
-							return false;
-					}
-
-					// ... otherwise, push node back onto stack
-					else
-					{
-						// Add node to pending nodes
-						pendingNodes.add(node);
-
-						// Push node onto stack
-						stack.addFirst(node);
-					}
-				}
-
-				// If visit was not pending, push children onto stack
-				if (!pending)
-				{
-					List<T> children = node.getChildren();
-					for (int i = children.size() - 1; i >= 0; i--)
-						stack.addFirst(children.get(i));
-				}
-			}
-		}
-
-		// Indicate traversal completed
-		return true;
+		return TreeTraversal.visitDepthFirst(root, preorder, includeRoot, ITreeNode::getChildren, action);
 	}
 
 	//------------------------------------------------------------------
@@ -592,29 +399,7 @@ public class TreeUtils
 		boolean					includeRoot,
 		Function<T, Boolean>	action)
 	{
-		// Initialise queue
-		Deque<T> queue = new ArrayDeque<>(32);
-
-		// Add root to queue
-		queue.addLast(root);
-
-		// While there are nodes to visit ...
-		while (!queue.isEmpty())
-		{
-			// Get next node from queue
-			T node = queue.removeFirst();
-
-			// Visit node
-			if (((node != root) || includeRoot) && !action.apply(node))
-				return false;
-
-			// Add children of node to queue
-			for (T child : node.getChildren())
-				queue.addLast(child);
-		}
-
-		// Indicate traversal completed
-		return true;
+		return TreeTraversal.visitBreadthFirst(root, includeRoot, ITreeNode::getChildren, action);
 	}
 
 	//------------------------------------------------------------------
@@ -669,26 +454,7 @@ public class TreeUtils
 		boolean					includeEnd,
 		Function<T, Boolean>	action)
 	{
-		// Initialise current node
-		T node = startNode;
-
-		// Ascend tree
-		while (node != null)
-		{
-			// Visit node
-			if ((includeEnd || (node != endNode)) && !action.apply(node))
-				return false;
-
-			// Test for end of ascent
-			if (node == endNode)
-				break;
-
-			// Ascend tree
-			node = node.getParent();
-		}
-
-		// Indicate ascent completed
-		return true;
+		return TreeTraversal.visitAscending(startNode, endNode, includeEnd, ITreeNode::getParent, action);
 	}
 
 	//------------------------------------------------------------------
@@ -742,100 +508,7 @@ public class TreeUtils
 		boolean			includeRoot,
 		Predicate<T>	test)
 	{
-		// Initialise result
-		T result = null;
-
-		// Initialise stack
-		Deque<T> stack = new ArrayDeque<>();
-
-		// Push root onto stack
-		stack.addFirst(root);
-
-		// Case: preorder
-		if (preorder)
-		{
-			// While there are nodes on stack, visit them
-			while (!stack.isEmpty())
-			{
-				// Pop node from stack
-				T node = stack.removeFirst();
-
-				// Test node
-				if (((node != root) || includeRoot) && test.test(node))
-				{
-					result = node;
-					break;
-				}
-
-				// Push children onto stack
-				List<T> children = node.getChildren();
-				for (int i = children.size() - 1; i >= 0; i--)
-					stack.addFirst(children.get(i));
-			}
-		}
-
-		// Case: postorder
-		else
-		{
-			// Initialise list of pending nodes
-			List<T> pendingNodes = new ArrayList<>();
-
-			// While there are nodes on stack, visit them
-			while (!stack.isEmpty())
-			{
-				// Pop node from stack
-				T node = stack.removeFirst();
-
-				// Assume visit is not pending
-				boolean pending = false;
-
-				// If node is not excluded, visit it if visit is pending
-				if ((node != root) || includeRoot)
-				{
-					// Test whether visit is pending
-					for (int i = pendingNodes.size() - 1; i >= 0; i--)
-					{
-						if (pendingNodes.get(i) == node)
-						{
-							pending = true;
-							pendingNodes.remove(i);
-							break;
-						}
-					}
-
-					// If visit is pending, test node ...
-					if (pending)
-					{
-						if (test.test(node))
-						{
-							result = node;
-							break;
-						}
-					}
-
-					// ... otherwise, push node back onto stack
-					else
-					{
-						// Add node to pending nodes
-						pendingNodes.add(node);
-
-						// Push node onto stack
-						stack.addFirst(node);
-					}
-				}
-
-				// If visit was not pending, push children onto stack
-				if (!pending)
-				{
-					List<T> children = node.getChildren();
-					for (int i = children.size() - 1; i >= 0; i--)
-						stack.addFirst(children.get(i));
-				}
-			}
-		}
-
-		// Return result
-		return result;
+		return TreeTraversal.searchDepthFirst(root, preorder, includeRoot, ITreeNode::getChildren, test);
 	}
 
 	//------------------------------------------------------------------
@@ -863,35 +536,7 @@ public class TreeUtils
 		boolean			includeRoot,
 		Predicate<T>	test)
 	{
-		// Initialise result
-		T result = null;
-
-		// Initialise queue
-		Deque<T> queue = new ArrayDeque<>(32);
-
-		// Add root to queue
-		queue.addLast(root);
-
-		// While there are nodes to visit ...
-		while (!queue.isEmpty())
-		{
-			// Get next node from queue
-			T node = queue.removeFirst();
-
-			// Test node
-			if (((node != root) || includeRoot) && test.test(node))
-			{
-				result = node;
-				break;
-			}
-
-			// Add children of node to queue
-			for (T child : node.getChildren())
-				queue.addLast(child);
-		}
-
-		// Return result
-		return result;
+		return TreeTraversal.searchBreadthFirst(root, includeRoot, ITreeNode::getChildren, test);
 	}
 
 	//------------------------------------------------------------------
@@ -948,30 +593,7 @@ public class TreeUtils
 		boolean			includeEnd,
 		Predicate<T>	test)
 	{
-		// Initialise result
-		T result = null;
-
-		// Perform search
-		T node = startNode;
-		while (node != null)
-		{
-			// Test node
-			if (((node != endNode) || includeEnd) && test.test(node))
-			{
-				result = node;
-				break;
-			}
-
-			// Test for end of ascent
-			if (node == endNode)
-				break;
-
-			// Ascend the tree
-			node = node.getParent();
-		}
-
-		// Return result
-		return result;
+		return TreeTraversal.searchAscending(startNode, endNode, includeEnd, ITreeNode::getParent, test);
 	}
 
 	//------------------------------------------------------------------
@@ -996,28 +618,8 @@ public class TreeUtils
 		int					indentIncrement,
 		Function<T, String>	converter)
 	{
-		StringBuilder buffer = new StringBuilder(256);
-		visitDepthFirst(root, true, true, node ->
-		{
-			// Get depth of node below root
-			int depth = getDepth(root, node);
-
-			// Append linefeed if node is not root
-			if (depth > 0)
-				buffer.append('\n');
-
-			// Append indent
-			int indent = depth * indentIncrement;
-			for (int i = 0; i < indent; i++)
-				buffer.append(' ');
-
-			// Append string representation of node
-			buffer.append(converter.apply(node));
-
-			// Continue to traverse tree
-			return true;
-		});
-		return buffer.toString();
+		return TreeTraversal.treeToString(root, indentIncrement, ITreeNode::getParent, ITreeNode::getChildren,
+										  converter);
 	}
 
 	//------------------------------------------------------------------

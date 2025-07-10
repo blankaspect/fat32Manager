@@ -19,7 +19,6 @@ package uk.blankaspect.ui.jfx.style;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -124,7 +123,7 @@ public class ColourProperty
 			throw new IllegalArgumentException("No selectors");
 
 		// Create property and return it
-		return new ColourProperty(fxProperty, colourKey, null, Arrays.asList(selectors));
+		return new ColourProperty(fxProperty, colourKey, null, List.of(selectors));
 	}
 
 	//------------------------------------------------------------------
@@ -166,7 +165,7 @@ public class ColourProperty
 			throw new IllegalArgumentException("No selectors");
 
 		// Create property and return it
-		return new ColourProperty(fxProperty, null, colour, Arrays.asList(selectors));
+		return new ColourProperty(fxProperty, null, colour, List.of(selectors));
 	}
 
 	//------------------------------------------------------------------
@@ -195,8 +194,8 @@ public class ColourProperty
 	public int hashCode()
 	{
 		int code = fxProperty.hashCode();
-		code = code * 31 + Objects.hashCode(colourKey);
-		code = code * 31 + Objects.hashCode(colour);
+		code = 31 * code + Objects.hashCode(colourKey);
+		code = 31 * code + Objects.hashCode(colour);
 		code = selectors.hashCode();
 		return code;
 	}
@@ -245,7 +244,8 @@ public class ColourProperty
 								: colour;
 		return (colour0 == null)
 					? null
-					: CssRuleSet.of(selectors, StrKVPair.of(fxProperty.getName(), ColourUtils.colourToCssRgbaString(colour0)));
+					: CssRuleSet.of(selectors,
+									StrKVPair.of(fxProperty.getName(), ColourUtils.colourToCssRgbaString(colour0)));
 	}
 
 	//------------------------------------------------------------------

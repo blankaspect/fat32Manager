@@ -39,8 +39,12 @@ import java.util.stream.Collectors;
 
 import uk.blankaspect.common.bitarray.BitUtils;
 
+import uk.blankaspect.common.logging.Logger;
+
 import uk.blankaspect.common.number.NumberCodec;
 import uk.blankaspect.common.number.NumberUtils;
+
+import uk.blankaspect.common.stack.StackUtils;
 
 import uk.blankaspect.common.string.StringUtils;
 
@@ -80,7 +84,7 @@ public class Fat32Directory
 
 	public static final		DateTimeFormatter	CREATION_TIME_FORMATTER	=
 			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SS");
-	public static final		DateTimeFormatter	MODIFICATION_TIME_FORMATTER	=
+	public static final		DateTimeFormatter	LAST_MODIFICATION_TIME_FORMATTER	=
 			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
 	public static final		DateTimeFormatter	ACCESS_DATE_FORMATTER	=
 			DateTimeFormatter.ofPattern("uuuu-MM-dd");
@@ -111,11 +115,11 @@ public class Fat32Directory
 	private static final	int		ACCESS_DATE_OFFSET	= 0x12;
 	private static final	int		ACCESS_DATE_LENGTH	= 2;
 
-	private static final	int		MODIFICATION_TIME_OFFSET	= 0x16;
-	private static final	int		MODIFICATION_TIME_LENGTH	= 2;
+	private static final	int		LAST_MODIFICATION_TIME_OFFSET	= 0x16;
+	private static final	int		LAST_MODIFICATION_TIME_LENGTH	= 2;
 
-	private static final	int		MODIFICATION_DATE_OFFSET	= 0x18;
-	private static final	int		MODIFICATION_DATE_LENGTH	= 2;
+	private static final	int		LAST_MODIFICATION_DATE_OFFSET	= 0x18;
+	private static final	int		LAST_MODIFICATION_DATE_LENGTH	= 2;
 
 	private static final	int		CLUSTER_INDEX_LOW_OFFSET	= 0x1A;
 	private static final	int		CLUSTER_INDEX_LOW_LENGTH	= 2;
@@ -163,41 +167,81 @@ public class Fat32Directory
 	private static final	int		DAY_FIELD_SHIFT		= 0;
 	private static final	int		DAY_FIELD_LENGTH	= 5;
 
+	private static final	int		MIN_DAY	= 1;
+	private static final	int		MAX_DAY	= 31;
+
+	private static final	int		MIN_MAX_DAY	= 28;
+
 	private static final	int		MONTH_FIELD_SHIFT	= DAY_FIELD_SHIFT + DAY_FIELD_LENGTH;
 	private static final	int		MONTH_FIELD_LENGTH	= 4;
+
+	private static final	int		MIN_MONTH	= 1;
+	private static final	int		MAX_MONTH	= 12;
 
 	private static final	int		YEAR_FIELD_SHIFT	= MONTH_FIELD_SHIFT + MONTH_FIELD_LENGTH;
 	private static final	int		YEAR_FIELD_LENGTH	= 7;
 
 	private static final	int		BASE_YEAR	= 1980;
 
+	private static final	int		MIN_CENTISECOND	= 0;
+	private static final	int		MAX_CENTISECOND	= 199;
+
 	private static final	int		SECOND_FIELD_SHIFT	= 0;
 	private static final	int		SECOND_FIELD_LENGTH	= 5;
+
+	private static final	int		MIN_SECOND	= 0;
+	private static final	int		MAX_SECOND	= 58;
 
 	private static final	int		MINUTE_FIELD_SHIFT	= SECOND_FIELD_SHIFT + SECOND_FIELD_LENGTH;
 	private static final	int		MINUTE_FIELD_LENGTH	= 6;
 
+	private static final	int		MIN_MINUTE	= 0;
+	private static final	int		MAX_MINUTE	= 59;
+
 	private static final	int		HOUR_FIELD_SHIFT	= MINUTE_FIELD_SHIFT + MINUTE_FIELD_LENGTH;
 	private static final	int		HOUR_FIELD_LENGTH	= 5;
 
-	private static final	String	ENTRY_KIND_STR			= "Entry kind";
-	private static final	String	PATHNAME_STR			= "Pathname";
-	private static final	String	CREATION_TIME_STR		= "creation date or time";
-	private static final	String	MODIFICATION_TIME_STR	= "modification date or time";
-	private static final	String	ACCESS_DATE_STR			= "access date";
+	private static final	int		MIN_HOUR	= 0;
+	private static final	int		MAX_HOUR	= 23;
+
+	private static final	String	ENTRY_KIND_STR					= "Entry kind";
+	private static final	String	PATHNAME_STR					= "Pathname";
+	private static final	String	CREATION_DATE_TIME_STR			= "creation date or time";
+	private static final	String	LAST_MODIFICATION_DATE_TIME_STR	= "last modification date or time";
+	private static final	String	ACCESS_DATE_STR					= "access date";
+	private static final	String	ERRORS_READING_CHILDREN_STR		= "errors reading children of";
 
 	private interface ErrorMsg
 	{
-		String	INVALID_DIRECTORY_ENTRY			= "Directory: %s\nThe directory entry at index %d is not valid.";
-		String	INVALID_DIRECTORY_ENTRY_FIELD	= "The %s of the directory entry is not valid.";
-		String	LFN_INDEX_OUT_OF_SEQUENCE		= "The long-filename index is out of sequence.";
-		String	LFN_INDEX_OUT_OF_BOUNDS			= "The long-filename index is out of bounds.";
-		String	FIRST_ENTRY_OF_LFN_EXPECTED		= "The first entry of a long filename was expected.";
-		String	UNRECOGNISED_LFN_TYPE			= "The long-filename entry type is not recognised.";
-		String	INCORRECT_SFN_CHECKSUM			= "The checksum of the short filename is incorrect.";
-		String	CLUSTER_INDEX_OUT_OF_BOUNDS		= "The cluster index %d is out of bounds.";
-		String	CLUSTER_INDEX_ZERO_EXPECTED		= "Cluster index %d: an index of 0 was expected.";
-		String	INCONSISTENT_FILE_LENGTH		= "File: %s\nThe file length is inconsistent with the number of clusters.";
+		String	INVALID_DIRECTORY_ENTRY =
+				"Directory: %s\nThe directory entry at index %d is not valid.";
+
+		String	INVALID_DIRECTORY_ENTRY_FIELD =
+				"The %s of the directory entry is not valid: %s";
+
+		String	LFN_INDEX_OUT_OF_SEQUENCE =
+				"The long-filename index is out of sequence.";
+
+		String	LFN_INDEX_OUT_OF_BOUNDS =
+				"The long-filename index is out of bounds.";
+
+		String	FIRST_ENTRY_OF_LFN_EXPECTED =
+				"The first entry of a long filename was expected.";
+
+		String	UNRECOGNISED_LFN_TYPE =
+				"The long-filename entry type is not recognised.";
+
+		String	INCORRECT_SFN_CHECKSUM =
+				"The checksum of the short filename is incorrect.";
+
+		String	CLUSTER_INDEX_OUT_OF_BOUNDS =
+				"The cluster index %d is out of bounds.";
+
+		String	CLUSTER_INDEX_ZERO_EXPECTED =
+				"Cluster index %d: an index of 0 was expected.";
+
+		String	INCONSISTENT_FILE_LENGTH =
+				"File: %s\nThe file length is inconsistent with the number of clusters.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -272,7 +316,7 @@ public class Fat32Directory
 
 	//------------------------------------------------------------------
 
-	public static void setModificationTime(
+	public static void setLastModificationTime(
 		LocalDateTime	dateTime,
 		byte[]			buffer,
 		int				offset)
@@ -282,14 +326,14 @@ public class Fat32Directory
 		date = BitUtils.setBitField(date, dateTime.getDayOfMonth(), DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
 		date = BitUtils.setBitField(date, dateTime.getMonthValue(), MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
 		date = BitUtils.setBitField(date, dateTime.getYear() - BASE_YEAR, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
-		NumberCodec.uIntToBytesLE(date, buffer, offset + MODIFICATION_DATE_OFFSET, MODIFICATION_DATE_LENGTH);
+		NumberCodec.uIntToBytesLE(date, buffer, offset + LAST_MODIFICATION_DATE_OFFSET, LAST_MODIFICATION_DATE_LENGTH);
 
 		// Set time
 		int time = 0;
 		time = BitUtils.setBitField(time, dateTime.getSecond() / 2, SECOND_FIELD_SHIFT, SECOND_FIELD_LENGTH);
 		time = BitUtils.setBitField(time, dateTime.getMinute(), MINUTE_FIELD_SHIFT, MINUTE_FIELD_LENGTH);
 		time = BitUtils.setBitField(time, dateTime.getHour(), HOUR_FIELD_SHIFT, HOUR_FIELD_LENGTH);
-		NumberCodec.uIntToBytesLE(time, buffer, offset + MODIFICATION_TIME_OFFSET, MODIFICATION_TIME_LENGTH);
+		NumberCodec.uIntToBytesLE(time, buffer, offset + LAST_MODIFICATION_TIME_OFFSET, LAST_MODIFICATION_TIME_LENGTH);
 	}
 
 	//------------------------------------------------------------------
@@ -326,95 +370,35 @@ public class Fat32Directory
 
 	//------------------------------------------------------------------
 
-	private static void decodeCreationDateTime(
-		byte[]			buffer,
-		int				offset,
-		Entry			entry,
-		List<String>	messages)
+	private static String dateToString(
+		int	year,
+		int	month,
+		int	day)
 	{
-		// Decode date
-		int date = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_DATE_OFFSET, CREATION_DATE_LENGTH);
-		int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
-		int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
-		int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
-
-		// Decode time
-		int cs = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_TIME_CS_OFFSET, CREATION_TIME_CS_LENGTH);
-		int time = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_TIME_OFFSET, CREATION_TIME_LENGTH);
-		int seconds = BitUtils.getBitField(time, SECOND_FIELD_SHIFT, SECOND_FIELD_LENGTH) * 2 + cs / 100;
-		int minutes = BitUtils.getBitField(time, MINUTE_FIELD_SHIFT, MINUTE_FIELD_LENGTH);
-		int hours = BitUtils.getBitField(time, HOUR_FIELD_SHIFT, HOUR_FIELD_LENGTH);
-
-		// Set date and time on entry
-		try
-		{
-			entry.creationTime = LocalDateTime.of(year, month, day, hours, minutes, seconds, (cs % 100) * 10_000_000);
-		}
-		catch (DateTimeException e)
-		{
-			addEntryMessage(entry, String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, CREATION_TIME_STR), messages);
-		}
+		return String.format("%04d-%02d-%02d", year, month, day);
 	}
 
 	//------------------------------------------------------------------
 
-	private static void decodeModificationDateTime(
-		byte[]			buffer,
-		int				offset,
-		Entry			entry,
-		List<String>	messages)
+	private static String timeToString(
+		int	hour,
+		int	minute,
+		int	second)
 	{
-		// Decode date
-		int date = NumberCodec.bytesToUIntLE(buffer, offset + MODIFICATION_DATE_OFFSET, MODIFICATION_DATE_LENGTH);
-		int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
-		int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
-		int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
-
-		// Decode time
-		int time = NumberCodec.bytesToUIntLE(buffer, offset + MODIFICATION_TIME_OFFSET, MODIFICATION_TIME_LENGTH);
-		int seconds = BitUtils.getBitField(time, SECOND_FIELD_SHIFT, SECOND_FIELD_LENGTH) * 2;
-		int minutes = BitUtils.getBitField(time, MINUTE_FIELD_SHIFT, MINUTE_FIELD_LENGTH);
-		int hours = BitUtils.getBitField(time, HOUR_FIELD_SHIFT, HOUR_FIELD_LENGTH);
-
-		// Set date and time on entry
-		try
-		{
-			entry.modificationTime = LocalDateTime.of(year, month, day, hours, minutes, seconds);
-		}
-		catch (DateTimeException e)
-		{
-			addEntryMessage(entry, String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, MODIFICATION_TIME_STR),
-							messages);
-		}
+		return String.format("%02d:%02d:%02d", hour, minute, second);
 	}
 
 	//------------------------------------------------------------------
 
-	private static void decodeAccessDate(
-		byte[]			buffer,
-		int				offset,
-		Entry			entry,
-		List<String>	messages)
+	private static String dateTimeToString(
+		int	year,
+		int	month,
+		int	day,
+		int	hour,
+		int	minute,
+		int	second)
 	{
-		// Decode date
-		int date = NumberCodec.bytesToUIntLE(buffer, offset + ACCESS_DATE_OFFSET, ACCESS_DATE_LENGTH);
-		if (date != 0)
-		{
-			int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
-			int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
-			int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
-
-			// Set date on entry
-			try
-			{
-				entry.accessDate = LocalDate.of(year, month, day);
-			}
-			catch (DateTimeException e)
-			{
-				addEntryMessage(entry, String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, ACCESS_DATE_STR),
-								messages);
-			}
-		}
+		return dateToString(year, month, day) + " " + timeToString(hour, minute, second);
 	}
 
 	//------------------------------------------------------------------
@@ -472,7 +456,7 @@ public class Fat32Directory
 	 *
 	 * @return a list of the subdirectories of this directory.
 	 * @throws WrappedVolumeException
-	 *           if an error occurred when reading the children of this directory.
+	 *           if an error occurs when reading the children of this directory.
 	 */
 
 	@Override
@@ -481,13 +465,24 @@ public class Fat32Directory
 		// If list of children is uninitialised, read children
 		if (children == null)
 		{
+			List<String> messages = new ArrayList<>();
 			try
 			{
-				readChildren(null);
+				readChildren(messages);
 			}
 			catch (VolumeException e)
 			{
 				throw new WrappedVolumeException(e);
+			}
+			finally
+			{
+				if (!messages.isEmpty())
+				{
+					StackWalker.StackFrame sf = StackUtils.stackFrame();
+					String prefix = StringUtils.getSuffixAfterLast(sf.getClassName(), '.') + "." + sf.getMethodName()
+										+ " : " + ERRORS_READING_CHILDREN_STR + " " + getPathname() + "\n----\n";
+					Logger.INSTANCE.error(messages.stream().collect(Collectors.joining("\n----\n", prefix, "")));
+				}
 			}
 		}
 
@@ -909,7 +904,7 @@ public class Fat32Directory
 
 	public void updateVolumeLabel(
 		String			volumeLabel,
-		LocalDateTime	modTime)
+		LocalDateTime	lastModificationTime)
 		throws VolumeException
 	{
 		int offset = 0;
@@ -925,9 +920,9 @@ public class Fat32Directory
 				entry.shortName = volumeLabel;
 				entry.name = volumeLabel;
 
-				// Update modification time
-				if (modTime != null)
-					entry.modificationTime = modTime;
+				// Update last modification time
+				if (lastModificationTime != null)
+					entry.lastModificationTime = lastModificationTime;
 
 				// Read directory clusters
 				byte[] data = readData();
@@ -935,9 +930,9 @@ public class Fat32Directory
 				// Update volume label
 				Utils.stringToBytes(volumeLabel, data, offset + SHORT_NAME_OFFSET, VOLUME_LABEL_LENGTH);
 
-				// Update modification time
-				if (modTime != null)
-					setModificationTime(modTime, data, offset);
+				// Update last modification time
+				if (lastModificationTime != null)
+					setLastModificationTime(lastModificationTime, data, offset);
 
 				// Write directory clusters
 				writeData(data, 0);
@@ -1057,19 +1052,23 @@ public class Fat32Directory
 																	 NAME_CASE_LENGTH);
 							entry.name = ((nameCase & LFN_STEM_CASE_MASK) == 0) ? snStem : snStem.toLowerCase();
 							if (!snExtension.isEmpty())
+							{
 								entry.name += separator + (((nameCase & LFN_EXTENSION_CASE_MASK) == 0)
-																			? snExtension
-																			: snExtension.toLowerCase());
+																   ? snExtension
+																   : snExtension.toLowerCase());
+							}
 						}
 
 						// Get file length and set it on entry
 						if (entry.isFile())
+						{
 							entry.fileLength = NumberCodec.bytesToUIntLE(buffer, offset + FILE_LENGTH_OFFSET,
 																		 FILE_LENGTH_LENGTH);
+						}
 
 						// Case: entry is volume label
 						if (entry.isVolumeLabel())
-							decodeModificationDateTime(buffer, offset, entry, messages);
+							decodeLastModificationDateTime(buffer, offset, entry, messages);
 
 						// Case: entry is not volume label
 						else
@@ -1091,8 +1090,8 @@ public class Fat32Directory
 							// Decode creation date and time
 							decodeCreationDateTime(buffer, offset, entry, messages);
 
-							// Decode modification date and time
-							decodeModificationDateTime(buffer, offset, entry, messages);
+							// Decode last modification date and time
+							decodeLastModificationDateTime(buffer, offset, entry, messages);
 
 							// Decode access date
 							decodeAccessDate(buffer, offset, entry, messages);
@@ -1280,7 +1279,7 @@ public class Fat32Directory
 
 						// Case: entry is volume label
 						if (entry.isVolumeLabel())
-							decodeModificationDateTime(buffer, offset, entry, messages);
+							decodeLastModificationDateTime(buffer, offset, entry, messages);
 
 						// Case: entry is not volume label
 						else
@@ -1312,8 +1311,8 @@ public class Fat32Directory
 							// Decode creation date and time
 							decodeCreationDateTime(buffer, offset, entry, messages);
 
-							// Decode modification date and time
-							decodeModificationDateTime(buffer, offset, entry, messages);
+							// Decode last modification date and time
+							decodeLastModificationDateTime(buffer, offset, entry, messages);
 
 							// Decode access date
 							decodeAccessDate(buffer, offset, entry, messages);
@@ -1364,6 +1363,222 @@ public class Fat32Directory
 
 		// Set cluster index on entry
 		entry.clusterIndex = clusterIndex;
+	}
+
+	//------------------------------------------------------------------
+
+	private void decodeCreationDateTime(
+		byte[]			buffer,
+		int				offset,
+		Entry			entry,
+		List<String>	messages)
+	{
+		// Decode date components
+		int date = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_DATE_OFFSET, CREATION_DATE_LENGTH);
+		int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
+		int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
+		int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
+
+		// Decode time components
+		int centisecond = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_TIME_CS_OFFSET, CREATION_TIME_CS_LENGTH);
+		int time = NumberCodec.bytesToUIntLE(buffer, offset + CREATION_TIME_OFFSET, CREATION_TIME_LENGTH);
+		int second = BitUtils.getBitField(time, SECOND_FIELD_SHIFT, SECOND_FIELD_LENGTH) * 2;
+		int minute = BitUtils.getBitField(time, MINUTE_FIELD_SHIFT, MINUTE_FIELD_LENGTH);
+		int hour = BitUtils.getBitField(time, HOUR_FIELD_SHIFT, HOUR_FIELD_LENGTH);
+
+		// Set date and time on entry
+		try
+		{
+			entry.creationTime = getDateTime(year, month, day, hour, minute, second, centisecond);
+		}
+		catch (DateTimeException e)
+		{
+			addEntryMessage(entry,
+							String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, CREATION_DATE_TIME_STR,
+										  dateTimeToString(year, month, day, hour, minute, second)),
+							messages);
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private void decodeLastModificationDateTime(
+		byte[]			buffer,
+		int				offset,
+		Entry			entry,
+		List<String>	messages)
+	{
+		// Decode date components
+		int date = NumberCodec.bytesToUIntLE(buffer, offset + LAST_MODIFICATION_DATE_OFFSET,
+											 LAST_MODIFICATION_DATE_LENGTH);
+		int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
+		int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
+		int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
+
+		// Decode time components
+		int time = NumberCodec.bytesToUIntLE(buffer, offset + LAST_MODIFICATION_TIME_OFFSET,
+											 LAST_MODIFICATION_TIME_LENGTH);
+		int second = BitUtils.getBitField(time, SECOND_FIELD_SHIFT, SECOND_FIELD_LENGTH) * 2;
+		int minute = BitUtils.getBitField(time, MINUTE_FIELD_SHIFT, MINUTE_FIELD_LENGTH);
+		int hour = BitUtils.getBitField(time, HOUR_FIELD_SHIFT, HOUR_FIELD_LENGTH);
+
+		// Set date and time on entry
+		try
+		{
+			entry.lastModificationTime = getDateTime(year, month, day, hour, minute, second, 0);
+		}
+		catch (DateTimeException e)
+		{
+			addEntryMessage(entry,
+							String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, LAST_MODIFICATION_DATE_TIME_STR,
+										  dateTimeToString(year, month, day, hour, minute, second)),
+							messages);
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private void decodeAccessDate(
+		byte[]			buffer,
+		int				offset,
+		Entry			entry,
+		List<String>	messages)
+	{
+		// Decode date
+		int date = NumberCodec.bytesToUIntLE(buffer, offset + ACCESS_DATE_OFFSET, ACCESS_DATE_LENGTH);
+		if (date != 0)
+		{
+			// Decode date components
+			int day = BitUtils.getBitField(date, DAY_FIELD_SHIFT, DAY_FIELD_LENGTH);
+			int month = BitUtils.getBitField(date, MONTH_FIELD_SHIFT, MONTH_FIELD_LENGTH);
+			int year = BASE_YEAR + BitUtils.getBitField(date, YEAR_FIELD_SHIFT, YEAR_FIELD_LENGTH);
+
+			// Set date on entry
+			try
+			{
+				entry.accessDate = getDate(year, month, day);
+			}
+			catch (DateTimeException e)
+			{
+				addEntryMessage(entry,
+								String.format(ErrorMsg.INVALID_DIRECTORY_ENTRY_FIELD, ACCESS_DATE_STR,
+											  dateToString(year, month, day)),
+								messages);
+			}
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private LocalDate getDate(
+		int	year,
+		int	month,
+		int	day)
+	{
+		// Case: convert date unchanged
+		if (!volume.isFixDirEntryDatesTimes())
+			return LocalDate.of(year, month, day);
+
+		// Clamp month
+		if (month < MIN_MONTH)
+			month = MIN_MONTH;
+		else if (month > MAX_MONTH)
+			month = MAX_MONTH;
+
+		// Clamp day
+		if (day < MIN_DAY)
+			day = MIN_DAY;
+		else if (day > MAX_DAY)
+			day = MAX_DAY;
+
+		// Repeatedly try to convert date; decrement day after each failure
+		while (true)
+		{
+			try
+			{
+				return LocalDate.of(year, month, day);
+			}
+			catch (DateTimeException e)
+			{
+				if (--day < MIN_MAX_DAY)
+					throw e;
+			}
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private LocalDateTime getDateTime(
+		int	year,
+		int	month,
+		int	day,
+		int	hour,
+		int	minute,
+		int	second,
+		int centisecond)
+	{
+		// Case: convert date and time unchanged
+		if (!volume.isFixDirEntryDatesTimes())
+		{
+			second += centisecond / 100;
+			return LocalDateTime.of(year, month, day, hour, minute, second, (centisecond % 100) * 10_000_000);
+		}
+
+		// Clamp month
+		if (month < MIN_MONTH)
+			month = MIN_MONTH;
+		else if (month > MAX_MONTH)
+			month = MAX_MONTH;
+
+		// Clamp day
+		if (day < MIN_DAY)
+			day = MIN_DAY;
+		else if (day > MAX_DAY)
+			day = MAX_DAY;
+
+		// Clamp hour
+		if (hour < MIN_HOUR)
+			hour = MIN_HOUR;
+		else if (hour > MAX_HOUR)
+			hour = MAX_HOUR;
+
+		// Clamp minute
+		if (minute < MIN_MINUTE)
+			minute = MIN_MINUTE;
+		else if (minute > MAX_MINUTE)
+			minute = MAX_MINUTE;
+
+		// Clamp second
+		if (second < MIN_SECOND)
+			second = MIN_SECOND;
+		else if (second > MAX_SECOND)
+			second = MAX_SECOND;
+
+		// Clamp centisecond
+		if (centisecond < MIN_CENTISECOND)
+			centisecond = MIN_CENTISECOND;
+		else if (centisecond > MAX_CENTISECOND)
+			centisecond = MAX_CENTISECOND;
+
+		// Adjust second from centisecond
+		second += centisecond / 100;
+
+		// Convert centisecond to nanosecond
+		int nanosecond = (centisecond % 100) * 10_000_000;
+
+		// Repeatedly try to convert date and time; decrement day after each failure
+		while (true)
+		{
+			try
+			{
+				return LocalDateTime.of(year, month, day, hour, minute, second, nanosecond);
+			}
+			catch (DateTimeException e)
+			{
+				if (--day < MIN_MAX_DAY)
+					throw e;
+			}
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -1505,21 +1720,22 @@ public class Fat32Directory
 				Comparator.<Entry, Kind>comparing(Entry::getKind).thenComparing(Entry::getName);
 
 		public static final		Comparator<Entry>	NAME_IGNORE_CASE_COMPARATOR	=
-				Comparator.<Entry, Kind>comparing(Entry::getKind).thenComparing(Entry::getName, String.CASE_INSENSITIVE_ORDER);
+				Comparator.<Entry, Kind>comparing(Entry::getKind)
+						.thenComparing(Entry::getName, String.CASE_INSENSITIVE_ORDER);
 
 		public static final		int		SIZE	= 32;
 
-		private static final	String	NAME_STR				= "name";
-		private static final	String	PATHNAME_STR			= "pathname";
-		private static final	String	KIND_STR				= "kind";
-		private static final	String	ATTRIBUTES_STR			= "attributes";
-		private static final	String	LENGTH_STR				= "length";
-		private static final	String	CREATION_TIME_STR		= "creation time";
-		private static final	String	MODIFICATION_TIME_STR	= "modification time";
-		private static final	String	ACCESS_DATE_STR			= "access date";
-		private static final	String	CLUSTER_INDEX_STR		= "cluster index";
-		private static final	String	NUM_CLUSTERS_STR		= "number of clusters";
-		private static final	String	SECTOR_INDEX_STR		= "sector index";
+		private static final	String	NAME_STR					= "name";
+		private static final	String	PATHNAME_STR				= "pathname";
+		private static final	String	KIND_STR					= "kind";
+		private static final	String	ATTRIBUTES_STR				= "attributes";
+		private static final	String	LENGTH_STR					= "length";
+		private static final	String	CREATION_TIME_STR			= "creation time";
+		private static final	String	LAST_MODIFICATION_TIME_STR	= "last modification time";
+		private static final	String	ACCESS_DATE_STR				= "access date";
+		private static final	String	CLUSTER_INDEX_STR			= "cluster index";
+		private static final	String	NUM_CLUSTERS_STR			= "number of clusters";
+		private static final	String	SECTOR_INDEX_STR			= "sector index";
 
 		private static final	String	EQUALS_STR	= " = ";
 
@@ -1535,7 +1751,7 @@ public class Fat32Directory
 		private	EnumSet<Attr>	attributes;
 		private	long			fileLength;
 		private	LocalDateTime	creationTime;
-		private	LocalDateTime	modificationTime;
+		private	LocalDateTime	lastModificationTime;
 		private	LocalDate		accessDate;
 		private	int				clusterIndex;
 		private	int				numClusters;
@@ -1604,11 +1820,11 @@ public class Fat32Directory
 				buffer.append('\n');
 			}
 
-			if (modificationTime != null)
+			if (lastModificationTime != null)
 			{
-				buffer.append(MODIFICATION_TIME_STR);
+				buffer.append(LAST_MODIFICATION_TIME_STR);
 				buffer.append(EQUALS_STR);
-				buffer.append(getModificationTimeString());
+				buffer.append(getLastModificationTimeString());
 				buffer.append('\n');
 			}
 
@@ -1731,7 +1947,8 @@ public class Fat32Directory
 			return attributes.contains(Attr.VOLUME_LABEL)
 							? Kind.VOLUME_LABEL
 							: attributes.contains(Attr.DIRECTORY)
-									? (name.equals(SPECIAL_DIRECTORY_NAME_THIS) || name.equals(SPECIAL_DIRECTORY_NAME_PARENT))
+									? (name.equals(SPECIAL_DIRECTORY_NAME_THIS)
+												|| name.equals(SPECIAL_DIRECTORY_NAME_PARENT))
 											? Kind.SPECIAL_DIRECTORY
 											: Kind.DIRECTORY
 									: Kind.FILE;
@@ -1781,9 +1998,9 @@ public class Fat32Directory
 
 		//--------------------------------------------------------------
 
-		public LocalDateTime getModificationTime()
+		public LocalDateTime getLastModificationTime()
 		{
-			return modificationTime;
+			return lastModificationTime;
 		}
 
 		//--------------------------------------------------------------
@@ -1842,9 +2059,9 @@ public class Fat32Directory
 
 		//--------------------------------------------------------------
 
-		public String getModificationTimeString()
+		public String getLastModificationTimeString()
 		{
-			return (modificationTime == null) ? "" : MODIFICATION_TIME_FORMATTER.format(modificationTime);
+			return (lastModificationTime == null) ? "" : LAST_MODIFICATION_TIME_FORMATTER.format(lastModificationTime);
 		}
 
 		//--------------------------------------------------------------

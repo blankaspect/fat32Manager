@@ -30,6 +30,7 @@ import javafx.scene.Node;
 
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
 
@@ -72,18 +73,18 @@ public abstract class AbstractTitledPane
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.TITLE_BACKGROUND,
 			CssSelector.builder()
-						.cls(StyleClass.TITLED_HEADER_PANE)
-						.desc(StyleClass.TITLE)
-						.build()
+					.cls(StyleClass.TITLED_HEADER_PANE)
+					.desc(StyleClass.TITLE)
+					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.BORDER_COLOUR,
 			ColourKey.TITLE_BORDER,
 			CssSelector.builder()
-						.cls(StyleClass.TITLED_HEADER_PANE)
-						.desc(StyleClass.TITLE)
-						.build()
+					.cls(StyleClass.TITLED_HEADER_PANE)
+					.desc(StyleClass.TITLE)
+					.build()
 		)
 	);
 
@@ -91,12 +92,12 @@ public abstract class AbstractTitledPane
 	private static final	List<CssRuleSet>	RULE_SETS	= List.of
 	(
 		RuleSetBuilder.create()
-						.selector(CssSelector.builder()
-									.cls(StyleClass.TITLED_HEADER_PANE)
-									.desc(StyleClass.TITLE)
-									.build())
-						.borders(Side.RIGHT, Side.BOTTOM)
-						.build()
+				.selector(CssSelector.builder()
+						.cls(StyleClass.TITLED_HEADER_PANE)
+						.desc(StyleClass.TITLE)
+						.build())
+				.borders(Side.RIGHT, Side.BOTTOM)
+				.build()
 	);
 
 	/** CSS style classes. */
@@ -154,7 +155,7 @@ public abstract class AbstractTitledPane
 
 		// Create title
 		title = new HBox();
-		title.setMaxWidth(HBox.USE_PREF_SIZE);
+		title.setMaxWidth(Region.USE_PREF_SIZE);
 		title.setAlignment(Pos.CENTER_LEFT);
 		title.getStyleClass().add(StyleClass.TITLE);
 
@@ -192,12 +193,12 @@ public abstract class AbstractTitledPane
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the colour that is associated with the specified key in the colour map of the selected theme of the
+	 * Returns the colour that is associated with the specified key in the colour map of the current theme of the
 	 * {@linkplain StyleManager style manager}.
 	 *
 	 * @param  key
 	 *           the key of the desired colour.
-	 * @return the colour that is associated with {@code key} in the colour map of the selected theme of the style
+	 * @return the colour that is associated with {@code key} in the colour map of the current theme of the style
 	 *         manager, or {@link StyleManager#DEFAULT_COLOUR} if there is no such colour.
 	 */
 

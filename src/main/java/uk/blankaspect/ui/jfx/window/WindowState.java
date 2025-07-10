@@ -18,18 +18,20 @@ package uk.blankaspect.ui.jfx.window;
 // IMPORTS
 
 
-import java.util.List;
-
 import javafx.geometry.Dimension2D;
 import javafx.geometry.Point2D;
+
+import javafx.scene.Scene;
+
+import javafx.scene.layout.Region;
 
 import javafx.stage.Stage;
 
 import uk.blankaspect.common.basictree.AbstractNode;
-import uk.blankaspect.common.basictree.IntNode;
 import uk.blankaspect.common.basictree.MapNode;
+import uk.blankaspect.common.basictree.NodeTypeException;
 
-import uk.blankaspect.common.exception.UnexpectedRuntimeException;
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
 
 //----------------------------------------------------------------------
 
@@ -53,10 +55,11 @@ public class WindowState
 	/** Keys of properties. */
 	private interface PropertyKey
 	{
-		String	HIDDEN		= "hidden";
-		String	LOCATION	= "location";
-		String	MAXIMISED	= "maximised";
-		String	SIZE		= "size";
+		String	CONTENT_SIZE	= "contentSize";
+		String	HIDDEN			= "hidden";
+		String	LOCATION		= "location";
+		String	MAXIMISED		= "maximised";
+		String	SIZE			= "size";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -68,6 +71,9 @@ public class WindowState
 
 	/** The size of the window. */
 	private	Dimension2D	size;
+
+	/** The size of the content of the window. */
+	private	Dimension2D	contentSize;
 
 	/** Flag: if {@code true}, the window is not visible. */
 	private	boolean		hidden;
@@ -106,7 +112,7 @@ public class WindowState
 	 * Creates a new instance of a window state for the specified window.
 	 *
 	 * @param window
-	 *          the window with whose location and size the window state will be initialised.
+	 *          the window with whose location, size and content size the window state will be initialised.
 	 */
 
 	public WindowState(
@@ -114,7 +120,7 @@ public class WindowState
 	{
 		if (window != null)
 		{
-			// Update location and size
+			// Update location, size and content size
 			updateBounds(window);
 
 			// Update 'resizable' flag
@@ -142,6 +148,8 @@ public class WindowState
 				copy.location = new Point2D(location.getX(), location.getY());
 			if (size != null)
 				copy.size = new Dimension2D(size.getWidth(), size.getHeight());
+			if (contentSize != null)
+				copy.contentSize = new Dimension2D(contentSize.getWidth(), contentSize.getHeight());
 			return copy;
 		}
 		catch (CloneNotSupportedException e)
@@ -219,6 +227,37 @@ public class WindowState
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns the size of the content of the window.
+	 *
+	 * @return the size of the content of the window.
+	 */
+
+	public Dimension2D getContentSize()
+	{
+		return contentSize;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the content size to the specified dimensions.
+	 *
+	 * @param width
+	 *          the width.
+	 * @param height
+	 *          the height.
+	 */
+
+	public void setContentSize(
+		double	width,
+		double	height)
+	{
+		contentSize = new Dimension2D(width, height);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns {@code true} if the window is not visible.
 	 *
 	 * @return {@code true} if the window is not visible.
@@ -275,10 +314,10 @@ public class WindowState
 	//------------------------------------------------------------------
 
 	/**
-	 * Updates this window state with the location and size of the specified window.
+	 * Updates this window state with the location, size and content size of the specified window.
 	 *
 	 * @param window
-	 *          the window with whose location and size this window state will be updated.
+	 *          the window with whose location, size and content size this window state will be updated.
 	 */
 
 	public void updateBounds(
@@ -288,6 +327,11 @@ public class WindowState
 		{
 			setLocation(window.getX(), window.getY());
 			setSize(window.getWidth(), window.getHeight());
+			Scene scene = window.getScene();
+			if ((scene != null) && (scene.getRoot() instanceof Region content))
+				setContentSize(content.getWidth(), content.getHeight());
+			else
+				contentSize = null;
 		}
 	}
 
@@ -310,11 +354,11 @@ public class WindowState
 	//------------------------------------------------------------------
 
 	/**
-	 * Uniconifies and unmaximises the specified window, updates this window state with the location and size of the
-	 * window, updates its <i>maximised</i> state, and sets its <i>hidden</i> state to the specified value.
+	 * Uniconifies and unmaximises the specified window, updates this window state with the location, size and content
+	 * size of the window, updates its <i>maximised</i> state, and sets its <i>hidden</i> state to the specified value.
 	 *
 	 * @param window
-	 *          the window with whose location and size this window state will be updated.
+	 *          the window with whose location, size and content size this window state will be updated.
 	 * @param hidden
 	 *          the value to which the <i>hidden</i> state of the window will be set.
 	 */
@@ -332,7 +376,7 @@ public class WindowState
 		if (maximised)
 			window.setMaximized(false);
 
-		// Update location and size
+		// Update location, size and content size
 		updateBounds(window);
 
 		// Update 'hidden' flag
@@ -357,11 +401,15 @@ public class WindowState
 
 		// Encode location
 		if (location != null)
-			rootNode.addInts(PropertyKey.LOCATION, (int)location.getX(), (int)location.getY());
+			rootNode.addDoubles(PropertyKey.LOCATION, location.getX(), location.getY());
 
 		// Encode size
 		if (resizable && (size != null))
-			rootNode.addInts(PropertyKey.SIZE, (int)size.getWidth(), (int)size.getHeight());
+			rootNode.addDoubles(PropertyKey.SIZE, size.getWidth(), size.getHeight());
+
+		// Encode content size
+		if (resizable && (contentSize != null))
+			rootNode.addDoubles(PropertyKey.CONTENT_SIZE, contentSize.getWidth(), contentSize.getHeight());
 
 		// Encode 'hidden' flag
 		if (hidden)
@@ -392,9 +440,16 @@ public class WindowState
 		String key = PropertyKey.LOCATION;
 		if (rootNode.hasList(key))
 		{
-			List<IntNode> nodes = rootNode.getListNode(key).intNodes();
-			if (nodes.size() >= 2)
-				location = new Point2D((double)nodes.get(0).getValue(), (double)nodes.get(1).getValue());
+			try
+			{
+				double[] values = rootNode.getListNode(key).getNumberArray();
+				if (values.length == 2)
+					location = new Point2D(values[0], values[1]);
+			}
+			catch (NodeTypeException e)
+			{
+				// ignore
+			}
 		}
 
 		// Decode size
@@ -402,13 +457,32 @@ public class WindowState
 		key = PropertyKey.SIZE;
 		if (resizable && rootNode.hasList(key))
 		{
-			List<IntNode> nodes = rootNode.getListNode(key).intNodes();
-			if (nodes.size() >= 2)
+			try
 			{
-				int width = nodes.get(0).getValue();
-				int height = nodes.get(1).getValue();
-				if ((width > 0) && (height > 0))
-					size = new Dimension2D((double)width, (double)height);
+				double[] values = rootNode.getListNode(key).getNumberArray();
+				if ((values.length == 2) && (values[0] > 0.0) && (values[1] > 0.0))
+					size = new Dimension2D(values[0], values[1]);
+			}
+			catch (NodeTypeException e)
+			{
+				// ignore
+			}
+		}
+
+		// Decode content size
+		contentSize = null;
+		key = PropertyKey.CONTENT_SIZE;
+		if (resizable && rootNode.hasList(key))
+		{
+			try
+			{
+				double[] values = rootNode.getListNode(key).getNumberArray();
+				if ((values.length == 2) && (values[0] > 0.0) && (values[1] > 0.0))
+					contentSize = new Dimension2D(values[0], values[1]);
+			}
+			catch (NodeTypeException e)
+			{
+				// ignore
 			}
 		}
 

@@ -27,10 +27,14 @@ import javafx.geometry.Point2D;
 
 import javafx.scene.Node;
 
+import javafx.scene.input.MouseEvent;
+
 import javafx.stage.Popup;
 import javafx.stage.Window;
 
 import javafx.util.Duration;
+
+import uk.blankaspect.common.os.OsUtils;
 
 //----------------------------------------------------------------------
 
@@ -46,91 +50,25 @@ public class CellPopUpManager
 {
 
 ////////////////////////////////////////////////////////////////////////
-//  Member interfaces
+//  Constants
 ////////////////////////////////////////////////////////////////////////
 
-
-	// INTERFACE: MANAGED CELL
-
-
-	/**
-	 * This interface defines the methods that must be implemented by a cell that is managed by a {@link
-	 * CellPopUpManager}.
-	 *
-	 * @param <T>
-	 *          the type of item that is represented by a cell.
-	 */
-
-	public interface ICell<T>
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
 	{
-
-	////////////////////////////////////////////////////////////////////
-	//  Methods
-	////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Returns the item that is associated with this cell.
-		 *
-		 * @return the item that is associated with this cell, or {@code null} if the cell is empty.
-		 */
-
-		T getItem();
-
-		//--------------------------------------------------------------
-
-		/**
-		 * Returns the object that {@link CellPopupManager#activate(Object, Iterator)} will use to identify this cell
-		 * when it searches a collection of cells for the cell whose pop-up window has been activated.  By default, this
-		 * method calls {@link #getItem()} and returns the result.
-		 *
-		 * @return the object that a cell pop-up manager will use to identify this cell when it searches a collection of
-		 *         cells for the cell whose pop-up window has been activated.
-		 */
-
-		default Object getIdentifier()
-		{
-			return getItem();
-		}
-
-		//--------------------------------------------------------------
-		/**
-		 * Returns the node that will be the content of a pop-up window for this cell.
-		 *
-		 * @return the node that will be the content of a pop-up window for this cell.  If {@code null}, no pop-up
-		 *         window will be displayed.
-		 */
-
-		Node getPopUpContent();
-
-		//--------------------------------------------------------------
-
-		/**
-		 * Returns the preferred location of a pop-up window that has the specified content.  This method is called
-		 * immediately after the pop-up window is made visible.
-		 *
-		 * @param  content
-		 *           the content of the pop-up window.
-		 * @return the preferred location of a pop-up window that contains {@code content}.
-		 */
-
-		Point2D getPrefPopUpLocation(Node content);
-
-		//--------------------------------------------------------------
-
-		/**
-		 * Returns the window that will be the owner of any pop-up windows that are created for this cell.
-		 *
-		 * @return the window that will be the owner of any pop-up windows that are created for this cell.  If {@code
-		 *         null}, no pop-up window will be displayed.
-		 */
-
-		Window getWindow();
-
-		//--------------------------------------------------------------
-
+		String	DEACTIVATE_POP_UP_ON_MOUSE_EXITED =
+				"blankaspect.ui.jfx.cellPopUpManager.deactivatePopUpOnMouseExited";
 	}
 
-	//==================================================================
+////////////////////////////////////////////////////////////////////////
+//  Static initialiser
+////////////////////////////////////////////////////////////////////////
+
+	static
+	{
+		if (OsUtils.isWindows())
+			System.setProperty(SystemPropertyKey.DEACTIVATE_POP_UP_ON_MOUSE_EXITED, Boolean.toString(true));
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -159,7 +97,8 @@ public class CellPopUpManager
 	 *          the delay (in milliseconds) before a pop-up window is displayed after it is activated.
 	 */
 
-	public CellPopUpManager(int delay)
+	public CellPopUpManager(
+		int	delay)
 	{
 		// Validate arguments
 		if (delay < 0)
@@ -176,6 +115,21 @@ public class CellPopUpManager
 ////////////////////////////////////////////////////////////////////////
 
 	/**
+	 * Returns {@code true} if a pop-up window for a cell should be deactivated when the cell receives a {@link
+	 * MouseEvent#MOUSE_EXITED MOUSE_EXITED} event.
+	 *
+	 * @return {@code true} if a pop-up window for a cell should be deactivated when the cell receives a {@code
+	 *         MOUSE_EXITED} event.
+	 */
+
+	public static boolean deactivatePopUpOnMouseExited()
+	{
+		return Boolean.getBoolean(SystemPropertyKey.DEACTIVATE_POP_UP_ON_MOUSE_EXITED);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns {@code true} if the two specified cell identifiers match.
 	 *
 	 * @param  id1
@@ -185,11 +139,13 @@ public class CellPopUpManager
 	 * @return {@code true} if {@code id1} and {@code id2} match.
 	 */
 
-	private static boolean cellIdsMatch(Object id1, Object id2)
+	private static boolean cellIdsMatch(
+		Object	id1,
+		Object	id2)
 	{
 		if (((id1 instanceof Integer) && (id2 instanceof Integer))
-			|| ((id1 instanceof Long) && (id2 instanceof Long))
-			|| ((id1 instanceof String) && (id2 instanceof String)))
+				|| ((id1 instanceof Long) && (id2 instanceof Long))
+				|| ((id1 instanceof String) && (id2 instanceof String)))
 			return id1.equals(id2);
 		return (id1 == id2);
 	}
@@ -215,7 +171,9 @@ public class CellPopUpManager
 	 *          id}.
 	 */
 
-	public void activate(Object id, Iterator<? extends ICell<?>> cellIterator)
+	public void activate(
+		Object							id,
+		Iterator<? extends ICell<?>>	cellIterator)
 	{
 		// Deactivate a pop-up that is pending or hide a pop-up that is displayed
 		deactivate();
@@ -348,6 +306,94 @@ public class CellPopUpManager
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member interfaces
+////////////////////////////////////////////////////////////////////////
+
+
+	// INTERFACE: MANAGED CELL
+
+
+	/**
+	 * This interface defines the methods that must be implemented by a cell that is managed by a {@link
+	 * CellPopUpManager}.
+	 *
+	 * @param <T>
+	 *          the type of item that is represented by a cell.
+	 */
+
+	public interface ICell<T>
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Returns the item that is associated with this cell.
+		 *
+		 * @return the item that is associated with this cell, or {@code null} if the cell is empty.
+		 */
+
+		T getItem();
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Returns the object that {@link CellPopupManager#activate(Object, Iterator)} will use to identify this cell
+		 * when it searches a collection of cells for the cell whose pop-up window has been activated.  By default, this
+		 * method calls {@link #getItem()} and returns the result.
+		 *
+		 * @return the object that a cell pop-up manager will use to identify this cell when it searches a collection of
+		 *         cells for the cell whose pop-up window has been activated.
+		 */
+
+		default Object getIdentifier()
+		{
+			return getItem();
+		}
+
+		//--------------------------------------------------------------
+		/**
+		 * Returns the node that will be the content of a pop-up window for this cell.
+		 *
+		 * @return the node that will be the content of a pop-up window for this cell.  If {@code null}, no pop-up
+		 *         window will be displayed.
+		 */
+
+		Node getPopUpContent();
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Returns the preferred location of a pop-up window that has the specified content.  This method is called
+		 * immediately after the pop-up window is made visible.
+		 *
+		 * @param  content
+		 *           the content of the pop-up window.
+		 * @return the preferred location of a pop-up window that contains {@code content}.
+		 */
+
+		Point2D getPrefPopUpLocation(
+			Node	content);
+
+		//--------------------------------------------------------------
+
+		/**
+		 * Returns the window that will be the owner of any pop-up windows that are created for this cell.
+		 *
+		 * @return the window that will be the owner of any pop-up windows that are created for this cell.  If {@code
+		 *         null}, no pop-up window will be displayed.
+		 */
+
+		Window getWindow();
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

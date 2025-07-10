@@ -28,10 +28,11 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 import uk.blankaspect.common.filesystem.PathnameUtils;
-
-import uk.blankaspect.common.function.IFunction1;
+import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.logging.Logger;
+
+import uk.blankaspect.common.os.OsUtils;
 
 //----------------------------------------------------------------------
 
@@ -61,8 +62,8 @@ public class AppAuxDirectory
 
 	private interface SystemPropertyKey
 	{
-		String	APP_AUX_DIR	= "blankaspect.app.auxDir";
-		String	USER_HOME	= "user.home";
+		String	APP_AUX_DIR		= "blankaspect.app.auxDir";
+		String	USER_HOME_DIR	= "user.home";
 	}
 
 	private interface EnvVariableName
@@ -100,9 +101,6 @@ public class AppAuxDirectory
 		if (appKey == null)
 			throw new IllegalArgumentException("Null app key");
 
-		// Create function to fix separators of pathname
-		IFunction1<String, String> fixSeparators = pathname -> pathname.replace('/', File.separatorChar);
-
 		// Initialise result
 		Path location = null;
 		Mode mode = Mode.NONE;
@@ -117,22 +115,19 @@ public class AppAuxDirectory
 			if (pathname == null)
 			{
 				// Case: Windows platform
-				if (File.separatorChar == '\\')
+				if (OsUtils.isWindows())
 				{
 					pathname = System.getenv(EnvVariableName.WINDOWS_APP_DATA_DIR);
 					if (pathname != null)
-						location = Path.of(fixSeparators.invoke(pathname)).resolve(DIRECTORY_NAME).resolve(appKey);
+						location = Path.of(std(pathname)).resolve(DIRECTORY_NAME).resolve(appKey);
 				}
 
 				// Case: Unix-like platform
 				else
 				{
-					pathname = System.getProperty(SystemPropertyKey.USER_HOME);
+					pathname = System.getProperty(SystemPropertyKey.USER_HOME_DIR);
 					if (pathname != null)
-					{
-						location = Path.of(fixSeparators.invoke(pathname))
-													.resolve(UNIX_AUX_DIR_PREFIX + DIRECTORY_NAME).resolve(appKey);
-					}
+						location = Path.of(std(pathname)).resolve(UNIX_AUX_DIR_PREFIX + DIRECTORY_NAME).resolve(appKey);
 				}
 			}
 
@@ -145,7 +140,7 @@ public class AppAuxDirectory
 					URI uri = class0.getProtectionDomain().getCodeSource().getLocation().toURI();
 					if (URI_FILE_SCHEME.equals(uri.getScheme()))
 					{
-						location = Path.of(uri).toAbsolutePath().getParent();
+						location = PathUtils.absParent(Path.of(uri));
 						mode = Mode.IMPLICIT;
 					}
 				}
@@ -160,7 +155,7 @@ public class AppAuxDirectory
 			// Case: system property is not empty
 			else
 			{
-				location = Path.of(PathnameUtils.parsePathname(fixSeparators.invoke(pathname)));
+				location = Path.of(PathnameUtils.parsePathname(std(pathname)));
 				mode = Mode.EXPLICIT;
 			}
 		}
@@ -200,6 +195,14 @@ public class AppAuxDirectory
 
 		// Resolve name against location of auxiliary directory and return result
 		return (directory == null) ? Path.of(name) : directory.location.resolve(name);
+	}
+
+	//------------------------------------------------------------------
+
+	private static String std(
+		String	pathname)
+	{
+		return pathname.replace('/', File.separatorChar);
 	}
 
 	//------------------------------------------------------------------

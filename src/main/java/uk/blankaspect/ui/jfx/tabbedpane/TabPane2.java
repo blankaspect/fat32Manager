@@ -49,6 +49,8 @@ import javafx.util.Duration;
 
 import uk.blankaspect.common.tuple.StrKVPair;
 
+import uk.blankaspect.ui.jfx.control.ControlUtils;
+
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
 import uk.blankaspect.ui.jfx.style.StyleProperty;
@@ -149,82 +151,6 @@ public class TabPane2
 	private	double		maxDragImageHeight;
 
 ////////////////////////////////////////////////////////////////////////
-//  Member classes : non-inner classes
-////////////////////////////////////////////////////////////////////////
-
-
-	// CLASS: TABBED-PANE EVENT
-
-
-	/**
-	 * This class implements a JavaFX event that is associated with a {@linkplain TabPane2 tabbed pane}.
-	 */
-
-	public static class TabPaneEvent
-		extends Event
-	{
-
-	////////////////////////////////////////////////////////////////////
-	//  Constants
-	////////////////////////////////////////////////////////////////////
-
-		/** This type of event is fired when the order of the tabs of a {@link TabPane2} changes. */
-		public static final EventType<TabPaneEvent>	TAB_ORDER_CHANGED	= new EventType<>("TAB_ORDER_CHANGED");
-
-	////////////////////////////////////////////////////////////////////
-	//  Instance variables
-	////////////////////////////////////////////////////////////////////
-
-		/** The tabbed pane with which this event is associated. */
-		private	TabPane2	tabPane;
-
-	////////////////////////////////////////////////////////////////////
-	//  Constructors
-	////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Creates an event of the specified type that is associated with the specified tabbed pane.
-		 *
-		 * @param eventType
-		 *          the type of event that will be created.
-		 * @param tabPane
-		 *         the tabbed pane with which the event will be associated.
-		 */
-
-		public TabPaneEvent(EventType<TabPaneEvent> eventType,
-							TabPane2                tabPane)
-		{
-			// Call superclass constructor
-			super(eventType);
-
-			// Initialise instance fields
-			this.tabPane = tabPane;
-		}
-
-		//--------------------------------------------------------------
-
-	////////////////////////////////////////////////////////////////////
-	//  Instance methods
-	////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Returns the tabbed pane with which this event is associated.
-		 *
-		 * @return the tabbed pane with which this event is associated.
-		 */
-
-		public TabPane2 getTabPane()
-		{
-			return tabPane;
-		}
-
-		//--------------------------------------------------------------
-
-	}
-
-	//==================================================================
-
-////////////////////////////////////////////////////////////////////////
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
@@ -247,9 +173,10 @@ public class TabPane2
 	 *          the tabs that will be added to the tabbed pane.
 	 */
 
-	public TabPane2(Tab... tabs)
+	public TabPane2(
+		Tab...	tabs)
 	{
-		// Initialise instance fields
+		// Initialise instance variables
 		dragSelectionDelay = DEFAULT_DRAG_SELECTION_DELAY;
 
 		// Disable animation when tabs are opened and closed
@@ -280,18 +207,18 @@ public class TabPane2
 
 					// Select tab after a delay
 					getTabs().stream()
-								.filter(tab -> id.equals(tab.getId()) && (getSelectionModel().getSelectedItem() != tab))
-								.findFirst()
-								.ifPresent(tab ->
-								{
-									dragSelectionTimeline =
-												new Timeline(new KeyFrame(Duration.millis(dragSelectionDelay), event0 ->
-												{
-													getSelectionModel().select(tab);
-													dragSelectionTimeline = null;
-												}));
-									dragSelectionTimeline.play();
-								});
+							.filter(tab -> id.equals(tab.getId()) && (getSelectionModel().getSelectedItem() != tab))
+							.findFirst()
+							.ifPresent(tab ->
+							{
+								dragSelectionTimeline =
+											new Timeline(new KeyFrame(Duration.millis(dragSelectionDelay), event0 ->
+											{
+												getSelectionModel().select(tab);
+												dragSelectionTimeline = null;
+											}));
+								dragSelectionTimeline.play();
+							});
 				}
 			}
 		});
@@ -324,11 +251,7 @@ public class TabPane2
 		});
 
 		// Updates the "hide 'close' button" state of tabs when tabbed pane acquires a skin
-		skinProperty().addListener((observable, oldSkin, skin) ->
-		{
-			if (skin != null)
-				updateTabs();
-		});
+		ControlUtils.onSkin(this, this::updateTabs);
 
 		// Add tabs
 		if (tabs != null)
@@ -349,7 +272,8 @@ public class TabPane2
 	 * @return the index of <i>tabNode</i>, or -1 if <i>tabNode</i> was not found in its parent's list of children.
 	 */
 
-	public static int getTabNodeIndex(Node tabNode)
+	public static int getTabNodeIndex(
+		Node	tabNode)
 	{
 		int index = -1;
 		for (Node child : tabNode.getParent().getChildrenUnmodifiable())
@@ -377,7 +301,8 @@ public class TabPane2
 	 *          the tab that will be added to the list of tabs.
 	 */
 
-	public void addTab(Tab tab)
+	public void addTab(
+		Tab	tab)
 	{
 		// Add tab to list
 		getTabs().add(tab);
@@ -399,8 +324,9 @@ public class TabPane2
 	 *          the tab that will be added to the list of tabs.
 	 */
 
-	public void addTab(int index,
-					   Tab tab)
+	public void addTab(
+		int	index,
+		Tab	tab)
 	{
 		// Add tab to list
 		getTabs().add(index, tab);
@@ -421,7 +347,8 @@ public class TabPane2
 	 *           if <i>tab</i> does not have an identifier.
 	 */
 
-	public Node findTabNode(Tab tab)
+	public Node findTabNode(
+		Tab	tab)
 	{
 		// Get the ID of the tab
 		String id = tab.getId();
@@ -434,10 +361,9 @@ public class TabPane2
 		return (getSkin() == null)
 						? null
 						: lookupAll(StyleSelector.TAB).stream()
-														.filter(tabNode -> id.equals(tabNode.getId())
-																				&& isNearestTabPaneAncestorOf(tabNode))
-														.findFirst()
-														.orElse(null);
+								.filter(tabNode -> id.equals(tabNode.getId()) && isNearestTabPaneAncestorOf(tabNode))
+								.findFirst()
+								.orElse(null);
 	}
 
 	//------------------------------------------------------------------
@@ -496,12 +422,13 @@ public class TabPane2
 	 *          If this is negative, the DRAG_ENTERED event is ignored.
 	 */
 
-	public void setDragSelectionDelay(double delay)
+	public void setDragSelectionDelay(
+		double	delay)
 	{
 		// Stop any pending selection
 		stopPendingDragSelection();
 
-		// Set instance field
+		// Update instance variable
 		dragSelectionDelay = delay;
 	}
 
@@ -515,7 +442,8 @@ public class TabPane2
 	 *          the value to which the maximum width and maximum height of the image of a dragged tab will be set.
 	 */
 
-	public void setMaxDragImageSize(double maxSize)
+	public void setMaxDragImageSize(
+		double	maxSize)
 	{
 		maxDragImageWidth = maxSize;
 		maxDragImageHeight = maxSize;
@@ -533,8 +461,9 @@ public class TabPane2
 	 *          the value to which the maximum height of the image of a dragged tab will be set.
 	 */
 
-	public void setMaxDragImageSize(double maxWidth,
-									double maxHeight)
+	public void setMaxDragImageSize(
+		double	maxWidth,
+		double	maxHeight)
 	{
 		maxDragImageWidth = maxWidth;
 		maxDragImageHeight = maxHeight;
@@ -550,7 +479,8 @@ public class TabPane2
 	 * @return the tab that corresponds to <i>tabNode</i>.
 	 */
 
-	private Tab getTab(Node tabNode)
+	private Tab getTab(
+		Node	tabNode)
 	{
 		return getTabs().get(getTabNodeIndex(tabNode));
 	}
@@ -566,8 +496,9 @@ public class TabPane2
 	 *          the drag event that is the cause of the movement.
 	 */
 
-	private void moveTab(Node      tabNode,
-						 DragEvent event)
+	private void moveTab(
+		Node		tabNode,
+		DragEvent	event)
 	{
 		// Get source index and target index
 		int sourceIndex = getTabNodeIndex(dragSource);
@@ -615,7 +546,8 @@ public class TabPane2
 	 *         TabPane2}.
 	 */
 
-	private boolean isNearestTabPaneAncestorOf(Node node)
+	private boolean isNearestTabPaneAncestorOf(
+		Node	node)
 	{
 		return (SceneUtils.searchAscending(node, node0 -> node0 instanceof TabPane2) == this);
 	}
@@ -644,8 +576,8 @@ public class TabPane2
 	private void setEventHandlers()
 	{
 		lookupAll(StyleSelector.TAB).stream()
-									.filter(tabNode -> (tabNode != dragSource) && isNearestTabPaneAncestorOf(tabNode))
-									.forEach(tabNode ->
+				.filter(tabNode -> (tabNode != dragSource) && isNearestTabPaneAncestorOf(tabNode))
+				.forEach(tabNode ->
 		{
 			// Handle DRAG_DETECTED event
 			tabNode.setOnDragDetected(event ->
@@ -750,6 +682,83 @@ public class TabPane2
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member classes : non-inner classes
+////////////////////////////////////////////////////////////////////////
+
+
+	// CLASS: TABBED-PANE EVENT
+
+
+	/**
+	 * This class implements a JavaFX event that is associated with a {@linkplain TabPane2 tabbed pane}.
+	 */
+
+	public static class TabPaneEvent
+		extends Event
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Constants
+	////////////////////////////////////////////////////////////////////
+
+		/** This type of event is fired when the order of the tabs of a {@link TabPane2} changes. */
+		public static final EventType<TabPaneEvent>	TAB_ORDER_CHANGED	= new EventType<>("TAB_ORDER_CHANGED");
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance variables
+	////////////////////////////////////////////////////////////////////
+
+		/** The tabbed pane with which this event is associated. */
+		private	TabPane2	tabPane;
+
+	////////////////////////////////////////////////////////////////////
+	//  Constructors
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates an event of the specified type that is associated with the specified tabbed pane.
+		 *
+		 * @param eventType
+		 *          the type of event that will be created.
+		 * @param tabPane
+		 *         the tabbed pane with which the event will be associated.
+		 */
+
+		public TabPaneEvent(
+			EventType<TabPaneEvent>	eventType,
+			TabPane2				tabPane)
+		{
+			// Call superclass constructor
+			super(eventType);
+
+			// Initialise instance variables
+			this.tabPane = tabPane;
+		}
+
+		//--------------------------------------------------------------
+
+	////////////////////////////////////////////////////////////////////
+	//  Instance methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Returns the tabbed pane with which this event is associated.
+		 *
+		 * @return the tabbed pane with which this event is associated.
+		 */
+
+		public TabPane2 getTabPane()
+		{
+			return tabPane;
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 

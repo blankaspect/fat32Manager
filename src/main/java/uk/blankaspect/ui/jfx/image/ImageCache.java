@@ -70,8 +70,8 @@ public class ImageCache
 	private static final	String	DEFAULT_FILENAME_EXTENSION	= ".png";
 
 	/** Miscellaneous strings. */
-	private static final	String	FAILED_TO_FIND_IMAGE_STR	= "Failed to find the image '%s'; "
-																	+ "substituting the default 16x16 image.";
+	private static final	String	FAILED_TO_FIND_IMAGE_STR	=
+			"Failed to find the image '%s'; substituting the default 16x16 image.";
 
 ////////////////////////////////////////////////////////////////////////
 //  Class variables
@@ -97,7 +97,7 @@ public class ImageCache
 		addDirectory(ImageCache.class, DIRECTORY);
 
 		// Initialise the default image
-		DEFAULT_IMAGE = new Image(new ByteArrayInputStream(ImageData.DEFAULT_IMAGE));
+		DEFAULT_IMAGE = new Image(new ByteArrayInputStream(ImgData.DEFAULT_IMAGE));
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ public class ImageCache
 	 *           if {@code true}, a default image will be returned if the specified image was not found; otherwise,
 	 *           {@code null} will be returned if the specified image was not found.
 	 * @return the image that corresponds to the specified filename, or, if the specified image was not found, either a
-	 *         default image or {@code null}, according to the <i>defaultIfNotFound</i> flag.
+	 *         default image or {@code null}, according to the {@code defaultIfNotFound} flag.
 	 * @see    #getImageView(String, boolean)
 	 */
 
@@ -220,13 +220,6 @@ public class ImageCache
 					// Create image
 					image = new Image(inStream);
 
-					// Process image
-					if ((colourFunction != null) && (themeId != null) && (i >= numThemeDirs))
-						image = ImageUtils.processPixelColours(image, colourFunction);
-
-					// Add image to cache
-					images.put(filename, image);
-
 					// Close input stream
 					try
 					{
@@ -235,6 +228,21 @@ public class ImageCache
 					catch (IOException e)
 					{
 						ExceptionUtils.printStderrLocated(e);
+					}
+
+					// Case: error when creating image
+					if (image.isError())
+						ExceptionUtils.printStderrLocated(image.getException());
+
+					// Case: image created successfully
+					else
+					{
+						// Process image
+						if ((colourFunction != null) && (themeId != null) && (i >= numThemeDirs))
+							image = ImageUtils.processPixelColours(image, colourFunction);
+
+						// Add image to cache
+						images.put(filename, image);
 					}
 					break;
 				}
@@ -265,7 +273,7 @@ public class ImageCache
 	 *
 	 * @param  filename
 	 *           the filename or filename stem of the required image file.
-	 * @return a new instance of an {@link ImageView} containing the image that corresponds to <i>filename</i>, or a
+	 * @return a new instance of an {@link ImageView} containing the image that corresponds to {@code filename}, or a
 	 *         default image if the specified image was not found by the class loader.
 	 * @see    #getImage(String)
 	 */
@@ -288,9 +296,9 @@ public class ImageCache
 	 * @param  defaultIfNotFound
 	 *           if {@code true}, an image view containing a default image will be returned if the specified image was
 	 *           not found; otherwise, {@code null} will be returned if the specified image was not found.
-	 * @return a new instance of an {@link ImageView} containing the image that corresponds to <i>filename</i>, or, if
-	 *         the specified image was not found, either a default image or {@code null}, according to the
-	 *         <i>defaultIfNotFound</i> flag.
+	 * @return a new instance of an {@link ImageView} containing the image that corresponds to {@code filename}, or, if
+	 *         the specified image was not found, either a default image or {@code null}, according to the {@code
+	 *         defaultIfNotFound} flag.
 	 * @see    #getImage(String, boolean)
 	 */
 
@@ -299,7 +307,7 @@ public class ImageCache
 		boolean	defaultIfNotFound)
 	{
 		Image image = getImage(filename, defaultIfNotFound);
-		return (image == null) ? null : ImageUtils.createSmoothImageView(image);
+		return (image == null) ? null : ImageUtils.smoothImageView(image);
 	}
 
 	//------------------------------------------------------------------
@@ -346,8 +354,11 @@ public class ImageCache
 //  Image data
 ////////////////////////////////////////////////////////////////////////
 
-	/** PNG image data. */
-	private interface ImageData
+	/**
+	 * PNG image data.
+	 */
+
+	private interface ImgData
 	{
 		byte[]	DEFAULT_IMAGE	=
 		{

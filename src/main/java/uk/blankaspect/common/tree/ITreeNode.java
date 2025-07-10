@@ -30,7 +30,8 @@ import java.util.List;
  * This interface defines the methods that must be implemented by a node of a tree that can be used with the methods of
  * {@link TreeUtils}.
  *
- * @param <T>  the type of the node: a subtype of {@code ITreeNode}.
+ * @param <T>
+ *          the type of the node: a subtype of {@code ITreeNode}.
  */
 
 public interface ITreeNode<T extends ITreeNode<T>>

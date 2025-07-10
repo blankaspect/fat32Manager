@@ -125,7 +125,7 @@ public enum MessageIcon32
 
 	public ImageView get()
 	{
-		return ImageUtils.createSmoothImageView(image);
+		return ImageUtils.smoothImageView(image);
 	}
 
 	//------------------------------------------------------------------

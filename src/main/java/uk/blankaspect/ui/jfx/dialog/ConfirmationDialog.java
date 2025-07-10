@@ -123,7 +123,8 @@ public class ConfirmationDialog
 		String	message,
 		String	acceptText)
 	{
-		return (MessageDialog.show(owner, title, icon, message, ButtonInfo.of(HPos.RIGHT, acceptText, CANCEL_STR)) == 0);
+		return (MessageDialog.show(owner, title, icon, message,
+								   ButtonInfo.of(HPos.RIGHT, acceptText, CANCEL_STR)) == 0);
 	}
 
 	//------------------------------------------------------------------
@@ -156,7 +157,8 @@ public class ConfirmationDialog
 		String	acceptText,
 		String	cancelText)
 	{
-		return (MessageDialog.show(owner, title, icon, message, ButtonInfo.of(HPos.RIGHT, acceptText, cancelText)) == 0);
+		return (MessageDialog.show(owner, title, icon, message,
+								   ButtonInfo.of(HPos.RIGHT, acceptText, cancelText)) == 0);
 	}
 
 	//------------------------------------------------------------------
