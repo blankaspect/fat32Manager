@@ -413,14 +413,6 @@ public abstract class SimpleDialog
 						extraWidth = ew;
 				}
 
-				// If width of window has not been set or button panes do not need to be widened, equalise widths of
-				// groups of buttons
-				if (!widthSet || (extraWidth == 0.0))
-				{
-					for (DialogButtonPane buttonPane : buttonPanes)
-						buttonPane.equaliseButtonWidths(true);
-				}
-
 				// If width of window has been set, reset extra width ...
 				if (widthSet)
 					extraWidth = 0.0;
@@ -437,6 +429,10 @@ public abstract class SimpleDialog
 					// Update dimensions
 					dims.update();
 				}
+
+				// Equalise widths of groups of buttons
+				for (DialogButtonPane buttonPane : buttonPanes)
+					buttonPane.equaliseButtonWidths(true);
 
 				// If there is no previous location of window, get location from locator ...
 				if (location == null)
