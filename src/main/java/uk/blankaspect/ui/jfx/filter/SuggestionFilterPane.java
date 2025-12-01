@@ -20,9 +20,8 @@ package uk.blankaspect.ui.jfx.filter;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Arrays;
 import java.util.List;
-
-import java.util.stream.Stream;
 
 import javafx.event.ActionEvent;
 
@@ -302,7 +301,7 @@ public class SuggestionFilterPane<T>
 				if (KEY_COMBO_LIST_TRIGGER.match(event))
 					return true;
 
-				if (Stream.of(LIST_NON_TRIGGER_KEY_COMBINATIONS).anyMatch(keyCombo -> keyCombo.match(event)))
+				if (Arrays.stream(LIST_NON_TRIGGER_KEY_COMBINATIONS).anyMatch(keyCombo -> keyCombo.match(event)))
 					return false;
 
 				if (event.isControlDown() || event.isAltDown())

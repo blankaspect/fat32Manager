@@ -29,7 +29,7 @@ public interface StyleConstants
 	String	CLASS_PREFIX		= "-ba-";
 
 	/** The prefix of {@code uk.blankaspect} style classes that belong to applications. */
-	String	APP_CLASS_PREFIX	= CLASS_PREFIX + "-app-";
+	String	APP_CLASS_PREFIX	= CLASS_PREFIX + "app-";
 
 	/** The separator between the elements of a multi-element JavaFX property value of a CSS rule. */
 	String	VALUE_SEPARATOR	= ", ";
@@ -39,6 +39,13 @@ public interface StyleConstants
 
 	/** The prefix of a colour key in a JavaFX property value of a CSS rule. */
 	String	COLOUR_KEY_PREFIX		= Character.toString(COLOUR_KEY_PREFIX_CHAR);
+
+	/** Identifiers of themes. */
+	interface ThemeId
+	{
+		String	DARK	= uk.blankaspect.ui.jfx.style.themes.dark.Theme.ID;
+		String	LIGHT	= uk.blankaspect.ui.jfx.style.themes.light.Theme.ID;
+	}
 
 	/** Identifiers of nodes. */
 	interface NodeId

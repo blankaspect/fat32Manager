@@ -273,7 +273,7 @@ public class JsonXmlUtils
 
 	/**
 	 * Returns the value of the <i>name</i> attribute of the specified XML element, ignoring any namespace prefix of the
-	 * attribute.  The <i>name</i> attribute of the element corresponds to the name of a member of a JSON object.
+	 * attribute.  The <i>name</i> attribute of a JSON-XML element corresponds to the name of a member of a JSON object.
 	 *
 	 * @param  element
 	 *           the target element.
@@ -291,7 +291,7 @@ public class JsonXmlUtils
 
 	/**
 	 * Returns the value of the <i>value</i> attribute of the specified XML element, ignoring any namespace prefix of
-	 * the attribute.  The <i>value</i> attribute of the element corresponds to a JSON value.
+	 * the attribute.  The <i>value</i> attribute of a JSON-XML element corresponds to a JSON value.
 	 *
 	 * @param  element
 	 *           the target element.
@@ -362,24 +362,25 @@ public class JsonXmlUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the parent of the specified element, which is assumed to be an element.
+	 * Returns the parent element of the specified element.
 	 *
 	 * @param  element
 	 *           the target element.
-	 * @return the parent of {@code element}, or {@code null} if the element does not have a parent.
+	 * @return the element that is the parent of {@code element}, or {@code null} if the element does not have a parent
+	 *         or its parent node is not an {@link Element}.
 	 */
 
 	public static Element parent(
 		Element	element)
 	{
-		return (Element)element.getParentNode();
+		return (element.getParentNode() instanceof Element parent) ? parent : null;
 	}
 
 	//------------------------------------------------------------------
 
 	/**
 	 * Returns a count of the child {@linkplain Node nodes} of the specified XML element that are JSON-XML elements.
-	 * Any child node that is not a JSON-XML elements is omitted from the count.
+	 * Any child node that is not a JSON-XML element is omitted from the count.
 	 *
 	 * @param  element
 	 *           the target element.
@@ -1026,8 +1027,7 @@ public class JsonXmlUtils
 					writer.write(NullNode.VALUE);
 					break;
 
-				case BOOLEAN:
-				case NUMBER:
+				case BOOLEAN, NUMBER:
 					writer.write(getValue(elementFacade, element));
 					break;
 
@@ -1144,7 +1144,8 @@ public class JsonXmlUtils
 	 * @param  indent
 	 *           the number of spaces by which the element at the root of XML tree will be indented.
 	 * @param  indentIncrement
-	 *           the number of spaces by which each additional level of the XML tree will be indented.
+	 *           the number of spaces by which the indentation of each additional level of the XML tree below the root
+	 *           will be increased.
 	 * @param  writer
 	 *           the character stream to which the text will be written.
 	 * @throws IOException
@@ -1212,7 +1213,7 @@ public class JsonXmlUtils
 				children.add(child);
 		}
 
-		// if element has no children, write end of start tag and line feed ...
+		// If element has no children, write end of start tag and line feed ...
 		if (children.isEmpty())
 			writer.write("/>\n");
 
@@ -1248,7 +1249,8 @@ public class JsonXmlUtils
 	 * @param  indent
 	 *           the number of spaces by which the element at the root of XML tree will be indented.
 	 * @param  indentIncrement
-	 *           the number of spaces by which each additional level of the XML tree below the root will be indented.
+	 *           the number of spaces by which the indentation of each additional level of the XML tree below the root
+	 *           will be increased.
 	 * @return a textual representation of the tree of JSON-XML elements whose root is {@code element}.
 	 */
 

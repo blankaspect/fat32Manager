@@ -39,17 +39,17 @@ public enum MatcherScope
 
 	FILES
 	(
-		FileMatcher.ALL_FILES
+		FileMatcher.ANY_FILE
 	),
 
 	DIRECTORIES
 	(
-		DirectoryMatcher.ALL_DIRECTORIES
+		DirectoryMatcher.ANY_DIRECTORY
 	),
 
 	FILES_AND_DIRECTORIES
 	(
-		LocationMatcher.ALL_FILES_AND_DIRECTORIES
+		LocationMatcher.ANY_FILE_OR_DIRECTORY
 	);
 
 ////////////////////////////////////////////////////////////////////////

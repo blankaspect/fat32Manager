@@ -18,7 +18,7 @@ package uk.blankaspect.common.logging;
 // IMPORTS
 
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 //----------------------------------------------------------------------
 
@@ -95,10 +95,7 @@ public enum LogLevel
 
 	public static LogLevel forKey(String key)
 	{
-		return Stream.of(values())
-				.filter(value -> value.getKey().equals(key))
-				.findFirst()
-				.orElse(null);
+		return Arrays.stream(values()).filter(value -> value.getKey().equals(key)).findFirst().orElse(null);
 	}
 
 	//------------------------------------------------------------------

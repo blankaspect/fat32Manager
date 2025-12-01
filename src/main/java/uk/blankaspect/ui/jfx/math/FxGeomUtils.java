@@ -18,7 +18,7 @@ package uk.blankaspect.ui.jfx.math;
 // IMPORTS
 
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 import javafx.geometry.HPos;
 import javafx.geometry.Point2D;
@@ -93,7 +93,7 @@ public class FxGeomUtils
 		VPos	verticalAlignment,
 		HPos	horizontalAlignment)
 	{
-		return Stream.of(Pos.values())
+		return Arrays.stream(Pos.values())
 				.filter(pos -> (pos.getVpos() == verticalAlignment) && (pos.getHpos() == horizontalAlignment))
 				.findFirst()
 				.orElse(null);

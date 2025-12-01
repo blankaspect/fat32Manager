@@ -69,11 +69,17 @@ public class StringNode
 		prefix}. */
 	public static final		char	UNICODE_ESCAPE_CHAR	= 'u';
 
+	/** The string with which a Unicode escape sequence begins. */
+	public static final		String	UNICODE_ESCAPE_PREFIX	= ESCAPE_PREFIX + UNICODE_ESCAPE_CHAR;
+
+	/** The number of hexadecimal digits in a Unicode escape sequence. */
+	public static final		int		UNICODE_SEQUENCE_LENGTH	= 4;
+
 	/** Hexadecimal-digit characters. */
 	public static final		char[]	HEX_DIGITS	= "0123456789ABCDEF".toCharArray();
 
 	/** The type of a string node. */
-	public static final	NodeType	TYPE	= new NodeType(NodeType.ANY, StringNode.class);
+	public static final		NodeType	TYPE	= new NodeType(NodeType.ANY, StringNode.class);
 
 	/** Mappings from literal characters to their corresponding characters in an escape sequence. */
 	protected static final	char[][]	ESCAPE_MAPPINGS	=
@@ -86,6 +92,21 @@ public class StringNode
 		{ '\f', 'f' },
 		{ '\r', 'r' }
 	};
+
+	/** The minimum value of a Unicode high surrogate. */
+	private static final	int		UNICODE_MIN_HIGH_SURROGATE	= 0xD800;
+
+	/** The maximum value of a Unicode high surrogate. */
+	private static final	int		UNICODE_MAX_HIGH_SURROGATE	= 0xDBFF;
+
+	/** The minimum value of a Unicode low surrogate. */
+	private static final	int		UNICODE_MIN_LOW_SURROGATE	= 0xDC00;
+
+	/** The maximum value of a Unicode low surrogate. */
+	private static final	int		UNICODE_MAX_LOW_SURROGATE	= 0xDFFF;
+
+	/** The minimum code point of Unicode plane 1. */
+	private static final	int		UNICODE_PLANE1_MIN_CODE_POINT	= 0x10000;
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -161,12 +182,12 @@ public class StringNode
 		char	ch)
 	{
 		int code = ch;
-		char[] digits = new char[4];
+		char[] digits = new char[UNICODE_SEQUENCE_LENGTH];
 		int i = digits.length;
 		while (i > 0)
 		{
 			digits[--i] = HEX_DIGITS[code & 0x0F];
-			code >>= 4;
+			code >>>= 4;
 		}
 		return new String(digits);
 	}
@@ -184,7 +205,7 @@ public class StringNode
 	public static String unicodeEscape(
 		char	ch)
 	{
-		return ESCAPE_PREFIX + UNICODE_ESCAPE_CHAR + charToUnicodeHex(ch);
+		return UNICODE_ESCAPE_PREFIX + charToUnicodeHex(ch);
 	}
 
 	//------------------------------------------------------------------
@@ -364,9 +385,6 @@ public class StringNode
 	 * <p>
 	 * Characters in the input sequence that are not escaped appear in the output string unchanged.
 	 * </p>
-	 * <p>
-	 * If the {@code printableAsciiOnly} flag is {@code true},
-	 * </p>
 	 *
 	 * @param  seq
 	 *           the character sequence that will be escaped.
@@ -389,8 +407,30 @@ public class StringNode
 		// Process input sequence
 		for (int i = 0; i < inLength; i++)
 		{
-			// Get character from input sequence
+			// Get next character from input sequence
 			char ch = seq.charAt(i);
+
+			// Process surrogate pair
+			if ((ch >= UNICODE_MIN_HIGH_SURROGATE) && (ch <= UNICODE_MAX_HIGH_SURROGATE) && (i + 1 < inLength))
+			{
+				char ch1 = seq.charAt(i + 1);
+				if ((ch1 >= UNICODE_MIN_LOW_SURROGATE) && (ch1 <= UNICODE_MAX_LOW_SURROGATE))
+				{
+					if (printableAsciiOnly)
+					{
+						buffer.append(unicodeEscape(ch));
+						buffer.append(unicodeEscape(ch1));
+					}
+					else
+					{
+						buffer.appendCodePoint(UNICODE_PLANE1_MIN_CODE_POINT
+												+ (ch - UNICODE_MIN_HIGH_SURROGATE << 10)
+												+ (ch1 - UNICODE_MIN_LOW_SURROGATE));
+					}
+					++i;
+					continue;
+				}
+			}
 
 			// Search for standard escape sequence for character
 			char[] pair = null;

@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import java.util.stream.Stream;
-
 import javafx.application.Platform;
 
 import javafx.beans.InvalidationListener;
@@ -867,8 +865,8 @@ public class DirectoryTableView
 								: showSpecialDirectories
 										? directory.getEntries()
 										: directory.getEntries().stream()
-																.filter(entry -> !entry.isSpecialDirectory())
-																.toList());
+												.filter(entry -> !entry.isSpecialDirectory())
+												.toList());
 
 		// Redraw cells
 		refresh();
@@ -1576,10 +1574,7 @@ public class DirectoryTableView
 		protected static Column forKey(
 			String	key)
 		{
-			return Stream.of(values())
-					.filter(value -> value.getKey().equals(key))
-					.findFirst()
-					.orElse(null);
+			return Arrays.stream(values()).filter(value -> value.getKey().equals(key)).findFirst().orElse(null);
 		}
 
 		//--------------------------------------------------------------

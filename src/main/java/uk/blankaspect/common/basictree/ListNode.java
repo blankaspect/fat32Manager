@@ -558,6 +558,84 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns {@code true} if any of the elements of this list node is of the specified type or a subtype of the
+	 * specified type.
+	 *
+	 * @param  type
+	 *           the target type of the elements.
+	 * @return {@code true} if the type of any of the elements of this list node is {@code type} or a subtype of {@code
+	 *         type}.
+	 */
+
+	public boolean any(
+		NodeType	type)
+	{
+		for (AbstractNode element : elements)
+		{
+			if (element.getType().is(type))
+				return true;
+		}
+		return false;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns {@code true} if all the elements of this list node are of the specified type or a subtype of the
+	 * specified type.
+	 *
+	 * @param  type
+	 *           the target type of the elements.
+	 * @return {@code true} if the type of all the elements of this list node is {@code type} or a subtype of {@code
+	 *         type}.
+	 */
+
+	public boolean all(
+		NodeType	type)
+	{
+		for (AbstractNode element : elements)
+		{
+			if (!element.getType().is(type))
+				return false;
+		}
+		return true;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a list of the elements of this list node that are {@linkplain NullNode null nodes}.
+	 *
+	 * @return a list of the elements of this list node that are null nodes.
+	 */
+
+	public List<NullNode> nullNodes()
+	{
+		List<NullNode> nodes = new ArrayList<>();
+		for (AbstractNode element : elements)
+		{
+			if (element instanceof NullNode nullNode)
+				nodes.add(nullNode);
+		}
+		return nodes;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a stream of the elements of this list node that are {@linkplain NullNode null nodes}.
+	 *
+	 * @return a stream of the elements of this list node that are null nodes.
+	 */
+
+	public Stream<NullNode> nullStream()
+	{
+		return nullNodes().stream();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns a list of the elements of this list node that are {@linkplain BooleanNode Boolean nodes}.
 	 *
 	 * @return a list of the elements of this list node that are Boolean nodes.
@@ -1297,8 +1375,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a new instance of a {@linkplain NullNode null node} and adds it to the end of the list of elements of
-	 * this list node.
+	 * Creates a new instance of a {@linkplain NullNode null node}, adds it to the end of the list of elements of this
+	 * list node and returns it.
 	 *
 	 * @return the null node that was created and added to the elements of this list node.
 	 */
@@ -1332,8 +1410,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain BooleanNode Boolean nodes} with the specified values and adds them to the
-	 * end of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain BooleanNode Boolean node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which Boolean nodes will be created and added to the elements of this list node.
@@ -1349,8 +1427,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain BooleanNode Boolean nodes} with the specified values and adds them to the
-	 * end of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain BooleanNode Boolean node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which Boolean nodes will be created and added to the elements of this list node.
@@ -1385,8 +1463,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain IntNode 'int' nodes} with the specified values and adds them to the end of
-	 * the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of an {@linkplain IntNode 'int' node} for each of the specified values and adds the nodes
+	 * to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'int' nodes will be created and added to the elements of this list node.
@@ -1402,8 +1480,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain IntNode 'int' nodes} with the specified values and adds them to the end of
-	 * the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of an {@linkplain IntNode 'int' node} for each of the specified values and adds the nodes
+	 * to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'int' nodes will be created and added to the elements of this list node.
@@ -1438,8 +1516,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain LongNode 'long' nodes} with the specified values and adds them to the end of
-	 * the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain LongNode 'long' node} for each of the specified values and adds the nodes
+	 * to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'long' nodes will be created and added to the elements of this list node.
@@ -1455,8 +1533,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain LongNode 'long' nodes} with the specified values and adds them to the end of
-	 * the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain LongNode 'long' node} for each of the specified values and adds the nodes
+	 * to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'long' nodes will be created and added to the elements of this list node.
@@ -1491,8 +1569,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain DoubleNode 'double' nodes} with the specified values and adds them to the
-	 * end of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain DoubleNode 'double' node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'double' nodes will be created and added to the elements of this list node.
@@ -1508,8 +1586,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain DoubleNode 'double' nodes} with the specified values and adds them to the
-	 * end of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain DoubleNode 'double' node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which 'double' nodes will be created and added to the elements of this list node.
@@ -1544,8 +1622,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain StringNode string nodes} with the specified values and adds them to the end
-	 * of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain StringNode string node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which string nodes will be created and added to the elements of this list node.
@@ -1561,8 +1639,8 @@ public class ListNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates new instances of {@linkplain StringNode string nodes} with the specified values and adds them to the end
-	 * of the list of elements of this list node, preserving the order of the values.
+	 * Creates a new instance of a {@linkplain StringNode string node} for each of the specified values and adds the
+	 * nodes to the end of the list of elements of this list node, preserving the order of the values.
 	 *
 	 * @param values
 	 *          the values for which string nodes will be created and added to the elements of this list node.

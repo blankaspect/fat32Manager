@@ -33,13 +33,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-
-import java.util.stream.Stream;
 
 import uk.blankaspect.common.exception2.ExceptionUtils;
 import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
@@ -1301,10 +1300,7 @@ public class Logger
 		public static Field forKey(
 			String	key)
 		{
-			return Stream.of(values())
-					.filter(value -> value.getKey().equals(key))
-					.findFirst()
-					.orElse(null);
+			return Arrays.stream(values()).filter(value -> value.getKey().equals(key)).findFirst().orElse(null);
 		}
 
 		//--------------------------------------------------------------

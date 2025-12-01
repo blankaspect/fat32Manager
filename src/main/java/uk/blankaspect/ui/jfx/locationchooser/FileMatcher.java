@@ -38,7 +38,7 @@ public class FileMatcher
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	public static final	FileMatcher	ALL_FILES	= new FileMatcher("All files", location -> true);
+	public static final	FileMatcher	ANY_FILE	= new FileMatcher("Any file", location -> true);
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors

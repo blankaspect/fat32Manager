@@ -69,7 +69,7 @@ public abstract class AbstractNode
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates a new instance of a node with the specified parent.
+	 * Creates a new instance of a node that has the specified parent.
 	 *
 	 * @param parent
 	 *          the parent of the node.
@@ -241,10 +241,10 @@ public abstract class AbstractNode
 	{
 		if (parent instanceof MapNode mapNode)
 		{
-			for (String name : mapNode.getKeys())
+			for (String key : mapNode.getKeys())
 			{
-				if (mapNode.get(name) == this)
-					return name;
+				if (mapNode.get(key) == this)
+					return key;
 			}
 		}
 		return null;

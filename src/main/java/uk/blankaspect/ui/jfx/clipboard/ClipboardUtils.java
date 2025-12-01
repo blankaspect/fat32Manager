@@ -166,11 +166,8 @@ public class ClipboardUtils
 	{
 		List<File> files = clipboard.getFiles();
 		return (files == null)
-						? null
-						: files.stream()
-								.map(File::toPath)
-								.findFirst()
-								.orElse(null);
+					? null
+					: files.stream().map(File::toPath).findFirst().orElse(null);
 	}
 
 	//------------------------------------------------------------------

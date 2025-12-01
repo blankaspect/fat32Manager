@@ -31,7 +31,7 @@ fun _path(vararg components : String): String =
 
 fun _appSystemProperties() =
         System.getProperties()
-                .filter { (key, _) -> (key is String) && key.startsWith("blankaspect.app.") }
+                .filter { (key, _) -> (key is String) && key.startsWith("blankaspect.") }
                 .mapKeys { it.key as String }
 
 //----------------------------------------------------------------------
@@ -89,6 +89,7 @@ tasks.compileJava {
 tasks.jar {
     destinationDirectory.set(file(jarDir))
     archiveFileName.set(jarFilename)
+    setPreserveFileTimestamps(true)
     manifest {
         attributes(
             "Application-Name" to projectName,
@@ -116,7 +117,7 @@ tasks.register<JavaExec>("runMain") {
 tasks.register<JavaExec>("runMainJre") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(mainClassName)
-    executable = jfxLauncher
+    executable(jfxLauncher)
 
     systemProperties(_appSystemProperties())
 }
@@ -138,7 +139,7 @@ tasks.register<JavaExec>("runJar") {
 
 tasks.register<JavaExec>("runJarJre") {
     classpath = files(tasks.jar)
-    executable = jfxLauncher
+    executable(jfxLauncher)
 
     systemProperties(_appSystemProperties())
 }

@@ -18,7 +18,7 @@ package uk.blankaspect.fat32manager;
 // IMPORTS
 
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 import uk.blankaspect.common.string.StringUtils;
 
@@ -76,10 +76,7 @@ public enum ClusterAlignment
 	public static ClusterAlignment forKey(
 		String	key)
 	{
-		return Stream.of(values())
-				.filter(value -> value.getKey().equals(key))
-				.findFirst()
-				.orElse(null);
+		return Arrays.stream(values()).filter(value -> value.getKey().equals(key)).findFirst().orElse(null);
 	}
 
 	//------------------------------------------------------------------

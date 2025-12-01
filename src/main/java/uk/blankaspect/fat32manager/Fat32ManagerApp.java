@@ -61,6 +61,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import uk.blankaspect.common.basictree.MapNode;
 
@@ -178,7 +179,7 @@ public class Fat32ManagerApp
 	private static final	String	CHECK_VOLUME_THREAD_NAME_SUFFIX	= "checkVolume";
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+	private static final	int		WINDOW_SHOWN_DELAY	= 200;
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
 	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
@@ -254,7 +255,12 @@ public class Fat32ManagerApp
 	private static final	String	VIEW_SECTOR_STR				= "View sector";
 	private static final	String	VIEW_CLUSTER_STR			= "View cluster";
 	private static final	String	VIEW_DELETED_ENTRIES_STR	= "View deleted entries";
+	private static final	String	ERASE_DELETED_ENTRIES_STR	= "Erase deleted entries";
+	private static final	String	ERASE_STR					= "Erase";
+	private static final	String	NO_DELETED_ENTRIES_STR		= "No deleted entries were found.";
+	private static final	String	NUM_ENTRIES_ERASED_STR		= "Number of deleted entries erased : ";
 	private static final	String	DEFRAGMENT_FILES_STR		= "Defragment files";
+	private static final	String	DEFRAGMENT_STR				= "Defragment";
 	private static final	String	SEARCHING_FOR_FILES_STR		= "Searching for files";
 	private static final	String	DEFRAGMENTING_FILES_STR		= "Defragmenting files";
 	private static final	String	NO_FILES_TO_DEFRAGMENT_STR	= "There are no files to defragment.";
@@ -298,6 +304,8 @@ public class Fat32ManagerApp
 	/** Keys that are associated with dialogs. */
 	private interface DialogKey
 	{
+		String	DEFRAGMENT_FILES		= "defragmentFiles";
+		String	ERASE_DELETED_ENTRIES	= "eraseDeletedEntries";
 		String	OPEN_VOLUME				= "openVolume";
 		String	SHOW_DELETED_ENTRIES	= "showDeletedEntries";
 		String	VOLUME_PROPERTIES		= "volumeProperties";
@@ -1120,7 +1128,8 @@ public class Fat32ManagerApp
 
 		// Add menu item: exit
 		menuItem = new MenuItem(EXIT_STR);
-		menuItem.setOnAction(event -> Platform.exit());
+		menuItem.setOnAction(event ->
+				primaryStage.fireEvent(new WindowEvent(primaryStage, WindowEvent.WINDOW_CLOSE_REQUEST)));
 		menu.getItems().add(menuItem);
 
 		// Create menu: edit
@@ -1136,10 +1145,10 @@ public class Fat32ManagerApp
 		menu = new Menu(DIRECTORY_STR);
 		menuBar.getMenus().add(menu);
 
-		// Add menu item: sort by name
+		// Add menu item: sort entries by name
 		menuItem = new MenuItem(SORT_BY_NAME_STR + ELLIPSIS_STR);
 		menuItem.disableProperty().bind(volume.isNull());
-		menuItem.setOnAction(event -> onSortByName());
+		menuItem.setOnAction(event -> onSortEntriesByName());
 		menu.getItems().add(menuItem);
 
 		// Add separator
@@ -1200,6 +1209,12 @@ public class Fat32ManagerApp
 		menuItem = new MenuItem(VIEW_DELETED_ENTRIES_STR);
 		menuItem.disableProperty().bind(volume.isNull());
 		menuItem.setOnAction(event -> onViewDeletedEntries());
+		menu.getItems().add(menuItem);
+
+		// Add menu item: erase deleted entries
+		menuItem = new MenuItem(ERASE_DELETED_ENTRIES_STR + ELLIPSIS_STR);
+		menuItem.disableProperty().bind(volume.isNull());
+		menuItem.setOnAction(event -> onEraseDeletedEntries());
 		menu.getItems().add(menuItem);
 
 		// Add separator
@@ -1460,7 +1475,7 @@ public class Fat32ManagerApp
 											result.getSectorsPerCluster(), result.getClusterAlignment(),
 											result.isAlignFatsToClusters());
 
-		// if format parameters are invalid, display error dialog and stop
+		// If format parameters are invalid, display error dialog and stop
 		if (params == null)
 		{
 			Utils.showErrorMessage(primaryStage, title, ErrorMsg.INVALID_FORMAT_PARAMS);
@@ -1915,9 +1930,9 @@ public class Fat32ManagerApp
 
 	//------------------------------------------------------------------
 
-	private void onSortByName()
+	private void onSortEntriesByName()
 	{
-		SortDialog.Result result = SortDialog.show(primaryStage, SORT_BY_NAME_STR);
+		SortEntriesDialog.Result result = SortEntriesDialog.show(primaryStage, SORT_BY_NAME_STR);
 		if (result != null)
 		{
 			if (result.preview()
@@ -2000,10 +2015,82 @@ public class Fat32ManagerApp
 
 	//------------------------------------------------------------------
 
+	private void onEraseDeletedEntries()
+	{
+		// Display dialog for recursive directory operation
+		Boolean recursive = DirectoryRecursionDialog.show(primaryStage, DialogKey.ERASE_DELETED_ENTRIES,
+														  ERASE_DELETED_ENTRIES_STR, ERASE_STR);
+		if (recursive == null)
+			return;
+
+		// Log title of task
+		String title = ERASE_DELETED_ENTRIES_STR;
+		Logger.INSTANCE.info(title + " : " + getDirectory().getPathname());
+
+		// Create task to erase deleted entries in current directory and, optionally, subdirectories
+		Task<Integer> task = new AbstractTask<>()
+		{
+			{
+				// Initialise task
+				updateTitle(title);
+				updateMessage(SEARCHING_ENTRIES_STR);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Integer call()
+				throws Exception
+			{
+				return eraseDeletedEntries(getDirectory());
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Get result of task
+				int erasedEntryCount = getValue();
+
+				// Report result
+				NotificationDialog.show(primaryStage, ERASE_DELETED_ENTRIES_STR, MessageIcon32.INFORMATION.get(),
+										(erasedEntryCount == 0) ? NO_DELETED_ENTRIES_STR
+																: NUM_ENTRIES_ERASED_STR + erasedEntryCount);
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Display error message in dialog
+				showErrorMessage(primaryStage);
+			}
+
+			private int eraseDeletedEntries(
+				Fat32Directory	directory)
+				throws VolumeException
+			{
+				int erasedEntryCount = directory.eraseDeletedEntries();
+				if (recursive)
+				{
+					for (Fat32Directory subdirectory : directory.getChildren())
+						erasedEntryCount += eraseDeletedEntries(subdirectory);
+				}
+				return erasedEntryCount;
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(primaryStage, task);
+
+		// Execute task on background thread
+		executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
 	private void onDefragmentFiles()
 	{
-		// Display dialog for recursive operation
-		Boolean recursive = DefragmentFilesDialog.show(primaryStage, DEFRAGMENT_FILES_STR);
+		// Display dialog for recursive directory operation
+		Boolean recursive = DirectoryRecursionDialog.show(primaryStage, DialogKey.DEFRAGMENT_FILES,
+														  DEFRAGMENT_FILES_STR, DEFRAGMENT_STR);
 		if (recursive == null)
 			return;
 

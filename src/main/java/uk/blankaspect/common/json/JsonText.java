@@ -40,6 +40,10 @@ import uk.blankaspect.common.text.ITextSpan;
  * spans}; each span is associated with a {@linkplain Token token}.  The lines and spans may be extracted from the
  * buffer.
  * </p>
+ * <p>
+ * {@code JsonText} does not override {@link Object#equals(Object) equals(Object)}.  To compare two instances of {@code
+ * JsonText} for equality, compare the values that are returned by {@link JsonText#toString()}.
+ * </p>
  */
 
 public class JsonText
@@ -205,7 +209,7 @@ public class JsonText
 				line = appendNewLine();
 
 			// Add a span for the text
-			line.addSpan(text.length(), token);
+			line.addSpan(length, token);
 
 			// Append the text to the buffer
 			buffer.append(text);
@@ -404,7 +408,7 @@ public class JsonText
 	 * This record encapsulates a subsequence of the text of a {@link Line} that is associated with a JSON token.
 	 *
 	 * @param line
-	 *          the line of which the span is a subsequence.
+	 *          the line of text of which the span is a subsequence.
 	 * @param length
 	 *          the length of the text of the span.
 	 * @param token

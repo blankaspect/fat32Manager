@@ -216,10 +216,8 @@ public class JsonUtils
 		if (target == null)
 			throw new IllegalArgumentException("Null target");
 
-		// Get length of target
-		int targetLength = target.length();
-
 		// If target is empty, it is deemed to be found in any input
+		int targetLength = target.length();
 		if (targetLength == 0)
 			return true;
 
@@ -230,16 +228,16 @@ public class JsonUtils
 
 		// Initialise circular buffer for characters from input stream
 		char buffer[] = new char[targetLength];
+
+		// Repeatedly read next character from input stream until end of input stream is reached or target is found
 		int index = 0;
 		boolean full = false;
-
-		// Read from input stream until end of input stream is reached or target is found
 		while (true)
 		{
 			// Read next character from input stream
 			int ch = inputStream.read();
 
-			// If end of stream, stop
+			// If end of input stream, stop
 			if (ch < 0)
 				break;
 
@@ -253,7 +251,7 @@ public class JsonUtils
 				full = true;
 			}
 
-			// If buffer is full, compare it with target
+			// If buffer is full, compare it to target
 			if (full)
 			{
 				// Initialise index to target characters

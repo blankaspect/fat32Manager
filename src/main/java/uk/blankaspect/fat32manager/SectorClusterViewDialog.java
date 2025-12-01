@@ -34,12 +34,12 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javafx.application.Platform;
 
@@ -918,7 +918,7 @@ public class SectorClusterViewDialog
 		Label saveSectorClusterLabel = new Label();
 		MultiTextLabeller<DataUnit> saveSectorClusterLabeller =
 				new MultiTextLabeller<>(saveSectorClusterLabel,
-										Stream.of(DataUnit.values())
+										Arrays.stream(DataUnit.values())
 												.collect(Collectors.toMap(unit -> unit,
 																		  unit -> SAVE_STR + " " + unit.lcText)));
 
@@ -942,7 +942,7 @@ public class SectorClusterViewDialog
 		Label dataUnitLabel = Labels.hNoShrink();
 		MultiTextLabeller<DataUnit> sectorClusterLabeller =
 				new MultiTextLabeller<>(dataUnitLabel,
-										Stream.of(DataUnit.values())
+										Arrays.stream(DataUnit.values())
 												.collect(Collectors.toMap(unit -> unit, unit -> unit.text)));
 
 		// Create data-unit pane
@@ -2890,7 +2890,7 @@ public class SectorClusterViewDialog
 			Button operationButton = Buttons.hNoShrink();
 			MultiTextLabeller<Operation> operationLabeller =
 					new MultiTextLabeller<>(operationButton,
-											Stream.of(Operation.values())
+											Arrays.stream(Operation.values())
 													.collect(Collectors.toMap(op -> op, op -> op.text)));
 			operationButton.setPadding(OPERATION_BUTTON_PADDING);
 			ButtonUtils.setBackgroundColour(operationButton, getColour(ColourKey.OPERATION_BUTTON_BACKGROUND));

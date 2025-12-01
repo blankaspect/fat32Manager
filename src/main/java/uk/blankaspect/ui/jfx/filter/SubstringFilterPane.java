@@ -92,7 +92,13 @@ public class SubstringFilterPane
 	private static final	double	GAP	= 2.0;
 
 	/** A map of the templates for filter modes. */
-	private static final	Map<FilterMode, String>	FILTER_MODE_TEMPLATES;
+	private static final	Map<FilterMode, String>	FILTER_MODE_TEMPLATES	= new EnumMap<>(Map.of
+	(
+		FilterMode.FRAGMENTED,        "-a-b-",
+		FilterMode.WILDCARD_ANYWHERE, "\u2013a?*\u2013",
+		FilterMode.WILDCARD_START,    "a?*\u2014",
+		FilterMode.WILDCARD_ALL,      "a?*"
+	));
 
 	/** The extra gap for a <i>filter mode</i> button. */
 	private static final	double	FILTER_MODE_BUTTON_EXTRA_GAP	= 2.0;
@@ -192,13 +198,6 @@ public class SubstringFilterPane
 
 	static
 	{
-		// Initialise filter-mode templates
-		FILTER_MODE_TEMPLATES = new EnumMap<>(FilterMode.class);
-		FILTER_MODE_TEMPLATES.put(FilterMode.FRAGMENTED,        "-a-b-");
-		FILTER_MODE_TEMPLATES.put(FilterMode.WILDCARD_ANYWHERE, "\u2013a?*\u2013");
-		FILTER_MODE_TEMPLATES.put(FilterMode.WILDCARD_START,    "a?*\u2014");
-		FILTER_MODE_TEMPLATES.put(FilterMode.WILDCARD_ALL,      "a?*");
-
 		// Register the style properties of this class and its dependencies with the style manager
 		StyleManager.INSTANCE.register(SubstringFilterPane.class, COLOUR_PROPERTIES,
 									   GraphicButton.class);

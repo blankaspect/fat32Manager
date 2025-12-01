@@ -38,7 +38,7 @@ public class DirectoryMatcher
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	public static final	DirectoryMatcher	ALL_DIRECTORIES	= new DirectoryMatcher("All directories", location -> true);
+	public static final	DirectoryMatcher	ANY_DIRECTORY	= new DirectoryMatcher("Any directory", location -> true);
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors

@@ -138,7 +138,11 @@ public class IntRangeSpinner
 	private static final	double	DISABLED_OPACITY	= 0.4;
 
 	/** A map from button-icon orientation to button information. */
-	private static final	Map<Orientation, ButtonInfo>	BUTTON_INFOS;
+	private static final	Map<Orientation, ButtonInfo>	BUTTON_INFOS	= new EnumMap<>(Map.of
+	(
+		Orientation.HORIZONTAL, new ButtonInfo(0.55, 0.35, 6.0),
+		Orientation.VERTICAL,   new ButtonInfo(0.4,  0.6,  5.0)
+	));
 
 	/** Miscellaneous strings. */
 	private static final	String	MIN_MAX_OUT_OF_ORDER_STR	= "Minimum and maximum values out of order";
@@ -308,11 +312,14 @@ public class IntRangeSpinner
 	/** The text colour of this spinner. */
 	private	Color					textColour;
 
-	/** The background node of the text box. */
+	/** The background node of the {@linkplain #textBox text box}. */
 	private	Rectangle				textBoxBackground;
 
-	/** The text node of the text box. */
+	/** The text node of the {@linkplain #textBox text box}. */
 	private	Text2					textNode;
+
+	/** The text box. */
+	private	Group					textBox;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -322,11 +329,6 @@ public class IntRangeSpinner
 	{
 		// Register the style properties of this class with the style manager
 		StyleManager.INSTANCE.register(IntRangeSpinner.class, COLOUR_PROPERTIES);
-
-		// Initialise button information
-		BUTTON_INFOS = new EnumMap<>(Orientation.class);
-		BUTTON_INFOS.put(Orientation.HORIZONTAL, new ButtonInfo(0.55, 0.35, 6.0));
-		BUTTON_INFOS.put(Orientation.VERTICAL,   new ButtonInfo(0.4,  0.6,  5.0));
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -739,6 +741,18 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////
+//  Instance methods : overriding methods
+////////////////////////////////////////////////////////////////////////
+
+	@Override
+	public void requestFocus()
+	{
+		textBox.requestFocus();
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
 
@@ -885,7 +899,7 @@ public class IntRangeSpinner
 		textBoxBackground.getStyleClass().add(StyleClass.TEXT_BOX);
 
 		// Create text box
-		Group textBox = new Group(textBoxBackground, textNode);
+		textBox = new Group(textBoxBackground, textNode);
 		textBox.setFocusTraversable(true);
 
 		// Set initial position of text within text box

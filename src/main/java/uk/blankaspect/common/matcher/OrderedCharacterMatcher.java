@@ -104,8 +104,7 @@ public class OrderedCharacterMatcher
 
 	public CharSequence getSource()
 	{
-		Sequence source = (Sequence)getSourceSequence();
-		return ((source == null) ? null : source.sequence);
+		return (getSourceSequence() instanceof Sequence source) ? source.sequence : null;
 	}
 
 	//------------------------------------------------------------------
@@ -118,8 +117,7 @@ public class OrderedCharacterMatcher
 
 	public CharSequence getTarget()
 	{
-		Sequence target = (Sequence)getTargetSequence();
-		return ((target == null) ? null : target.sequence);
+		return (getTargetSequence() instanceof Sequence target) ? target.sequence : null;
 	}
 
 	//------------------------------------------------------------------

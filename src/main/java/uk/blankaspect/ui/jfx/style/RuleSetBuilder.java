@@ -164,7 +164,7 @@ public class RuleSetBuilder
 		int...	widths)
 	{
 		// Convert widths to string
-		String value = IntStream.of(widths).<String>mapToObj(Integer::toString).collect(Collectors.joining(" "));
+		String value = IntStream.of(widths).mapToObj(Integer::toString).collect(Collectors.joining(" "));
 
 		// Add property to map; return this builder
 		return property(FxProperty.BORDER_WIDTH, value);
@@ -176,7 +176,7 @@ public class RuleSetBuilder
 		int...	insets)
 	{
 		// Convert insets to string
-		String value = IntStream.of(insets).<String>mapToObj(Integer::toString).collect(Collectors.joining(", "));
+		String value = IntStream.of(insets).mapToObj(Integer::toString).collect(Collectors.joining(", "));
 
 		// Add property to map; return this builder
 		return property(FxProperty.BORDER_INSETS, value);

@@ -39,6 +39,7 @@ import uk.blankaspect.ui.jfx.image.ImageData;
 import uk.blankaspect.ui.jfx.image.ImageUtils;
 
 import uk.blankaspect.ui.jfx.style.AbstractTheme;
+import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 
 //----------------------------------------------------------------------
@@ -219,9 +220,9 @@ public class Images
 		// Get hue map for theme
 		List<HueMapEntry> hueMap = switch (styleManager.getThemeId())
 		{
-			case uk.blankaspect.ui.jfx.style.themes.dark.Theme.ID  -> HUE_MAP_DARK;
-			case uk.blankaspect.ui.jfx.style.themes.light.Theme.ID -> HUE_MAP_LIGHT;
-			default                                                -> throw new UnexpectedRuntimeException();
+			case StyleConstants.ThemeId.DARK  -> HUE_MAP_DARK;
+			case StyleConstants.ThemeId.LIGHT -> HUE_MAP_LIGHT;
+			default                           -> throw new UnexpectedRuntimeException();
 		};
 
 		// Get dimensions of input image

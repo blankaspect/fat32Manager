@@ -387,9 +387,9 @@ public class SimpleTableView<S>
 					Parent columnHeader = node.getParent();
 					String id = columnHeader.getId();
 					IColumn<S, ?> column = columns.stream()
-													.filter(column0 -> column0.getId().equals(id))
-													.findFirst()
-													.orElse(null);
+							.filter(column0 -> column0.getId().equals(id))
+							.findFirst()
+							.orElse(null);
 
 					// Get alignment of column and insets of column header
 					HPos hAlignment = (column == null) ? IColumn.DEFAULT_H_ALIGNMENT : column.getHAlignment();

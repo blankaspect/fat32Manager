@@ -141,13 +141,10 @@ public enum ElementKind
 	public static ElementKind ofThrow(
 		Element	element)
 	{
-		String name = name(element);
-		for (ElementKind kind : values())
-		{
-			if (kind.key.equals(name))
-				return kind;
-		}
-		throw UnexpectedKindException.of(name);
+		ElementKind result = of(element);
+		if (result != null)
+			return result;
+		throw UnexpectedKindException.of(name(element));
 	}
 
 	//------------------------------------------------------------------

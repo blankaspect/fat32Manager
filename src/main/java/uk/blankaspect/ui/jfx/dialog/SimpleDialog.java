@@ -142,7 +142,7 @@ public abstract class SimpleDialog
 	private static final	double	DEFAULT_MIN_BUTTON_WIDTH	= 3.0 * TextUtils.textHeight();
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+	private static final	int		WINDOW_SHOWN_DELAY	= 200;
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
 	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;

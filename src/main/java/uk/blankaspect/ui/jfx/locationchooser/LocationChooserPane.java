@@ -56,7 +56,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javafx.application.Platform;
 
@@ -334,7 +333,7 @@ public class LocationChooserPane
 	private static final	String	NO_MATCHING_STR					= "No matching ";
 	private static final	String	DIRECTORIES_STR					= "directories";
 	private static final	String	ENTRIES_STR						= "entries";
-	private static final	String	SCAN_FILE_SYSTEM_STR			= "Scan file system";
+	private static final	String	SCANNING_FILE_SYSTEM_STR		= "Scanning file system";
 	private static final	String	SCANNING_ROOT_DIRECTORIES_STR	= "Scanning root directories";
 	private static final	String	READING_DIRECTORY_STR			= "Reading directory";
 
@@ -760,8 +759,8 @@ public class LocationChooserPane
 				try
 				{
 					List<String> names = DirectoryUtils.listDirectories(directory).stream()
-											.map(dir -> dir.getFileName().toString())
-											.toList();
+							.map(dir -> dir.getFileName().toString())
+							.toList();
 					String name = new NameDialog(getWindow(), NEW_DIRECTORY_STR,
 												 name0 -> !name0.isBlank() && !names.contains(name0)).showDialog();
 					if (name != null)
@@ -982,7 +981,10 @@ public class LocationChooserPane
 
 					// Set absolute location on this field
 					if (location != null)
+					{
 						setText(PathUtils.absString(location));
+						end();
+					}
 				}
 
 				// ... otherwise, call superclass method to paste text into this field
@@ -1649,7 +1651,7 @@ public class LocationChooserPane
 		{
 			{
 				// Initialise task status
-				updateTitle(SCAN_FILE_SYSTEM_STR);
+				updateTitle(SCANNING_FILE_SYSTEM_STR);
 				updateMessage(SCANNING_ROOT_DIRECTORIES_STR + " " + ELLIPSIS_STR);
 				updateProgress(-1, 1);
 			}
@@ -3505,10 +3507,7 @@ public class LocationChooserPane
 			private static Column forKey(
 				String	key)
 			{
-				return Stream.of(values())
-						.filter(value -> value.getKey().equals(key))
-						.findFirst()
-						.orElse(null);
+				return Arrays.stream(values()).filter(value -> value.getKey().equals(key)).findFirst().orElse(null);
 			}
 
 			//----------------------------------------------------------

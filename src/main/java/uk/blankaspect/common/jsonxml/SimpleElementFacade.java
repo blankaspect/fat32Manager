@@ -2,7 +2,7 @@
 
 SimpleElementFacade.java
 
-Class: implementation of simple interface for JSON-XML elements.
+Class: implementation of a simple interface for JSON-XML elements.
 
 \*====================================================================*/
 
@@ -31,7 +31,7 @@ import uk.blankaspect.common.exception2.BaseException;
 //----------------------------------------------------------------------
 
 
-// CLASS: IMPLEMENTATION OF SIMPLE INTERFACE FOR JSON-XML ELEMENTS
+// CLASS: IMPLEMENTATION OF A SIMPLE INTERFACE FOR JSON-XML ELEMENTS
 
 
 /**
@@ -40,8 +40,8 @@ import uk.blankaspect.common.exception2.BaseException;
  * document}.  Some of the constructors of this class create an XML document for this purpose; the remaining
  * constructors expect an XML document to be supplied as an argument.
  * <p>
- * An instance of this class may be used to apply a namespace prefix to the name of a JSON-XML element and to the names
- * of attributes of a JSON-XML element.
+ * An instance of this class may be used to apply a namespace prefix to the name of a JSON-XML element and to the name
+ * of an attribute of a JSON-XML element.
  * </p>
  */
 

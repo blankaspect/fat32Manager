@@ -18,11 +18,10 @@ package uk.blankaspect.ui.jfx.event;
 // IMPORTS
 
 
+import java.util.Arrays;
 import java.util.EnumSet;
 
 import java.util.function.Predicate;
-
-import java.util.stream.Stream;
 
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -125,7 +124,7 @@ public enum ModifierKey
 		KeyEvent	event)
 	{
 		EnumSet<ModifierKey> modifiers = EnumSet.noneOf(ModifierKey.class);
-		Stream.of(values())
+		Arrays.stream(values())
 				.filter(modifier -> modifier.keyEventTest.test(event))
 				.findFirst()
 				.ifPresent(modifier -> modifiers.add(modifier));
@@ -146,7 +145,7 @@ public enum ModifierKey
 		MouseEvent	event)
 	{
 		EnumSet<ModifierKey> modifiers = EnumSet.noneOf(ModifierKey.class);
-		Stream.of(values())
+		Arrays.stream(values())
 				.filter(modifier -> modifier.mouseEventTest.test(event))
 				.findFirst()
 				.ifPresent(modifier -> modifiers.add(modifier));

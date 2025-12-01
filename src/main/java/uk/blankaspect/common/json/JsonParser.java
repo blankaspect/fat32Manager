@@ -106,17 +106,14 @@ public class JsonParser
 	/** The prefix of a four-hex-digit Unicode representation of a character. */
 	private static final	String	UNICODE_PREFIX	= "U+";
 
-	/** The number of hexadecimal digits in a Unicode escape sequence. */
-	private static final	int		UNICODE_SEQUENCE_LENGTH	= 4;
-
 	/** Miscellaneous strings. */
-	private static final	String	CHARACTER_NOT_ALLOWED_STR	= "the character %s at index %s is not allowed.";
-	private static final	String	ENDED_PREMATURELY_STR		= "it ended prematurely at index %s.";
+	private static final	String	CHARACTER_NOT_ALLOWED_STR	= "the character %s at index %d is not allowed.";
+	private static final	String	ENDED_PREMATURELY_STR		= "it ended prematurely at index %d.";
 	private static final	String	UNSUPPORTED_OPERATION_STR	= "Unsupported operation";
 	private static final	String	NULL_INPUT_STREAM_STR		= "Null input stream";
 	private static final	String	NULL_READER_STR				= "Null reader";
 	private static final	String	NULL_TEXT_STR				= "Null text";
-	private static final	String	NO_ELEMENT_FACADE_STR		= "No element facade was specified";
+	private static final	String	NO_XML_ELEMENT_FACADE_STR	= "No XML element facade";
 	private static final	String	INVALID_PARENT_STR			= "Unexpected error: invalid parent";
 
 	/** Mappings from characters in an escape sequence to their corresponding literal characters. */
@@ -182,6 +179,7 @@ public class JsonParser
 		String	ILLEGAL_UNICODE_ESCAPE_SEQUENCE	= "The Unicode escape sequence '%s' is illegal.";
 		String	DUPLICATE_OBJECT_MEMBER_NAME	= "The object has more than one member with the name '%s'.";
 		String	INVALID_NUMBER					= "The number is not valid";
+		String	NOT_A_VALID_NUMBER				= "'%s' is not a valid number";
 		String	TOO_LARGE_FOR_INTEGER			= "The number is too large for an integer.";
 	}
 
@@ -201,7 +199,7 @@ public class JsonParser
 	/** Flag: if {@code true}, the last character that was read from the input has been pushed back. */
 	private	boolean			pushedBack;
 
-	/** The index of the next character in the input. */
+	/** The index of the next character in the input text. */
 	private	int				index;
 
 	/** The index of the current line in the input text. */
@@ -242,7 +240,7 @@ public class JsonParser
 	{
 		// Initialise instance variables
 		tokenBuffer = new StringBuilder();
-		unicodeSeqChars = new char[UNICODE_SEQUENCE_LENGTH];
+		unicodeSeqChars = new char[StringNode.UNICODE_SEQUENCE_LENGTH];
 		xmlElementFacade = builder.elementFacade;
 		storeExcessiveIntegerAsFP = builder.storeExcessiveIntegerAsFP;
 	}
@@ -556,7 +554,7 @@ public class JsonParser
 
 		// Test for XML element facade
 		if (xmlElementFacade == null)
-			throw new IllegalStateException(NO_ELEMENT_FACADE_STR);
+			throw new IllegalStateException(NO_XML_ELEMENT_FACADE_STR);
 
 		// Initialise instance variables
 		inputReader = reader;
@@ -605,7 +603,7 @@ public class JsonParser
 		while (state != State.DONE)
 		{
 			// Get next character from input stream
-			char ch = getNextChar();
+			char ch = nextChar();
 
 			// Execute finite-state machine
 			switch (state)
@@ -895,24 +893,26 @@ public class JsonParser
 					if (endOfInput)
 						throw new ParseException(ErrorMsg.PREMATURE_END_OF_TEXT, lineIndex, index - lineStartIndex);
 
+					// Push back start of number
+					pushBackChar();
+
+					// Validate number; put valid number in token buffer
+					validateNumber();
+
+					// Get string representation of number
+					String numberStr = tokenBuffer.toString();
+
+					// Process number string
 					try
 					{
-						// Push back start of number
-						pushBackChar();
-
-						// Validate number; put valid number in token buffer
-						validateNumber();
-
-						// Parse number
+						// If generating XML, add number element to parent ...
 						if (toXml)
-						{
-							// Add number element to parent
-							xmlElement = addChild(xmlElement, ElementKind.NUMBER, tokenBuffer.toString());
-						}
+							xmlElement = addChild(xmlElement, ElementKind.NUMBER, numberStr);
+
+						// ... otherwise, parse number
 						else
 						{
-							// Parse number by creating new instance of BigDecimal from token
-							String numberStr = tokenBuffer.toString();
+							// Create new instance of BigDecimal from token
 							BigDecimal number = new BigDecimal(numberStr);
 
 							// If number is integer, add node of smallest type ...
@@ -930,12 +930,13 @@ public class JsonParser
 									}
 									catch (ArithmeticException e0)
 									{
-										if (!storeExcessiveIntegerAsFP)
+										if (storeExcessiveIntegerAsFP)
+											node = new DoubleNode(node, number.doubleValue());
+										else
 										{
 											throw new ParseException(ErrorMsg.TOO_LARGE_FOR_INTEGER, lineIndex,
 																	 tokenIndex - lineStartIndex);
 										}
-										node = new DoubleNode(node, number.doubleValue());
 									}
 								}
 							}
@@ -955,9 +956,9 @@ public class JsonParser
 					{
 						String causeMessage = e.getMessage();
 						throw new ParseException(((causeMessage == null) || causeMessage.isEmpty())
-															? ErrorMsg.INVALID_NUMBER + "."
-															: ErrorMsg.INVALID_NUMBER + ": " + causeMessage,
-												 lineIndex, tokenIndex - lineStartIndex);
+														? ErrorMsg.NOT_A_VALID_NUMBER + "."
+														: ErrorMsg.NOT_A_VALID_NUMBER + ": " + causeMessage,
+												 lineIndex, tokenIndex - lineStartIndex, numberStr);
 					}
 					break;
 				}
@@ -1257,7 +1258,7 @@ public class JsonParser
 
 	/**
 	 * Reads and returns the next character from the input stream.  If a character has been {@linkplain #pushBackChar()
-	 * pushed back}, the last character that was read from input stream is returned.
+	 * pushed back}, the last character that was read from the input stream is returned.
 	 *
 	 * @return the next character from the input stream, or a space character (U+0020) if the end of the input stream
 	 *         has been reached.
@@ -1265,7 +1266,7 @@ public class JsonParser
 	 *           if an error occurs when reading from the input stream.
 	 */
 
-	private char getNextChar()
+	private char nextChar()
 		throws ParseException
 	{
 		// Case: a character is pushed back
@@ -1310,10 +1311,10 @@ public class JsonParser
 
 	/**
 	 * Pushes the last character that was read from input stream back to the stream.  This method may be called only
-	 * once after each call to {@link #getNextChar()}.
+	 * once after each call to {@link #nextChar()}.
 	 *
 	 * @throws IllegalStateException
-	 *           if a character is already pushed back or {@link #getNextChar()} has not yet been called on the input
+	 *           if a character is already pushed back or {@link #nextChar()} has not yet been called on the input
 	 *           stream.
 	 */
 
@@ -1398,22 +1399,22 @@ public class JsonParser
 		char	ch)
 		throws ParseException
 	{
-		// Get string representation of index of character
-		String indexStr = Integer.toString(index - 1 - tokenIndex);
+		// Get index of character at which validation failed
+		int errorIndex = index - 1 - tokenIndex;
 
 		// Initialise secondary message
 		String message = null;
 
 		// If character is terminator, secondary message is 'ended prematurely' ...
 		if (isValueTerminator(ch))
-			message = String.format(ENDED_PREMATURELY_STR, indexStr);
+			message = String.format(ENDED_PREMATURELY_STR, errorIndex);
 
 		// ... otherwise, secondary message is 'character is not allowed'
 		else
 		{
 			String charStr = ((ch < '\u0020') || (ch > '\u007E')) ? UNICODE_PREFIX + StringNode.charToUnicodeHex(ch)
 																  : "'" + Character.toString(ch) + "'";
-			message = String.format(CHARACTER_NOT_ALLOWED_STR, charStr, indexStr);
+			message = String.format(CHARACTER_NOT_ALLOWED_STR, charStr, errorIndex);
 		}
 
 		// Throw exception
@@ -1423,8 +1424,8 @@ public class JsonParser
 	//------------------------------------------------------------------
 
 	/**
-	 * Validates a JSON number at the {@linkplain #index current index} within the specified text.  This method only
-	 * checks that a number conforms to the JSON grammar; the number is subsequently parsed by calling {@link
+	 * Validates a JSON number at the {@linkplain #index current index} within the input text.  This method only checks
+	 * that a number conforms to the JSON grammar; the number is subsequently parsed by calling {@link
 	 * BigDecimal#BigDecimal(String)}.
 	 * <p>
 	 * The use of a finite-state machine to validate a JSON number is preferred to a regular expression because it is
@@ -1442,7 +1443,7 @@ public class JsonParser
 		while (state != NumberState.DONE)
 		{
 			// Get next character from input stream
-			char ch = getNextChar();
+			char ch = nextChar();
 
 			// Execute finite-state machine
 			switch (state)
@@ -1645,7 +1646,7 @@ public class JsonParser
 	//------------------------------------------------------------------
 
 	/**
-	 * Parses a JSON string at the {@linkplain #index current index} within the specified text, and sets the resulting
+	 * Parses a JSON string at the {@linkplain #index current index} within the input text, and sets the resulting
 	 * string in the {@linkplain #tokenBuffer token buffer}.  This method is not called on the quotation mark (U+0022)
 	 * at the start of the string.
 	 *
@@ -1676,7 +1677,7 @@ public class JsonParser
 		if (ch == StringNode.ESCAPE_PREFIX_CHAR)
 		{
 			// Get first character of escape sequence after prefix
-			ch = getNextChar();
+			ch = nextChar();
 
 			// Test whether input stream ended before first character of escape sequence after prefix
 			if (endOfInput)
@@ -1689,10 +1690,10 @@ public class JsonParser
 			if (ch == StringNode.UNICODE_ESCAPE_CHAR)
 			{
 				// Read Unicode escape sequence from input stream
-				for (int i = 0; i < UNICODE_SEQUENCE_LENGTH; i++)
+				for (int i = 0; i < StringNode.UNICODE_SEQUENCE_LENGTH; i++)
 				{
 					// Get next character from input stream
-					unicodeSeqChars[i] = getNextChar();
+					unicodeSeqChars[i] = nextChar();
 
 					// Test whether input stream ended before end of Unicode escape sequence
 					if (endOfInput)
@@ -1701,7 +1702,7 @@ public class JsonParser
 
 				// Parse Unicode escape sequence
 				int value = 0;
-				for (int i = 0; i < UNICODE_SEQUENCE_LENGTH; i++)
+				for (int i = 0; i < StringNode.UNICODE_SEQUENCE_LENGTH; i++)
 				{
 					// Decode hex-digit character
 					ch = unicodeSeqChars[i];
@@ -1717,8 +1718,7 @@ public class JsonParser
 						--startIndex;
 						throw new ParseException(ErrorMsg.ILLEGAL_UNICODE_ESCAPE_SEQUENCE, lineIndex,
 												 startIndex - lineStartIndex,
-												 StringNode.ESCAPE_PREFIX + StringNode.UNICODE_ESCAPE_CHAR
-														+ new String(unicodeSeqChars));
+												 StringNode.UNICODE_ESCAPE_PREFIX + new String(unicodeSeqChars));
 					}
 
 					// Update value

@@ -143,8 +143,8 @@ public class BooleanNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns an array whose elements are the values of the specified {@linkplain BooleanNode Boolean nodes}, with the
-	 * order of the elements preserved.
+	 * Returns an array whose elements are the values of the specified {@linkplain BooleanNode Boolean nodes},
+	 * preserving the order of the elements.
 	 *
 	 * @param  nodes
 	 *           the Boolean nodes whose values will be extracted into an array.
@@ -165,8 +165,8 @@ public class BooleanNode
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns a list whose elements are the values of the specified {@linkplain BooleanNode Boolean nodes}, with the
-	 * order of the elements preserved.
+	 * Returns a list whose elements are the values of the specified {@linkplain BooleanNode Boolean nodes},
+	 * preserving the order of the elements.
 	 *
 	 * @param  nodes
 	 *           the Boolean nodes whose values will be extracted into a list.

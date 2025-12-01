@@ -890,14 +890,51 @@ public class Fat32Directory
 		int index = 0;
 		for (Entry entry : entries)
 		{
-			int length = entry.getLength();
-			System.arraycopy(inData, entry.getIndex() * Entry.SIZE, outData, index * Entry.SIZE, length * Entry.SIZE);
+			System.arraycopy(inData, entry.index * Entry.SIZE, outData, index * Entry.SIZE, entry.length * Entry.SIZE);
 			entry.index = index;
-			index += length;
+			index += entry.length;
 		}
 
 		// Write directory clusters
 		writeData(outData, 0);
+	}
+
+	//------------------------------------------------------------------
+
+	public int eraseDeletedEntries()
+		throws VolumeException
+	{
+		// Get list of indices of deleted entries
+		List<Integer> indices = findDeletedEntries(null).stream().map(Entry::getIndex).toList();
+
+		// If there are deleted entries, erase them
+		if (!indices.isEmpty())
+		{
+			// Read directory clusters
+			byte[] inData = readData();
+
+			// Allocate buffer for new directory entries
+			byte[] outData = new byte[inData.length];
+
+			// Copy entries, omitting deleted entries
+			int index = 0;
+			for (Entry entry : entries)
+			{
+				if (!indices.contains(entry.index))
+				{
+					System.arraycopy(inData, entry.index * Entry.SIZE, outData, index * Entry.SIZE,
+									 entry.length * Entry.SIZE);
+					entry.index = index;
+					index += entry.length;
+				}
+			}
+
+			// Write directory clusters
+			writeData(outData, 0);
+		}
+
+		// Return count of erased entries
+		return indices.size();
 	}
 
 	//------------------------------------------------------------------
@@ -1717,11 +1754,10 @@ public class Fat32Directory
 	////////////////////////////////////////////////////////////////////
 
 		public static final		Comparator<Entry>	NAME_COMPARATOR	=
-				Comparator.<Entry, Kind>comparing(Entry::getKind).thenComparing(Entry::getName);
+				Comparator.comparing(Entry::getKind).thenComparing(Entry::getName);
 
 		public static final		Comparator<Entry>	NAME_IGNORE_CASE_COMPARATOR	=
-				Comparator.<Entry, Kind>comparing(Entry::getKind)
-						.thenComparing(Entry::getName, String.CASE_INSENSITIVE_ORDER);
+				Comparator.comparing(Entry::getKind).thenComparing(Entry::getName, String.CASE_INSENSITIVE_ORDER);
 
 		public static final		int		SIZE	= 32;
 

@@ -154,7 +154,7 @@ public class ExceptionDialog
 			FxProperty.BACKGROUND_COLOUR,
 			Color.TRANSPARENT,
 			CssSelector.builder()
-					.cls(StyleClass.EXCEPTION_DIALOG)
+					.cls(StyleClass.EXCEPTION_DIALOG_ROOT)
 					.desc(StyleClass.DETAILS_BUTTON)
 					.build()
 		),
@@ -163,7 +163,7 @@ public class ExceptionDialog
 			FxProperty.BACKGROUND_COLOUR,
 			ColourKey.DETAILS_BUTTON_BACKGROUND_FOCUSED,
 			CssSelector.builder()
-					.cls(StyleClass.EXCEPTION_DIALOG)
+					.cls(StyleClass.EXCEPTION_DIALOG_ROOT)
 					.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
 					.build()
 		),
@@ -172,7 +172,7 @@ public class ExceptionDialog
 			FxProperty.BORDER_COLOUR,
 			ColourKey.DETAILS_BUTTON_BORDER,
 			CssSelector.builder()
-					.cls(StyleClass.EXCEPTION_DIALOG)
+					.cls(StyleClass.EXCEPTION_DIALOG_ROOT)
 					.desc(StyleClass.DETAILS_BUTTON)
 					.build()
 		),
@@ -181,7 +181,7 @@ public class ExceptionDialog
 			FxProperty.FILL,
 			ColourKey.DETAILS_BUTTON_ARROWHEAD,
 			CssSelector.builder()
-					.cls(StyleClass.EXCEPTION_DIALOG)
+					.cls(StyleClass.EXCEPTION_DIALOG_ROOT)
 					.desc(StyleClass.DETAILS_BUTTON)
 					.desc(StyleClass.ARROWHEAD)
 					.build()
@@ -203,7 +203,7 @@ public class ExceptionDialog
 		RuleSetFactory.focusBorder
 		(
 			CssSelector.builder()
-					.cls(StyleClass.EXCEPTION_DIALOG)
+					.cls(StyleClass.EXCEPTION_DIALOG_ROOT)
 					.desc(StyleClass.DETAILS_BUTTON).pseudo(FxPseudoClass.FOCUSED)
 					.build()
 		),
@@ -219,10 +219,10 @@ public class ExceptionDialog
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	EXCEPTION_DIALOG	= StyleConstants.CLASS_PREFIX + "exception-dialog";
+		String	EXCEPTION_DIALOG_ROOT	= StyleConstants.CLASS_PREFIX + "exception-dialog-root";
 
 		String	ARROWHEAD			= StyleConstants.CLASS_PREFIX + "arrowhead";
-		String	DETAILS_AREA		= EXCEPTION_DIALOG + "-details-area";
+		String	DETAILS_AREA		= EXCEPTION_DIALOG_ROOT + "-details-area";
 		String	DETAILS_BUTTON		= StyleConstants.CLASS_PREFIX + "details-button";
 	}
 
@@ -419,8 +419,8 @@ public class ExceptionDialog
 		// Initialise instance variables
 		result = -1;
 
-		// Set properties
-		getScene().getRoot().getStyleClass().add(StyleClass.EXCEPTION_DIALOG);
+		// Set style class on root node of scene graph
+		getScene().getRoot().getStyleClass().add(StyleClass.EXCEPTION_DIALOG_ROOT);
 
 		// Create list of string representations of stack traces of chain of causes
 		List<String> causes = ExceptionUtils.getStackTraceStrings(cause);

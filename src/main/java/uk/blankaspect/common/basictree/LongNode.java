@@ -2,7 +2,7 @@
 
 LongNode.java
 
-Class: long node.
+Class: long-integer node.
 
 \*====================================================================*/
 
@@ -25,7 +25,7 @@ import java.util.List;
 //----------------------------------------------------------------------
 
 
-// CLASS: LONG NODE
+// CLASS: LONG-INTEGER NODE
 
 
 /**

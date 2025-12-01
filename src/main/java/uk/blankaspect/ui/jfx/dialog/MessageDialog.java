@@ -184,7 +184,7 @@ public class MessageDialog
 				ctrlEnterButton = button;
 		}
 
-		// Close dialog if Escape key is pressed
+		// Fire 'request to close window' event if Escape is pressed
 		setRequestCloseOnEscape();
 
 		// Fire button if Ctrl+Enter is pressed

@@ -19,7 +19,6 @@ package uk.blankaspect.ui.jfx.style;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -96,7 +95,7 @@ public class StyleUtils
 		String	name,
 		String	value)
 	{
-		setProperties(node, Collections.singletonList(StrKVPair.of(name, value)));
+		setProperties(node, List.of(StrKVPair.of(name, value)));
 	}
 
 	//------------------------------------------------------------------

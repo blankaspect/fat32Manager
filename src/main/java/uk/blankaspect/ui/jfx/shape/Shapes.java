@@ -97,7 +97,13 @@ public class Shapes
 	};
 
 	/** A map of the coordinates of the vertices of <i>arrowhead 01</i>. */
-	private static final	Map<VHDirection, double[]>	ARROWHEAD01_COORDS;
+	private static final	Map<VHDirection, double[]>	ARROWHEAD01_COORDS	= new EnumMap<>(Map.of
+	(
+		VHDirection.UP,    ARROWHEAD01_UP_COORDS,
+		VHDirection.DOWN,  ARROWHEAD01_DOWN_COORDS,
+		VHDirection.LEFT,  ARROWHEAD01_LEFT_COORDS,
+		VHDirection.RIGHT, ARROWHEAD01_RIGHT_COORDS
+	));
 
 	/** The width and height of <i>plus 01</i> in relation to its {@linkplain #PLUS01_COORDS coordinates}. */
 	private static final	double	PLUS01_SIZE	= 48.0;
@@ -176,19 +182,6 @@ public class Shapes
 	/** The difference between the <i>x</i> coordinates of the corresponding vertices of the components of <i>angle
 		01</i>. */
 	private static final	double	ANGLE01_DOUBLE_DELTA_X	= 6.0;
-
-////////////////////////////////////////////////////////////////////////
-//  Static initialiser
-////////////////////////////////////////////////////////////////////////
-
-	static
-	{
-		ARROWHEAD01_COORDS = new EnumMap<>(VHDirection.class);
-		ARROWHEAD01_COORDS.put(VHDirection.UP,    ARROWHEAD01_UP_COORDS);
-		ARROWHEAD01_COORDS.put(VHDirection.DOWN,  ARROWHEAD01_DOWN_COORDS);
-		ARROWHEAD01_COORDS.put(VHDirection.LEFT,  ARROWHEAD01_LEFT_COORDS);
-		ARROWHEAD01_COORDS.put(VHDirection.RIGHT, ARROWHEAD01_RIGHT_COORDS);
-	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors

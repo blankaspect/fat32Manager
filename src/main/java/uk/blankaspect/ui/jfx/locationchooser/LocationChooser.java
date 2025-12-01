@@ -97,7 +97,7 @@ public class LocationChooser
 ////////////////////////////////////////////////////////////////////////
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 150;
+	private static final	int		WINDOW_SHOWN_DELAY	= 200;
 
 	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
 	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
@@ -626,7 +626,7 @@ public class LocationChooser
 		Path	file)
 	{
 		LocationMatcher filter = getFinalFilter();
-		if (filter != FileMatcher.ALL_FILES)
+		if (filter != FileMatcher.ANY_FILE)
 		{
 			String filename = file.getFileName().toString();
 			if (filename.indexOf('.') < 0)

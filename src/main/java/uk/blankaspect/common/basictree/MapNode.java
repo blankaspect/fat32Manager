@@ -1523,7 +1523,7 @@ public class MapNode
 		if (value == null)
 			throw new IllegalArgumentException(NULL_VALUE_STR);
 
-		// If it does not already contain the key, add KV pair to map; otherwise, get existing value
+		// If map does not already contain the key, add KV pair to map; otherwise, get existing value
 		@SuppressWarnings("unchecked")
 		T outValue = (T)pairs.putIfAbsent(key, value);
 		if (outValue == null)

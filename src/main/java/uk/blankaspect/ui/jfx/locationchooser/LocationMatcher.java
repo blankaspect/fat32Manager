@@ -40,8 +40,8 @@ public class LocationMatcher
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	public static final	LocationMatcher	ALL_FILES_AND_DIRECTORIES	=
-			new LocationMatcher("All files and directories", location -> true);
+	public static final	LocationMatcher	ANY_FILE_OR_DIRECTORY	=
+			new LocationMatcher("Any file or directory", location -> true);
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables

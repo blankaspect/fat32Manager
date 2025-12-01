@@ -2,7 +2,7 @@
 
 DoubleNode.java
 
-Class: double node.
+Class: double-precision floating-point number node.
 
 \*====================================================================*/
 
@@ -25,7 +25,7 @@ import java.util.List;
 //----------------------------------------------------------------------
 
 
-// CLASS: DOUBLE NODE
+// CLASS: DOUBLE-PRECISION FLOATING-POINT NUMBER NODE
 
 
 /**
