@@ -111,7 +111,7 @@ public class FilteredListView<T>
 ////////////////////////////////////////////////////////////////////////
 
 	/** The default padding at the top and bottom of the label of a cell. */
-	public static final		double	DEFAULT_CELL_VERTICAL_PADDING	= 2.0;
+	private static final	double	DEFAULT_CELL_VERTICAL_PADDING	= 2.0;
 
 	/** The default gap between the graphic and text of a cell of this list view. */
 	private static final	double	DEFAULT_GRAPHIC_TEXT_GAP	= 6.0;
@@ -226,13 +226,16 @@ public class FilteredListView<T>
 	/** Flag: if {@code true}, the labels of cells will be truncated, avoiding a horizontal scroll bar. */
 	private	boolean													truncateCells;
 
-	/** The filter mode. */
+	/** The mode of the {@link #filter}. */
 	private	SimpleObjectProperty<SubstringFilterPane.FilterMode>	filterMode;
 
-	/** The filter. */
+	/** Flag: if {@code true}, an empty {@link #filter} accepts all the items in this list view. */
+	private	boolean													emptyFilterAcceptsAll;
+
+	/** The filter that is applied to the items in this list view. */
 	private	String													filter;
 
-	/** The matcher that is used to filter items when the filter mode is {@linkplain
+	/** The matcher that is used to filter items when the {@linkplain #filterMode filter mode} is {@linkplain
 		SubstringFilterPane.FilterMode#FRAGMENTED &apos;fragmented&apos;}. */
 	private	OrderedCharacterMatcher									characterMatcher;
 
@@ -577,6 +580,21 @@ public class FilteredListView<T>
 	//------------------------------------------------------------------
 
 	/**
+	 * Sets the <i>empty filter accepts all items</i> flag to the specified value.
+	 *
+	 * @param acceptAll
+	 *          the value to which the <i>empty filter accepts all items</i> flag will be set.
+	 */
+
+	public void setEmptyFilterAcceptsAll(
+		boolean	acceptAll)
+	{
+		emptyFilterAcceptsAll = acceptAll;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns the filter mode as a property.
 	 *
 	 * @return the filter mode as a property.
@@ -659,6 +677,22 @@ public class FilteredListView<T>
 	//------------------------------------------------------------------
 
 	/**
+	 * Sets the preferred number of rows of this list view to the specified value.
+	 *
+	 * @param numRows
+	 *          the preferred number of rows, ignored if less than 1.
+	 */
+
+	public void setPrefNumRows(
+		int	numRows)
+	{
+		if (numRows > 0)
+			setPrefHeight((double)numRows * (TextUtils.textHeight() + 2.0 * DEFAULT_CELL_VERTICAL_PADDING + 1.0) + 2.0);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Creates and returns a new instance of a label of a cell to represent the specified item.
 	 *
 	 * @param  item
@@ -727,9 +761,12 @@ public class FilteredListView<T>
 		// Initialise list of filtered items
 		ObservableList<T> filteredItems = FXCollections.observableArrayList();
 
-		// If there is no filter, add all items ...
+		// If there is no filter, add all items if the 'accept all' flag is set ...
 		if (filter.isEmpty())
-			filteredItems.addAll(unfilteredItems);
+		{
+			if (emptyFilterAcceptsAll)
+				filteredItems.addAll(unfilteredItems);
+		}
 
 		// ... otherwise, apply filter to items
 		else
@@ -968,7 +1005,7 @@ public class FilteredListView<T>
 			if (label != null)
 			{
 				label.setBackground(SceneUtils.createColouredBackground(
-							getColour(ListViewStyle.ColourKey.CELL_POPUP_BACKGROUND)));
+						getColour(ListViewStyle.ColourKey.CELL_POPUP_BACKGROUND)));
 				label.setBorder(SceneUtils.createSolidBorder(getColour(ListViewStyle.ColourKey.CELL_POPUP_BORDER)));
 				label.getStyleClass().add(ListViewStyle.StyleClass.CELL_POPUP_LABEL);
 			}

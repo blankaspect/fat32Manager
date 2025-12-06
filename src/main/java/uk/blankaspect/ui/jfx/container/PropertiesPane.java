@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -31,12 +32,14 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -66,14 +69,22 @@ import uk.blankaspect.ui.jfx.button.Buttons;
 import uk.blankaspect.ui.jfx.clipboard.ClipboardUtils;
 
 import uk.blankaspect.ui.jfx.dialog.ErrorDialog;
+import uk.blankaspect.ui.jfx.dialog.SimpleDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
+import uk.blankaspect.ui.jfx.dialog.SimpleModelessDialog;
 
 import uk.blankaspect.ui.jfx.dialog.SimpleDialog.ILocator;
 
+import uk.blankaspect.ui.jfx.image.ImageData;
+import uk.blankaspect.ui.jfx.image.ImageUtils;
+
 import uk.blankaspect.ui.jfx.label.OverlayLabel;
+
+import uk.blankaspect.ui.jfx.popup.ActionLabelPopUp;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
+import uk.blankaspect.ui.jfx.style.AbstractTheme;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
@@ -127,8 +138,10 @@ public class PropertiesPane
 	/** Miscellaneous strings. */
 	private static final	String	EQUALS_STR			= " = ";
 	private static final	String	COPY_STR			= "Copy";
+	private static final	String	COPY_VALUE_STR		= "Copy value";
 	private static final	String	VALUES_STR			= "Values";
 	private static final	String	NAMES_VALUES_STR	= "Names and values";
+	private static final	String	NULL_PROPERTIES_STR	= "Null properties";
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -189,6 +202,14 @@ public class PropertiesPane
 		String	VALUE_LABEL_TEXT			= PREFIX + "valueLabel.text";
 	}
 
+	/** Image identifiers. */
+	public interface ImageId
+	{
+		String	PREFIX = MethodHandles.lookup().lookupClass().getEnclosingClass().getName() + ".";
+
+		String	COPY	= PREFIX + "copy";
+	}
+
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
@@ -205,6 +226,7 @@ public class PropertiesPane
 	private	double								dialogMaxInitialWidth;
 	private	Insets								dialogCopyButtonPadding;
 	private	Insets								dialogCloseButtonPadding;
+	private	boolean								valueLabelHasContextMenu;
 	private	List<OverlayLabel>					valueLabels;
 
 ////////////////////////////////////////////////////////////////////////
@@ -215,6 +237,9 @@ public class PropertiesPane
 	{
 		// Register the style properties of this class with the style manager
 		StyleManager.INSTANCE.register(PropertiesPane.class, COLOUR_PROPERTIES);
+
+		// Create images from image data
+		ImageData.add(ImageId.COPY, AbstractTheme.MONO_IMAGE_KEY, ImgData.COPY);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -434,6 +459,18 @@ public class PropertiesPane
 
 	//------------------------------------------------------------------
 
+	public PropertiesPane valueLabelHasContextMenu(
+		boolean	hasContextMenu)
+	{
+		// Update instance variable
+		valueLabelHasContextMenu = hasContextMenu;
+
+		// Return this pane
+		return this;
+	}
+
+	//------------------------------------------------------------------
+
 	public PropertiesPane dialogMaxInitialWidth(
 		double	maxWidth)
 	{
@@ -492,6 +529,10 @@ public class PropertiesPane
 		String	name,
 		String	value)
 	{
+		// Validate arguments
+		if (name == null)
+			throw new IllegalArgumentException("Null name");
+
 		// Add property to map
 		properties.put(name, new SimpleStringProperty(value));
 
@@ -535,12 +576,21 @@ public class PropertiesPane
 
 	//------------------------------------------------------------------
 
+	public PropertiesPane property1(
+		String	name,
+		Object	value)
+	{
+		return property(name, Objects.toString(value));
+	}
+
+	//------------------------------------------------------------------
+
 	public PropertiesPane properties(
 		Iterable<? extends IStrKVPair>	properties)
 	{
 		// Validate argument
 		if (properties == null)
-			throw new IllegalArgumentException("Null properties");
+			throw new IllegalArgumentException(NULL_PROPERTIES_STR);
 
 		// Clear map of properties and list of value labels; remove children of this pane
 		clear();
@@ -560,7 +610,7 @@ public class PropertiesPane
 	{
 		// Validate argument
 		if (properties == null)
-			throw new IllegalArgumentException("Null properties");
+			throw new IllegalArgumentException(NULL_PROPERTIES_STR);
 
 		// Clear map of properties and list of value labels; remove children of this pane
 		clear();
@@ -580,7 +630,7 @@ public class PropertiesPane
 	{
 		// Validate argument
 		if (properties == null)
-			throw new IllegalArgumentException("Null properties");
+			throw new IllegalArgumentException(NULL_PROPERTIES_STR);
 
 		// Clear map of properties and list of value labels; remove children of this pane
 		clear();
@@ -595,137 +645,90 @@ public class PropertiesPane
 
 	//------------------------------------------------------------------
 
-	public void showDialog(
+	public SimpleModalDialog<Void> showModalDialog(
 		Window	owner,
 		String	locationKeySuffix,
 		String	title)
 	{
-		showDialog(owner, locationKeySuffix, title, null);
+		return showModalDialog(owner, locationKeySuffix, title, null);
 	}
 
 	//------------------------------------------------------------------
 
-	public void showDialog(
+	public SimpleModalDialog<Void> showModalDialog(
 		Window		owner,
 		String		title,
 		ILocator	locator)
 	{
-		showDialog(owner, null, title, locator);
+		return showModalDialog(owner, null, title, locator);
 	}
 
 	//------------------------------------------------------------------
 
-	protected void showDialog(
+	protected SimpleModalDialog<Void> showModalDialog(
 		Window		owner,
 		String		locationKeySuffix,
 		String		title,
 		ILocator	locator)
 	{
-		// Get location key
-		String locationKey = null;
-		if (locationKeySuffix != null)
-		{
-			locationKey = MethodHandles.lookup().lookupClass().getCanonicalName();
-			if (!locationKeySuffix.isEmpty())
-				locationKey += "-" + locationKeySuffix;
-		}
-
 		// Create dialog
-		SimpleModalDialog<Void> dialog = new SimpleModalDialog<>(owner, locationKey, null, title, 1, locator, null)
+		SimpleModalDialog<Void> dialog =
+				new SimpleModalDialog<>(owner, locationKey(locationKeySuffix), null, title, 1, locator, null)
 		{
 			{
-				// Set properties
-				setResizable(dialogMaxInitialWidth > 0.0);
-
-				// Get properties pane
-				PropertiesPane propertiesPane = PropertiesPane.this;
-				propertiesPane.setAlignment(Pos.CENTER);
-
-				// Add properties pane to content pane
-				addContent(propertiesPane);
-
-				// Create menu button: copy
-				MenuButton copyButton = new MenuButton(COPY_STR);
-				copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
-				copyButton.setPadding(dialogCopyButtonPadding);
-				addButton(copyButton, HPos.LEFT, false);
-
-				// Add menu item: values
-				MenuItem menuItem = new MenuItem(VALUES_STR);
-				menuItem.setOnAction(event ->
-				{
-					try
-					{
-						ClipboardUtils.putTextThrow(valuesToString());
-					}
-					catch (BaseException e)
-					{
-						ErrorDialog.show(this, COPY_STR + " : " + VALUES_STR, e);
-					}
-				});
-				copyButton.getItems().add(menuItem);
-
-				// Add menu item: names and values
-				menuItem = new MenuItem(NAMES_VALUES_STR);
-				menuItem.setOnAction(event ->
-				{
-					try
-					{
-						ClipboardUtils.putTextThrow(namesValuesToString());
-					}
-					catch (BaseException e)
-					{
-						ErrorDialog.show(this, COPY_STR + " : " + NAMES_VALUES_STR, e);
-					}
-				});
-				copyButton.getItems().add(menuItem);
-
-				// Create button: close
-				Button closeButton = Buttons.hNoShrink(CLOSE_STR);
-				closeButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
-				closeButton.setOnAction(event -> requestClose());
-				addButton(closeButton, HPos.RIGHT);
-				closeButton.setPadding(dialogCloseButtonPadding);
+				// Create dialog content
+				Button closeButton = createDialogContent(this);
 
 				// Fire 'close' button if Escape key is pressed
 				setKeyFireButton(closeButton, null);
-
-				// Resize dialog to scene
-				sizeToScene();
-
-				// Fire 'copy' button if Ctrl+C key is pressed
-				addEventFilter(KeyEvent.KEY_PRESSED, event ->
-				{
-					if (KEY_COMBO_COPY.match(event))
-					{
-						// Fire 'copy' button
-						copyButton.fire();
-
-						// Consume event
-						event.consume();
-					}
-				});
-
-				// If dialog is resizable, prevent height of dialog from changing and ensure that initial width of
-				// dialog does not exceed maximum
-				if (isResizable())
-				{
-					// When dialog is shown, reduce its width if it exceeds maximum and prevent its height from changing
-					addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
-					{
-						// Reduce width of dialog if it exceeds maximum
-						if (getWidth() > dialogMaxInitialWidth)
-							setWidth(dialogMaxInitialWidth);
-
-						// Prevent height of dialog from changing
-						WindowUtils.preventHeightChange(this);
-					});
-				}
 			}
 		};
 
 		// Show dialog
 		dialog.showDialog();
+
+		// Return dialog
+		return dialog;
+	}
+
+	//------------------------------------------------------------------
+
+	public SimpleModelessDialog createModelessDialog(
+		Window	owner,
+		String	locationKeySuffix,
+		String	title)
+	{
+		return createModelessDialog(owner, locationKeySuffix, title, null);
+	}
+
+	//------------------------------------------------------------------
+
+	public SimpleModelessDialog createModelessDialog(
+		Window		owner,
+		String		title,
+		ILocator	locator)
+	{
+		return createModelessDialog(owner, null, title, locator);
+	}
+
+	//------------------------------------------------------------------
+
+	protected SimpleModelessDialog createModelessDialog(
+		Window		owner,
+		String		locationKeySuffix,
+		String		title,
+		ILocator	locator)
+	{
+		return new SimpleModelessDialog(owner, locationKey(locationKeySuffix), null, title, 1, locator, null)
+		{
+			{
+				// Create dialog content
+				Button closeButton = createDialogContent(this);
+
+				// Fire 'close' button if Escape key is pressed
+				setKeyFireButton(closeButton, null);
+			}
+		};
 	}
 
 	//------------------------------------------------------------------
@@ -741,6 +744,29 @@ public class PropertiesPane
 		label.setPopUpBorderColour(valueLabelPopUpBorderColour);
 		label.setPopUpStyleClass(StyleClass.VALUE_LABEL_POPUP);
 		label.getStyleClass().add(StyleClass.VALUE_LABEL);
+		label.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event ->
+		{
+			if (valueLabelHasContextMenu)
+			{
+				// Create pop-up for 'copy' action
+				Window window = SceneUtils.getWindow(label);
+				ActionLabelPopUp popUp =
+						new ActionLabelPopUp(COPY_STR, ImageUtils.smoothImageView(ImageData.image(ImageId.COPY)), () ->
+						{
+							try
+							{
+								ClipboardUtils.putTextThrow(label.getText());
+							}
+							catch (BaseException e)
+							{
+								ErrorDialog.show(window, COPY_VALUE_STR, e);
+							}
+						});
+
+				// Display pop-up
+				popUp.show(window, event.getScreenX(), event.getScreenY());
+			}
+		});
 		valueLabels.add(label);
 
 		// Add labels for property name and value to this pane
@@ -782,6 +808,153 @@ public class PropertiesPane
 	}
 
 	//------------------------------------------------------------------
+
+	private String locationKey(
+		String	suffix)
+	{
+		String key = null;
+		if (suffix != null)
+		{
+			key = MethodHandles.lookup().lookupClass().getCanonicalName();
+			if (!suffix.isEmpty())
+				key += "-" + suffix;
+		}
+		return key;
+	}
+
+	//------------------------------------------------------------------
+
+	private Button createDialogContent(
+		SimpleDialog	dialog)
+	{
+		// Set properties of this pane
+		setAlignment(Pos.CENTER);
+
+		// Set properties of dialog
+		dialog.setResizable(dialogMaxInitialWidth > 0.0);
+
+		// Add this pane to content pane of dialog
+		dialog.addContent(this);
+
+		// Create menu button: copy
+		Object buttonGroup = new Object();
+		MenuButton copyButton = new MenuButton(COPY_STR);
+		copyButton.getProperties().put(SimpleDialog.BUTTON_GROUP_KEY, buttonGroup);
+		copyButton.setPopupSide(Side.RIGHT);
+		copyButton.setPadding(dialogCopyButtonPadding);
+		dialog.addButton(copyButton, HPos.LEFT, false);
+
+		// Add menu item: values
+		MenuItem menuItem = new MenuItem(VALUES_STR);
+		menuItem.setOnAction(event ->
+		{
+			try
+			{
+				ClipboardUtils.putTextThrow(valuesToString());
+			}
+			catch (BaseException e)
+			{
+				ErrorDialog.show(dialog, COPY_STR + " : " + VALUES_STR, e);
+			}
+		});
+		copyButton.getItems().add(menuItem);
+
+		// Add menu item: names and values
+		menuItem = new MenuItem(NAMES_VALUES_STR);
+		menuItem.setOnAction(event ->
+		{
+			try
+			{
+				ClipboardUtils.putTextThrow(namesValuesToString());
+			}
+			catch (BaseException e)
+			{
+				ErrorDialog.show(dialog, COPY_STR + " : " + NAMES_VALUES_STR, e);
+			}
+		});
+		copyButton.getItems().add(menuItem);
+
+		// Create button: close
+		Button closeButton = Buttons.hNoShrink(SimpleDialog.CLOSE_STR);
+		closeButton.getProperties().put(SimpleDialog.BUTTON_GROUP_KEY, buttonGroup);
+		closeButton.setOnAction(event -> dialog.requestClose());
+		dialog.addButton(closeButton, HPos.RIGHT);
+		closeButton.setPadding(dialogCloseButtonPadding);
+
+		// Resize dialog to scene
+		dialog.sizeToScene();
+
+		// Fire 'copy' button if Ctrl+C key is pressed
+		dialog.addEventFilter(KeyEvent.KEY_PRESSED, event ->
+		{
+			if (KEY_COMBO_COPY.match(event))
+			{
+				// Fire 'copy' button
+				copyButton.fire();
+
+				// Consume event
+				event.consume();
+			}
+		});
+
+		// If dialog is resizable, prevent height of dialog from changing and ensure that initial width of dialog does
+		// not exceed maximum
+		if (dialog.isResizable())
+		{
+			// When dialog is shown, reduce its width if it exceeds maximum and prevent its height from changing
+			dialog.addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
+			{
+				// Reduce width of dialog if it exceeds maximum
+				if (dialog.getWidth() > dialogMaxInitialWidth)
+					dialog.setWidth(dialogMaxInitialWidth);
+
+				// Prevent height of dialog from changing
+				WindowUtils.preventHeightChange(dialog);
+			});
+		}
+
+		// Return 'close' button
+		return closeButton;
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Image data
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * PNG image data.
+	 */
+
+	private interface ImgData
+	{
+		// File: mono/copy
+		byte[]	COPY	=
+		{
+			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
+			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
+			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
+			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x59, (byte)0x49, (byte)0x44, (byte)0x41,
+			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
+			(byte)0x22, (byte)0x33, (byte)0xDF, (byte)0x33, (byte)0xFC, (byte)0x07, (byte)0xC3, (byte)0xDF,
+			(byte)0x0C, (byte)0x49, (byte)0xD8, (byte)0x15, (byte)0xFC, (byte)0x87, (byte)0xD1, (byte)0x0C,
+			(byte)0x8F, (byte)0x19, (byte)0x32, (byte)0xF1, (byte)0x2B, (byte)0x50, (byte)0x45, (byte)0x28,
+			(byte)0xC1, (byte)0xA6, (byte)0x00, (byte)0x62, (byte)0xD5, (byte)0x6F, (byte)0x14, (byte)0x05,
+			(byte)0x98, (byte)0xF6, (byte)0xC3, (byte)0x95, (byte)0xA3, (byte)0x71, (byte)0xE1, (byte)0xF6,
+			(byte)0xE3, (byte)0x56, (byte)0x00, (byte)0xB5, (byte)0x1F, (byte)0x97, (byte)0x02, (byte)0xB8,
+			(byte)0xFD, (byte)0x38, (byte)0x14, (byte)0x20, (byte)0x78, (byte)0x04, (byte)0x14, (byte)0x00,
+			(byte)0xE1, (byte)0x7B, (byte)0xBC, (byte)0x0A, (byte)0x90, (byte)0xD8, (byte)0x98, (byte)0x42,
+			(byte)0x64, (byte)0x2A, (byte)0x80, (byte)0x05, (byte)0x14, (byte)0x04, (byte)0x42, (byte)0xED,
+			(byte)0x47, (byte)0x52, (byte)0x80, (byte)0x1B, (byte)0x02, (byte)0x00, (byte)0xE5, (byte)0x32,
+			(byte)0xF8, (byte)0x0C, (byte)0x4A, (byte)0x24, (byte)0x84, (byte)0xAC, (byte)0x00, (byte)0x00,
+			(byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42,
+			(byte)0x60, (byte)0x82
+		};
+	}
+
+	//==================================================================
 
 }
 

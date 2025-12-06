@@ -274,6 +274,9 @@ public class LocationChooserPane
 	/** The preferred number of columns of the name field. */
 	private static final	int		NAME_FIELD_NUM_COLUMNS	= 40;
 
+	/** The preferred number of rows of the suggestion list of the name-filter pane. */
+	private static final	int		NAME_FILTER_SUGGESTION_LIST_NUM_ROWS	= 4;
+
 	/** The padding around the name pane. */
 	private static final	Insets	NAME_PANE_PADDING	= new Insets(6.0, 8.0, 6.0, 8.0);
 
@@ -994,14 +997,15 @@ public class LocationChooserPane
 		};
 		nameField.setPrefColumnCount(NAME_FIELD_NUM_COLUMNS);
 
-		// Create filter pane or initialise name field
+		// Create name-filter pane or initialise name field
 		switch (selectionMode)
 		{
 			case SINGLE:
 			{
-				// Create filter pane
+				// Create name-filter pane
 				nameFilterPane = new SuggestionFilterPane<>(NAME_FILTER_CONVERTER, nameField,
 															SubstringFilterPane.FilterMode.WILDCARD_START, false, true);
+				nameFilterPane.getListView().setPrefNumRows(NAME_FILTER_SUGGESTION_LIST_NUM_ROWS);
 				namePane.addRow(row++, new Label(NAME_STR), nameFilterPane);
 
 				// Set properties of name field
@@ -1130,7 +1134,7 @@ public class LocationChooserPane
 				if (directory != null)
 					tableView.setDirectory(directory, true, false);
 
-				// Fire event to notify listeners that content of tooltip pop-up has changed
+				// Notify listeners that content of tooltip pop-up has changed
 				filterSpinner.fireEvent(new PopUpEvent(PopUpEvent.CONTENT_CHANGED));
 			});
 			filterSpinner.setItem(filters.stream().skip(filterIndex).findFirst().orElse(null));
@@ -1142,7 +1146,7 @@ public class LocationChooserPane
 				return suffixes.isEmpty() ? "" : suffixes.stream().collect(Collectors.joining(", *", "*", ""));
 			});
 
-			// Keep tooltip active when navigating through filters by making pop-up of empty tooltip transparent
+			// Keep tooltip active when navigating through filters by suppressing pop-up of empty tooltip
 			popUpManager.setPopUpDecorator(popUp ->
 			{
 				if ((popUp.getContent().iterator().next() instanceof Label label) && label.getText().isEmpty())

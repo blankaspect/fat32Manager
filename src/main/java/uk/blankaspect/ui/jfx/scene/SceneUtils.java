@@ -925,21 +925,10 @@ public class SceneUtils
 		{
 			switch (side)
 			{
-				case TOP:
-					top = width;
-					break;
-
-				case BOTTOM:
-					bottom = width;
-					break;
-
-				case LEFT:
-					left = width;
-					break;
-
-				case RIGHT:
-					right = width;
-					break;
+				case TOP    -> top = width;
+				case BOTTOM -> bottom = width;
+				case LEFT   -> left = width;
+				case RIGHT  -> right = width;
 			}
 		}
 		return createSolidBorder(colour, new BorderWidths(top, right, bottom, left));
@@ -1061,9 +1050,9 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the location of a target object with the specified location and size within the specified bounds such
-	 * that the change to the location of the target is minimised and the top left corner of the target is within the
-	 * bounds.
+	 * Relocates a <i>target</i> of the specified location and dimensions so that the top left corner of the target is
+	 * within the specified bounds and the change to the location of the target is minimised, and returns the new
+	 * location.
 	 *
 	 * @param  x
 	 *           the <i>x</i> coordinate of the target.
@@ -1092,9 +1081,9 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the location of a target object with the specified location and size within the specified bounds such
-	 * that the change to the location of the target is minimised and the top left corner of the target is within the
-	 * bounds.
+	 * Relocates a <i>target</i> of the specified location and dimensions so that the top left corner of the target is
+	 * within the specified bounds and the change to the location of the target is minimised, and returns the new
+	 * location.
 	 *
 	 * @param  x
 	 *           the <i>x</i> coordinate of the target.
@@ -1131,42 +1120,42 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the location of a target object of the specified width and height relative to another object (the
-	 * <i>locator</i>) that has the specified location.  The location is initially calculated so that the top left
-	 * corner of the target coincides with the location of the locator, then adjusted to ensure that as much as possible
-	 * of the target lies within the visual bounds of the screen that contains the location of the locator.
+	 * Returns the location of a <i>target</i> of the specified width and height relative to a <i>reference object</i>
+	 * that has the specified location.  The location is initially calculated so that the top left corner of the target
+	 * coincides with the location of the reference object, then adjusted to ensure that as much as possible of the
+	 * target lies within the visual bounds of the screen that contains the location of the reference object.
 	 *
 	 * @param  width
 	 *           the width of the target.
 	 * @param  height
 	 *           the height of the target.
-	 * @param  locatorX
-	 *           the <i>x</i> coordinate of the object relative to which the target will be located.
-	 * @param  locatorY
-	 *           the <i>y</i> coordinate of the object relative to which the target will be located.
-	 * @return the location of the target relative to the locator, ensuring that as much as possible of the target lies
-	 *         within the visual bounds of the screen that contains the location of the locator.
+	 * @param  referenceX
+	 *           the <i>x</i> coordinate of the reference object.
+	 * @param  referenceY
+	 *           the <i>y</i> coordinate of the reference object.
+	 * @return the location of the target relative to the reference object, ensuring that as much as possible of the
+	 *         target lies within the visual bounds of the screen that contains the location of the reference object.
 	 */
 
 	public static Point2D getRelativeLocation(
 		double	width,
 		double	height,
-		double	locatorX,
-		double	locatorY)
+		double	referenceX,
+		double	referenceY)
 	{
 		// Initialise location
 		Point2D location = null;
 
-		// Determine relative location within visual bounds of screen that contains locator
+		// Determine relative location within visual bounds of screen that contains reference object
 		for (Screen screen : Screen.getScreens())
 		{
 			// Get visual bounds of screen
 			Rectangle2D bounds = screen.getVisualBounds();
 
-			// If locator is within visual bounds of screen, determine location of target within those bounds
-			if (bounds.contains(locatorX, locatorY))
+			// If reference object is within visual bounds of screen, determine location of target within those bounds
+			if (bounds.contains(referenceX, referenceY))
 			{
-				location = getLocationWithinBounds(locatorX, locatorY, width, height, bounds);
+				location = getLocationWithinBounds(referenceX, referenceY, width, height, bounds);
 				break;
 			}
 		}
@@ -1178,43 +1167,43 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the location of a target object of the specified width and height relative to another object (the
-	 * <i>locator</i>) that has the specified location and size.  The location is initially calculated so that the
-	 * centre of the target coincides with the centre of the locator, then adjusted to ensure that as much as possible
-	 * of the target lies within the visual bounds of the screen that contains the location of the locator.
+	 * Returns the location of a <i>target</i> of the specified width and height relative to a <i>reference object</i>
+	 * that has the specified location and size.  The location is initially calculated so that the centre of the target
+	 * coincides with the centre of the reference object, then adjusted to ensure that as much as possible of the target
+	 * lies within the visual bounds of the screen that contains the location of the reference object.
 	 *
 	 * @param  width
 	 *           the width of the target.
 	 * @param  height
 	 *           the height of the target.
-	 * @param  locatorX
-	 *           the <i>x</i> coordinate of the object relative to which the target will be located.
-	 * @param  locatorY
-	 *           the <i>y</i> coordinate of the object relative to which the target will be located.
-	 * @param  locatorWidth
-	 *           the width of the object relative to which the target will be located.
-	 * @param  locatorHeight
-	 *           the height of the object relative to which the target will be located.
-	 * @return the location of the target relative to the locator, ensuring that as much as possible of the target lies
-	 *         within the visual bounds of the screen that contains the location of the locator.
+	 * @param  referenceX
+	 *           the <i>x</i> coordinate of the reference object.
+	 * @param  referenceY
+	 *           the <i>y</i> coordinate of the reference object.
+	 * @param  referenceWidth
+	 *           the width of the reference object.
+	 * @param  referenceHeight
+	 *           the height of the reference object.
+	 * @return the location of the target relative to the reference object, ensuring that as much as possible of the
+	 *         target lies within the visual bounds of the screen that contains the location of the reference object.
 	 */
 
 	public static Point2D getRelativeLocation(
 		double	width,
 		double	height,
-		double	locatorX,
-		double	locatorY,
-		double	locatorWidth,
-		double	locatorHeight)
+		double	referenceX,
+		double	referenceY,
+		double	referenceWidth,
+		double	referenceHeight)
 	{
 		// Initialise location
 		Point2D location = null;
 
 		// Get preferred coordinates of target
-		double targetX = locatorX + 0.5 * (locatorWidth - width);
-		double targetY = locatorY + 0.5 * (locatorHeight - height);
+		double targetX = referenceX + 0.5 * (referenceWidth - width);
+		double targetY = referenceY + 0.5 * (referenceHeight - height);
 
-		// Find screen that has maximal intersection with locator
+		// Find screen that has maximal intersection with reference object
 		double maxIntersection = 0.0;
 		Screen maxIntersectionScreen = null;
 		for (Screen screen : Screen.getScreens())
@@ -1222,13 +1211,15 @@ public class SceneUtils
 			// Get visual bounds of screen
 			Rectangle2D bounds = screen.getVisualBounds();
 
-			// Get extent of horizontal intersection between screen and locator
-			double dx = Math.min(bounds.getMaxX(), locatorX + locatorWidth) - Math.max(bounds.getMinX(), locatorX);
+			// Get extent of horizontal intersection between screen and reference object
+			double dx = Math.min(bounds.getMaxX(), referenceX + referenceWidth)
+							- Math.max(bounds.getMinX(), referenceX);
 
-			// Get extent of vertical intersection between screen and locator
-			double dy = Math.min(bounds.getMaxY(), locatorY + locatorHeight) - Math.max(bounds.getMinY(), locatorY);
+			// Get extent of vertical intersection between screen and reference object
+			double dy = Math.min(bounds.getMaxY(), referenceY + referenceHeight)
+							- Math.max(bounds.getMinY(), referenceY);
 
-			// Calculate area of intersection between screen and locator
+			// Calculate area of intersection between screen and reference object
 			double intersection = ((dx > 0) && (dy > 0)) ? dx * dy : 0.0;
 
 			// Update maximum intersection
@@ -1239,7 +1230,8 @@ public class SceneUtils
 			}
 		}
 
-		// Determine location of target within visual bounds of screen that has maximal intersection with locator
+		// Determine location of target within visual bounds of screen that has maximal intersection with reference
+		// object
 		if (maxIntersectionScreen != null)
 		{
 			location = getLocationWithinBounds(targetX, targetY, width, height,
@@ -1253,150 +1245,116 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the screen location of a target object of the specified width and height relative to the specified
-	 * <i>locator</i> node by aligning the specified reference position of the target with the specified reference
-	 * position of the locator node.
+	 * Returns the screen location of a <i>target</i> of the specified width and height relative to the specified
+	 * <i>reference node</i> by aligning the specified position on the target with the specified position on the
+	 * reference node.
 	 *
 	 * @param  width
 	 *           the width of the target.
 	 * @param  height
 	 *           the height of the target.
 	 * @param  pos
-	 *           the reference position of the target, which will be aligned with {@code locatorPos}.
-	 * @param  locator
+	 *           the position on the target that will be aligned with {@code referencePos}.
+	 * @param  reference
 	 *           the node relative to which the target will be located.
-	 * @param  locatorPos
-	 *           the reference position of {@code locator}, which will be aligned with {@code pos}.
-	 * @return the location of the target relative to the locator, aligning {@code pos} with {@code locatorPos}.
+	 * @param  referencePos
+	 *           the position on {@code reference} that will be aligned with {@code pos}.
+	 * @return the location of the target relative to the reference node when {@code pos} is aligned with {@code
+	 *         referencePos}.
 	 */
 
 	public static Point2D getRelativeLocation(
 		double	width,
 		double	height,
 		VHPos	pos,
-		Node	locator,
-		VHPos	locatorPos)
+		Node	reference,
+		VHPos	referencePos)
 	{
-		// Get bounds of locator
-		Bounds locatorBounds = locator.localToScreen(locator.getLayoutBounds());
-		if (locatorBounds == null)
-			locatorBounds = new BoundingBox(0.0, 0.0, 0.0, 0.0);
+		// Get bounds of reference node
+		Bounds referenceBounds = reference.localToScreen(reference.getLayoutBounds());
+		if (referenceBounds == null)
+			referenceBounds = new BoundingBox(0.0, 0.0, 0.0, 0.0);
 
 		// Return location of target
-		return getRelativeLocation(width, height, pos, locatorBounds.getMinX(), locatorBounds.getMinY(),
-								   locatorBounds.getWidth(), locatorBounds.getHeight(), locatorPos);
+		return getRelativeLocation(width, height, pos, referenceBounds.getMinX(), referenceBounds.getMinY(),
+								   referenceBounds.getWidth(), referenceBounds.getHeight(), referencePos);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the location of a target object of the specified width and height relative to another object (the
-	 * <i>locator</i>) that has the specified location and size by aligning the specified reference position of the
-	 * target with the specified reference position of the locator.
+	 * Returns the location of a <i>target</i> of the specified width and height relative to a <i>reference object</i>
+	 * that has the specified location and size by aligning the specified position on the target with the specified
+	 * position on the reference object.
 	 *
 	 * @param  width
 	 *           the width of the target.
 	 * @param  height
 	 *           the height of the target.
 	 * @param  pos
-	 *           the reference position of the target, which will be aligned with {@code locatorPos}.
-	 * @param  locatorX
-	 *           the <i>x</i> coordinate of the object relative to which the target will be located.
-	 * @param  locatorY
-	 *           the <i>y</i> coordinate of the object relative to which the target will be located.
-	 * @param  locatorWidth
-	 *           the width of the object relative to which the target will be located.
-	 * @param  locatorHeight
-	 *           the height of the object relative to which the target will be located.
-	 * @param  locatorPos
-	 *           the reference position of {@code locator}, which will be aligned with {@code pos}.
-	 * @return the location of the target relative to the locator, aligning {@code pos} with {@code locatorPos}.
+	 *           the position on the target that will be aligned with {@code referencePos}.
+	 * @param  referenceX
+	 *           the <i>x</i> coordinate of the reference object.
+	 * @param  referenceY
+	 *           the <i>y</i> coordinate of the reference object.
+	 * @param  referenceWidth
+	 *           the width of the reference object.
+	 * @param  referenceHeight
+	 *           the height of the reference object.
+	 * @param  referencePos
+	 *           the position on the reference object that will be aligned with {@code pos}.
+	 * @return the location of the target relative to the reference object when {@code pos} is aligned with {@code
+	 *         referencePos}.
 	 */
 
 	public static Point2D getRelativeLocation(
 		double	width,
 		double	height,
 		VHPos	pos,
-		double	locatorX,
-		double	locatorY,
-		double	locatorWidth,
-		double	locatorHeight,
-		VHPos	locatorPos)
+		double	referenceX,
+		double	referenceY,
+		double	referenceWidth,
+		double	referenceHeight,
+		VHPos	referencePos)
 	{
-		// Initialise x and y coordinates
-		double x = 0.0;
-		double y = 0.0;
-
-		// Get x coordinate of locator
-		double x1 = locatorX;
-		double x3 = locatorX + locatorWidth;
-		double x2 = 0.5 * (x1 + x3);
-		switch (locatorPos.getH())
+		// Get x coordinate of reference object
+		double x1 = referenceX;
+		double x2 = referenceX + referenceWidth;
+		double x = switch (referencePos.h())
 		{
-			case LEFT:
-				x = x1;
-				break;
+			case LEFT   -> x1;
+			case CENTRE -> 0.5 * (x1 + x2);
+			case RIGHT  -> x2;
+		};
 
-			case CENTRE:
-				x = x2;
-				break;
-
-			case RIGHT:
-				x = x3;
-				break;
-		}
-
-		// Get y coordinate of locator
-		double y1 = locatorY;
-		double y3 = locatorY + locatorHeight;
-		double y2 = 0.5 * (y1 + y3);
-		switch (locatorPos.getV())
+		// Get y coordinate of reference object
+		double y1 = referenceY;
+		double y2 = referenceY + referenceHeight;
+		double y = switch (referencePos.v())
 		{
-			case TOP:
-				y = y1;
-				break;
+			case TOP    -> y1;
+			case CENTRE -> 0.5 * (y1 + y2);
+			case BOTTOM -> y2;
+		};
 
-			case CENTRE:
-				y = y2;
-				break;
-
-			case BOTTOM:
-				y = y3;
-				break;
-		}
-
-		// Adjust x coordinate for position of target
-		switch (pos.getH())
+		// Get displacement of x coordinate
+		double dx = switch (pos.h())
 		{
-			case LEFT:
-				break;
+			case LEFT   -> 0.0;
+			case CENTRE -> 0.5 * width;
+			case RIGHT  -> width;
+		};
 
-			case CENTRE:
-				x -= 0.5 * width;
-				break;
-
-			case RIGHT:
-				x -= width;
-				break;
-		}
-
-		// Adjust y coordinate for position of target
-		switch (pos.getV())
+		// Get displacement of y coordinate
+		double dy = switch (pos.v())
 		{
-			case TOP:
-				break;
-
-			case CENTRE:
-				y -= 0.5 * height;
-				break;
-
-			case BOTTOM:
-				y -= height;
-				break;
-		}
+			case TOP    -> 0.0;
+			case CENTRE -> 0.5 * height;
+			case BOTTOM -> height;
+		};
 
 		// Return location of target
-		return new Point2D(x, y);
+		return new Point2D(x - dx, y - dy);
 	}
 
 	//------------------------------------------------------------------

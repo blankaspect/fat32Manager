@@ -50,7 +50,19 @@ public class FillerUtils
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
 
-	public static Region hBoxFiller(double minWidth)
+	public static Region filler(
+		double	minWidth,
+		double	minHeight)
+	{
+		Region filler = new Region();
+		filler.setMinSize(minWidth, minHeight);
+		return filler;
+	}
+
+	//------------------------------------------------------------------
+
+	public static Region hBoxFiller(
+		double	minWidth)
 	{
 		Region filler = new Region();
 		filler.setMinWidth(minWidth);
@@ -60,7 +72,8 @@ public class FillerUtils
 
 	//------------------------------------------------------------------
 
-	public static Region vBoxFiller(double minHeight)
+	public static Region vBoxFiller(
+		double	minHeight)
 	{
 		Region filler = new Region();
 		filler.setMinHeight(minHeight);

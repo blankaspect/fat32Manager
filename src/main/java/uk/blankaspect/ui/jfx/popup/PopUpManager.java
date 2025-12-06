@@ -516,7 +516,7 @@ public class PopUpManager
 		// Add mouse-event handlers to show and hide pop-up
 		addEventHandlerManager(target, MouseEvent.MOUSE_ENTERED, mouseEventHandler).addHandler();
 		if ((targetPos == null)
-				|| !(targetPos.getV().isOpposite(popUpPos.getV()) || targetPos.getH().isOpposite(popUpPos.getH())))
+				|| !(targetPos.v().isOpposite(popUpPos.v()) || targetPos.h().isOpposite(popUpPos.h())))
 			addEventHandlerManager(target, MouseEvent.MOUSE_MOVED, mouseEventHandler).addHandler();
 		addEventHandlerManager(target, MouseEvent.MOUSE_EXITED, this::hidePopUp).addHandler();
 

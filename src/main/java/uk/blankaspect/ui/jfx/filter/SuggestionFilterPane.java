@@ -20,8 +20,9 @@ package uk.blankaspect.ui.jfx.filter;
 
 import java.lang.invoke.MethodHandles;
 
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import javafx.event.ActionEvent;
 
@@ -43,6 +44,7 @@ import javafx.stage.WindowEvent;
 import uk.blankaspect.common.css.CssSelector;
 
 import uk.blankaspect.common.function.IFunction0;
+import uk.blankaspect.common.function.IProcedure0;
 
 import uk.blankaspect.ui.jfx.label.Labels;
 
@@ -53,8 +55,6 @@ import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
-
-import uk.blankaspect.ui.jfx.text.TextUtils;
 
 //----------------------------------------------------------------------
 
@@ -85,17 +85,22 @@ public class SuggestionFilterPane<T>
 	/** The preferred number of rows of the list view. */
 	private static final	int		LIST_VIEW_NUM_ROWS	= 8;
 
+	/** The key combination Ctrl+H, equivalent to backspace. */
+	private static final	KeyCombination	KEY_COMBO_CTRL_H	=
+			new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN);
+
 	/** The key combination that causes the list of suggestions to be displayed. */
 	private static final	KeyCombination	KEY_COMBO_LIST_TRIGGER	=
 			new KeyCodeCombination(KeyCode.SPACE, KeyCombination.CONTROL_DOWN);
 
-	/** Key combinations that do not cause the list of suggestions to be displayed. */
-	private static final	KeyCombination[]	LIST_NON_TRIGGER_KEY_COMBINATIONS	=
-	{
-		new KeyCodeCombination(KeyCode.ENTER),
-		new KeyCodeCombination(KeyCode.TAB),
-		new KeyCodeCombination(KeyCode.DELETE),
-	};
+	/** Keys that do not cause the list of suggestions to be displayed. */
+	private static final	Set<KeyCode>	LIST_NON_TRIGGER_KEYS	= EnumSet.of
+	(
+		KeyCode.ESCAPE,
+		KeyCode.ENTER,
+		KeyCode.TAB,
+		KeyCode.DELETE
+	);
 
 	/** The default key combination that advances the filter mode to the next value in the cycle. */
 	private static final	KeyCombination	DEFAULT_KEY_COMBO_NEXT_FILTER_MODE	=
@@ -255,11 +260,10 @@ public class SuggestionFilterPane<T>
 
 		// Create list view for filtered items
 		listView = new FilteredListView<>(converter);
+		listView.setPrefNumRows(LIST_VIEW_NUM_ROWS);
 		listView.setFilterMode(initialFilterMode);
 		listView.prefWidthProperty().bind(textField.widthProperty());
-		listView.setPrefHeight((double)LIST_VIEW_NUM_ROWS
-								* (TextUtils.textHeight() + 2.0 * FilteredListView.DEFAULT_CELL_VERTICAL_PADDING + 1.0)
-								+ 2.0);
+		listView.filterModeProperty().bind(filterModeProperty());
 
 		// Set placeholder on list view
 		Label placeholderLabel =
@@ -272,47 +276,44 @@ public class SuggestionFilterPane<T>
 		// Update list view when filter changes
 		textField.textProperty().addListener((observable, oldText, text) -> listView.setFilter(text));
 
+		// Create test for whether list view contains items
+		IFunction0<Boolean> listViewHasItems = () -> !listView.getItems().isEmpty();
+
 		// Create pop-up for list
 		popUp = new Popup();
 		popUp.getContent().add(listView);
 		popUp.setAutoHide(true);
 
-		// When pop-up is shown, bind filter mode of list view to filter mode of this pane; select first item in list
-		// view
+		// When pop-up is shown, select first item in list view
 		popUp.addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 		{
-			// Update list view when filter mode changes
-			listView.filterModeProperty().bind(filterModeProperty());
-
-			// Select first item in list view
-			if (!listView.getItems().isEmpty())
+			if (listViewHasItems.invoke())
 				listView.getSelectionModel().select(0);
 		});
 
-		// When pop-up is hidden, unbind filter mode of list view from filter mode of this pane
-		popUp.addEventHandler(WindowEvent.WINDOW_HIDING, event -> listView.filterModeProperty().unbind());
+		// Create procedure to show pop-up below text field
+		IProcedure0 showPopUp = () ->
+		{
+			Bounds bounds = textField.localToScreen(textField.getLayoutBounds());
+			popUp.show(textField, bounds.getMinX() - 1.0, bounds.getMaxY());
+		};
 
-		// Display list when a recognised key is pressed on text field
+		// Handle 'key pressed' events on text field
 		textField.addEventFilter(KeyEvent.KEY_PRESSED, event ->
 		{
-			// Create function to test whether key event causes suggestion list to be displayed
-			IFunction0<Boolean> showList = () ->
+			// Case: show pop-up
+			if (KEY_COMBO_LIST_TRIGGER.match(event))
 			{
-				if (KEY_COMBO_LIST_TRIGGER.match(event))
-					return true;
+				// Show pop-up
+				if (!popUp.isShowing())
+					showPopUp.invoke();
 
-				if (Arrays.stream(LIST_NON_TRIGGER_KEY_COMBINATIONS).anyMatch(keyCombo -> keyCombo.match(event)))
-					return false;
+				// Consume event
+				event.consume();
+			}
 
-				if (event.isControlDown() || event.isAltDown())
-					return false;
-
-				KeyCode keyCode = event.getCode();
-				return !(keyCode.isNavigationKey() || keyCode.isFunctionKey() || keyCode.isModifierKey());
-			};
-
-			// Change filter mode
-			if (filterModeKeyCombination.match(event))
+			// Case: change filter mode
+			else if (filterModeKeyCombination.match(event))
 			{
 				// Change filter mode
 				if (hasFilterModeButton)
@@ -321,34 +322,32 @@ public class SuggestionFilterPane<T>
 				// Consume event
 				event.consume();
 			}
-
-			// Hide pop-up
-			else if (event.getCode() == KeyCode.ESCAPE)
-			{
-				// Hide pop-up
-				popUp.hide();
-
-				// Consume event
-				event.consume();
-			}
-
-			// Display suggestion list in pop-up
-			else if (showList.invoke() && !popUp.isShowing())
-			{
-				// Display pop-up
-				Bounds bounds = textField.localToScreen(textField.getLayoutBounds());
-				popUp.show(textField, bounds.getMinX() - 1.0, bounds.getMaxY());
-
-				// Update list view
-				listView.setFilter(textField.getText());
-
-				// Consume event
-				if (event.getCode() != KeyCode.BACK_SPACE)
-					event.consume();
-			}
 		});
 
-		// Hide list when 'action' event occurs on text field
+		// Handle 'key released' events on text field
+		textField.addEventHandler(KeyEvent.KEY_RELEASED, event ->
+		{
+			// Ignore key event if it does not cause suggestion list to be displayed
+			KeyCode keyCode = event.getCode();
+			if (!(KEY_COMBO_CTRL_H.match(event) || filterModeKeyCombination.match(event))
+					&& ((event.isControlDown() || event.isAltDown() || LIST_NON_TRIGGER_KEYS.contains(keyCode)
+						|| keyCode.isNavigationKey() || keyCode.isFunctionKey() || keyCode.isModifierKey())))
+				return;
+
+			// Update filter with content of text field
+			listView.setFilter(textField.getText());
+
+			// Show or hide pop-up according to whether list contains items
+			if (listViewHasItems.invoke())
+			{
+				if (!popUp.isShowing())
+					showPopUp.invoke();
+			}
+			else if (popUp.isShowing())
+				popUp.hide();
+		});
+
+		// Hide pop-up when 'action' event occurs on text field
 		textField.addEventFilter(ActionEvent.ACTION, event ->
 		{
 			if (popUp.isShowing())
@@ -377,19 +376,35 @@ public class SuggestionFilterPane<T>
 						break;
 
 					case HOME:
-						if (event.isShiftDown())
-							textField.selectHome();
+						if (event.isControlDown())
+						{
+							if (listViewHasItems.invoke())
+								listView.getSelectionModel().select(0);
+						}
 						else
-							textField.home();
-						event.consume();
+						{
+							if (event.isShiftDown())
+								textField.selectHome();
+							else
+								textField.home();
+							event.consume();
+						}
 						break;
 
 					case END:
-						if (event.isShiftDown())
-							textField.selectEnd();
+						if (event.isControlDown())
+						{
+							if (listViewHasItems.invoke())
+								listView.getSelectionModel().select(listView.getItems().size() - 1);
+						}
 						else
-							textField.end();
-						event.consume();
+						{
+							if (event.isShiftDown())
+								textField.selectEnd();
+							else
+								textField.end();
+							event.consume();
+						}
 						break;
 
 					default:
@@ -399,10 +414,21 @@ public class SuggestionFilterPane<T>
 			}
 		});
 
-		// Handle key presses on list
+		// Handle 'key pressed' events on list
 		listView.addEventHandler(KeyEvent.KEY_PRESSED, event ->
 		{
-			if (filterModeKeyCombination.match(event))
+			// Case: hide pop-up
+			if (KEY_COMBO_LIST_TRIGGER.match(event))
+			{
+				// Hide pop-up
+				popUp.hide();
+
+				// Consume event
+				event.consume();
+			}
+
+			// Case: change filter mode
+			else if (filterModeKeyCombination.match(event))
 			{
 				// Change filter mode
 				if (hasFilterModeButton)
@@ -411,6 +437,8 @@ public class SuggestionFilterPane<T>
 				// Consume event
 				event.consume();
 			}
+
+			// Case: handle other keys
 			else
 			{
 				switch (event.getCode())
@@ -434,14 +462,14 @@ public class SuggestionFilterPane<T>
 		// Commit selected item when mouse is double-clicked on item in list
 		listView.addEventHandler(ActionEvent.ACTION, event ->
 		{
-			// Get selected item
+			// Get text of selected item
 			String text = converter.getText(listView.getSelectionModel().getSelectedItem());
 
 			// Set it on text field
 			textField.setText(text);
 			textField.end();
 
-			// Close pop-up
+			// Hide pop-up
 			popUp.hide();
 		});
 	}

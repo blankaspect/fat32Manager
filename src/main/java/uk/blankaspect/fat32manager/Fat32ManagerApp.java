@@ -1895,12 +1895,13 @@ public class Fat32ManagerApp
 				.verticalGap(4.0)
 				.padding(new Insets(0.0, 2.0, 0.0, 2.0))
 				.valueLabelPadding(new Insets(1.0, 6.0, 1.0, 6.0))
+				.valueLabelHasContextMenu(true)
 				.nameConverter(name -> name.chars().allMatch(ch -> Character.isUpperCase(ch))
 																			? name
 																			: StringUtils.firstCharToLowerCase(name))
 				.properties1(volume.getProperties())
-				.showDialog(primaryStage, DialogKey.VOLUME_PROPERTIES,
-							PROPERTIES_STR + OF_STR + Utils.volumeDisplayName(volume));
+				.showModalDialog(primaryStage, DialogKey.VOLUME_PROPERTIES,
+								 PROPERTIES_STR + OF_STR + Utils.volumeDisplayName(volume));
 	}
 
 	//------------------------------------------------------------------
