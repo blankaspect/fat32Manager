@@ -510,9 +510,8 @@ public class SectorClusterViewDialog
 
 	static
 	{
-		// Register the style properties of this class and its dependencies with the style manager
-		StyleManager.INSTANCE.register(SectorClusterViewDialog.class, COLOUR_PROPERTIES, RULE_SETS,
-									   PaneStyle.class);
+		// Register the style properties of this class with the style manager
+		StyleManager.INSTANCE.register(SectorClusterViewDialog.class, COLOUR_PROPERTIES, RULE_SETS);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -1802,8 +1801,8 @@ public class SectorClusterViewDialog
 			{
 				try
 				{
-					PosixFileAttributes posixAttrs = Files.readAttributes(file, PosixFileAttributes.class,
-																		  LinkOption.NOFOLLOW_LINKS);
+					PosixFileAttributes posixAttrs =
+							Files.readAttributes(file, PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 					attrs = new FileAttribute<?>[] { PosixFilePermissions.asFileAttribute(posixAttrs.permissions()) };
 				}
 				catch (UnsupportedOperationException e)
@@ -2759,7 +2758,7 @@ public class SectorClusterViewDialog
 			directoryField.setLocationMatcher(PathnameField.DIRECTORY_MATCHER);
 
 			// Pathname pane: directory
-			PathnamePane directoryPane = new PathnamePane(directoryField, event ->
+			PathnamePane directoryPane = new PathnamePane(directoryField, true, event ->
 			{
 				// Set initial directory of directory chooser from content of output-directory field
 				directoryField.initChooser(directoryChooser, DEFAULT_DIRECTORY);

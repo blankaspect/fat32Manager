@@ -42,6 +42,9 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 
 import javafx.scene.layout.Region;
@@ -81,6 +84,20 @@ public class MainDirectoryTableView
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
+
+	/** The key combination that invokes the <i>open directory</i> command. */
+	private static final	KeyCombination	KEY_COMBO_OPEN			= new KeyCodeCombination(KeyCode.ENTER);
+
+	/** The key combination that invokes the <i>open parent directory</i> command. */
+	private static final	KeyCombination	KEY_COMBO_OPEN_PARENT	=
+			new KeyCodeCombination(KeyCode.UP, KeyCombination.CONTROL_DOWN);
+
+	/** The key combinations that invoke the <i>refresh directory</i> command. */
+	private static final	List<KeyCombination>	KEY_COMBOS_REFRESH	= List.of
+	(
+		new KeyCodeCombination(KeyCode.F5),
+		new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN)
+	);
 
 	/** The key of the instance of {@link TextAreaDialog} that may be displayed by the <i>refresh directory</i>
 		command. */
@@ -133,28 +150,26 @@ public class MainDirectoryTableView
 		directoryChangedNotifier = new ChangeNotifier<>();
 		historyChangedNotifier = new ChangeNotifier<>();
 
-		// Open directory when 'Enter' is pressed on directory entry
+		// Handle 'key pressed' events
 		addEventHandler(KeyEvent.KEY_PRESSED, event ->
 		{
-			switch (event.getCode())
+			if (KEY_COMBO_OPEN.match(event))
 			{
-				case ENTER:
-				{
-					Fat32Directory.Entry entry = getSelectionModel().getSelectedItem();
-					if ((entry != null) && entry.isDirectory()
-							&& !entry.getName().equals(Fat32Directory.SPECIAL_DIRECTORY_NAME_THIS))
-						openDirectory(entry);
-					break;
-				}
-
-				case UP:
-					if (event.isControlDown())
-						openParentDirectory();
-					break;
-
-				default:
-					// do nothing
-					break;
+				Fat32Directory.Entry entry = getSelectionModel().getSelectedItem();
+				if ((entry != null) && entry.isDirectory()
+						&& !entry.getName().equals(Fat32Directory.SPECIAL_DIRECTORY_NAME_THIS))
+					openDirectory(entry);
+				event.consume();
+			}
+			else if (KEY_COMBO_OPEN_PARENT.match(event))
+			{
+				openParentDirectory();
+				event.consume();
+			}
+			else if (KEY_COMBOS_REFRESH.stream().anyMatch(keyCombo -> keyCombo.match(event)))
+			{
+				refreshDirectory();
+				event.consume();
 			}
 		});
 	}

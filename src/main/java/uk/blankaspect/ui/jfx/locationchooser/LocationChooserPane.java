@@ -4665,13 +4665,9 @@ public class LocationChooserPane
 			// Fire 'cancel' button if Escape key is pressed; fire 'OK' button if Ctrl+Enter is pressed
 			setKeyFireButton(cancelButton, okButton);
 
-			// When dialog is shown, prevent its height from changing; request focus on text field
+			// When dialog is shown, request focus on text field
 			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 			{
-				// Prevent height of dialog from changing
-				WindowUtils.preventHeightChange(this);
-
-				// Request focus on text field
 				textField.requestFocus();
 				textField.selectAll();
 			});
@@ -4682,6 +4678,22 @@ public class LocationChooserPane
 	////////////////////////////////////////////////////////////////////
 	//  Instance methods : overriding methods
 	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Prevents the height of this dialog from changing.
+		 */
+
+		@Override
+		protected void onWindowShown()
+		{
+			// Call superclass method
+			super.onWindowShown();
+
+			// Prevent height of window from changing
+			WindowUtils.preventHeightChange(this);
+		}
+
+		//--------------------------------------------------------------
 
 		/**
 		 * {@inheritDoc}

@@ -618,8 +618,37 @@ public class TreeUtils
 		int					indentIncrement,
 		Function<T, String>	converter)
 	{
-		return TreeTraversal.treeToString(root, indentIncrement, ITreeNode::getParent, ITreeNode::getChildren,
-										  converter);
+		return treeToString(root, indentIncrement, true, converter);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a string representation of the tree of {@link ITreeNode}s whose root is the specified node.  The
+	 * inclusion of the root node in the string representation is optional.
+	 *
+	 * @param  <T>
+	 *           the type of the nodes of the tree.
+	 * @param  root
+	 *           the node at the root of the tree.
+	 * @param  indentIncrement
+	 *           the number of spaces by which the indent of a line of text will be incremented for each level of the
+	 *           tree below {@code root}.
+	 * @param  includeRoot
+	 *           if {@code true}, {@code root} will be included in the string representation.
+	 * @param  converter
+	 *           the function that will convert each node to its string representation.
+	 * @return a string representation of the tree whose root is {@code root}.
+	 */
+
+	public static <T extends ITreeNode<T>> String treeToString(
+		T					root,
+		int					indentIncrement,
+		boolean				includeRoot,
+		Function<T, String>	converter)
+	{
+		return TreeTraversal.treeToString(root, indentIncrement, includeRoot, ITreeNode::getParent,
+										  ITreeNode::getChildren, converter);
 	}
 
 	//------------------------------------------------------------------

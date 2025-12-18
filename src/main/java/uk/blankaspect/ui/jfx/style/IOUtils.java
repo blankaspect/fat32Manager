@@ -118,8 +118,8 @@ public class IOUtils
 			{
 				try
 				{
-					PosixFileAttributes posixAttrs = Files.readAttributes(file, PosixFileAttributes.class,
-																		  LinkOption.NOFOLLOW_LINKS);
+					PosixFileAttributes posixAttrs =
+							Files.readAttributes(file, PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 					attrs = new FileAttribute<?>[] { PosixFilePermissions.asFileAttribute(posixAttrs.permissions()) };
 				}
 				catch (UnsupportedOperationException e)

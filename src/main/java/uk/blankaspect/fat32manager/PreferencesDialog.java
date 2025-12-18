@@ -99,7 +99,7 @@ public class PreferencesDialog
 	private static final	double	CONTROL_H_GAP	= 6.0;
 	private static final	double	CONTROL_V_GAP	= 6.0;
 
-	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(8.0, 12.0, 8.0, 12.0);
+	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(12.0);
 
 	private static final	Insets	TABBED_PANE_HEADER_PADDING	= new Insets(2.0, 2.0, 0.0, 2.0);
 
@@ -109,7 +109,7 @@ public class PreferencesDialog
 	private static final	String	THEME_STR						= "Theme";
 	private static final	String	COLUMN_HEADER_POP_UP_DELAY_STR	= "Table-column header pop-up delay";
 	private static final	String	MS_STR							= "ms";
-	private static final	String	SHOW_SPECIAL_DIRECTORIES_STR	= "Show special directories";
+	private static final	String	SHOW_SPECIAL_DIRECTORIES_STR	= "Show special directories ( '.' and '..' )";
 	private static final	String	FIX_INVALID_DATES_TIMES_STR		= "Fix invalid dates and times";
 	private static final	String	REMOVABLE_ONLY_STR				= "Removable media only";
 	private static final	String	MIN_NUM_SECTORS_STR				= "Minimum number of sectors";
@@ -167,9 +167,8 @@ public class PreferencesDialog
 
 	static
 	{
-		// Register the style properties of this class and its dependencies with the style manager
-		StyleManager.INSTANCE.register(PreferencesDialog.class, COLOUR_PROPERTIES, RULE_SETS,
-									   PaneStyle.class);
+		// Register the style properties of this class with the style manager
+		StyleManager.INSTANCE.register(PreferencesDialog.class, COLOUR_PROPERTIES, RULE_SETS);
 	}
 
 ////////////////////////////////////////////////////////////////////////

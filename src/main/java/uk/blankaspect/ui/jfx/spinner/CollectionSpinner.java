@@ -191,7 +191,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -245,7 +245,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -297,7 +297,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -350,7 +350,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -402,7 +402,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -456,7 +456,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -508,7 +508,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -562,7 +562,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -616,7 +616,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -671,7 +671,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -725,7 +725,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(items, prototypeText, converter);
+						.items(items, prototypeText, converter);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -780,7 +780,7 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-							.items(getEnumConstants(cls), prototypeText, converter);
+						.items(getEnumConstants(cls), prototypeText, converter);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 

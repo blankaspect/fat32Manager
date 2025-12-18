@@ -584,11 +584,12 @@ public abstract class AbstractTheme
 	//------------------------------------------------------------------
 
 	public void loadDefaultColours(
-		String	pathname,
-		String	keyPrefix)
+		Class<?>	cls,
+		String		pathname,
+		String		keyPrefix)
 		throws LocationException
 	{
-		defaultColours.putAll(readColours(getClass(), pathname, keyPrefix));
+		defaultColours.putAll(readColours(cls, pathname, keyPrefix));
 	}
 
 	//------------------------------------------------------------------

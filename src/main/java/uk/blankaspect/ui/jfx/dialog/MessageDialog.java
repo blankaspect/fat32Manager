@@ -139,8 +139,8 @@ public class MessageDialog
 
 		// Create labels for messages
 		messageLabels = new ArrayList<>();
-		for (String message0 : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
-			messageLabels.add(new Label(message0));
+		for (String msg : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
+			messageLabels.add(new Label(msg));
 
 		// Create pane for message labels
 		VBox messagePane = new VBox(MESSAGE_GAP);

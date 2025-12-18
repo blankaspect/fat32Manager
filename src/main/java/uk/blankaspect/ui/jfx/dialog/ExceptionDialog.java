@@ -433,9 +433,9 @@ public class ExceptionDialog
 		messageLabels = new ArrayList<>();
 		if (!StringUtils.isNullOrEmpty(message))
 		{
-			for (String message0 : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
+			for (String msg : StringUtils.split(message, MessageConstants.LABEL_SEPARATOR_CHAR, true))
 			{
-				Label label = new Label(message0);
+				Label label = new Label(msg);
 				label.setMinWidth(MIN_MESSAGE_LABEL_WIDTH);
 				label.setMaxWidth(MAX_MESSAGE_LABEL_WIDTH);
 				label.setWrapText(true);
@@ -506,12 +506,11 @@ public class ExceptionDialog
 			{
 				boolean focused = detailsButton.isFocused();
 				detailsButton.setBackground(focused
-												? SceneUtils.createColouredBackground(
-														getColour(ColourKey.DETAILS_BUTTON_BACKGROUND_FOCUSED))
-												: null);
+						? SceneUtils.createColouredBackground(getColour(ColourKey.DETAILS_BUTTON_BACKGROUND_FOCUSED))
+						: null);
 				detailsButton.setBorder(focused
-											? SceneUtils.createFocusBorder()
-											: SceneUtils.createSolidBorder(getColour(ColourKey.DETAILS_BUTTON_BORDER)));
+						? SceneUtils.createFocusBorder()
+						: SceneUtils.createSolidBorder(getColour(ColourKey.DETAILS_BUTTON_BORDER)));
 			};
 
 			// Update 'details' button when its focus changes

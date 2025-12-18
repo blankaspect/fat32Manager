@@ -827,8 +827,8 @@ public class LocationChooser
 
 			// Get outer button pane from location-chooser pane
 			StackPane outerButtonPane = chooserPane.getBottomRightPane();
-			outerButtonPane.setBorder(SceneUtils.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER),
-																   Side.LEFT));
+			outerButtonPane.setBorder(SceneUtils
+					.createSolidBorder(getColour(PaneStyle.ColourKey.PANE_BORDER), Side.LEFT));
 			outerButtonPane.getStyleClass().add(StyleClass.OUTER_BUTTON_PANE);
 			outerButtonPane.getChildren().add(buttonPane);
 

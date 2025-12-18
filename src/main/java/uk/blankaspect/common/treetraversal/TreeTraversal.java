@@ -415,7 +415,7 @@ public class TreeTraversal
 	 * @param  node
 	 *           the node whose indices are desired.
 	 * @param  includeRoot
-	 *           the index of {@code root} will be included in the list of indices.
+	 *           if {@code true}, the index of {@code root} will be included in the list of indices.
 	 * @param  baseIndex
 	 *           the base index that is added to each valid index in the list of indices.
 	 * @param  parentMapper
@@ -1050,23 +1050,66 @@ public class TreeTraversal
 		Function<T, List<T>>	childListMapper,
 		Function<T, String>		converter)
 	{
+		return treeToString(root, indentIncrement, true, parentMapper, childListMapper, converter);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns a string representation of the tree whose root is the specified node.  The inclusion of the root node in
+	 * the string representation is optional.
+	 *
+	 * @param  <T>
+	 *           the type of the nodes of the tree.
+	 * @param  root
+	 *           the node at the root of the tree.
+	 * @param  indentIncrement
+	 *           the number of spaces by which the indent of a line of text will be incremented for each level of the
+	 *           tree below {@code root}.
+	 * @param  includeRoot
+	 *           if {@code true}, {@code root} will be included in the string representation.
+	 * @param  parentMapper
+	 *           the function that returns the parent of a given node.
+	 * @param  childListMapper
+	 *           the function that returns a list of the children of a given node.
+	 * @param  converter
+	 *           the function that will convert each node to its string representation.
+	 * @return a string representation of the tree whose root is {@code root}.
+	 */
+
+	public static <T> String treeToString(
+		T						root,
+		int						indentIncrement,
+		boolean					includeRoot,
+		Function<T, T>			parentMapper,
+		Function<T, List<T>>	childListMapper,
+		Function<T, String>		converter)
+	{
 		StringBuilder buffer = new StringBuilder(256);
+		int[] nodeCount = { 0 };
 		visitDepthFirst(root, true, true, childListMapper, node ->
 		{
 			// Get depth of node below root
 			int depth = getDepth(root, node, parentMapper);
 
-			// Append linefeed if node is not root
-			if (depth > 0)
+			// Append linefeed if node is not first to be represented
+			if (nodeCount[0] > 0)
 				buffer.append('\n');
 
-			// Append indent
-			int indent = depth * indentIncrement;
-			for (int i = 0; i < indent; i++)
-				buffer.append(' ');
+			// Append indent and string representation of node
+			if (includeRoot || (depth > 0))
+			{
+				// Append indent
+				int indent = (includeRoot ? depth : depth - 1) * indentIncrement;
+				for (int i = 0; i < indent; i++)
+					buffer.append(' ');
 
-			// Append string representation of node
-			buffer.append(converter.apply(node));
+				// Append string representation of node
+				buffer.append(converter.apply(node));
+
+				// Increment node counter
+				++nodeCount[0];
+			}
 
 			// Continue to traverse tree
 			return true;

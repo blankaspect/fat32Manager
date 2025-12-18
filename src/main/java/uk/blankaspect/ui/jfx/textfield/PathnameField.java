@@ -462,7 +462,7 @@ public class PathnameField
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the content of this field (the pathname) after applying the following steps to it:
+	 * Returns the text of this field (the pathname) after applying the following steps to it:
 	 * <ol>
 	 *   <li>
 	 *     If the first character of the pathname is '~', the '~' is replaced by the absolute pathname of the user's
@@ -475,7 +475,7 @@ public class PathnameField
 	 *   </li>
 	 * </ol>
 	 *
-	 * @return the content of this field after applying the steps described above.
+	 * @return the text of this field after applying the steps described above.
 	 */
 
 	public String getPathname()
@@ -486,10 +486,10 @@ public class PathnameField
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the content of this field as a {@linkplain Path location} after applying the steps described in {@link
+	 * Returns the text of this field as a {@linkplain Path location} after applying the steps described in {@link
 	 * #getPathname()}.  If the pathname is invalid, an error message is displayed in a pop-up window below the field.
 	 *
-	 * @return the content of this field as a {@linkplain Path location} after applying the steps described in {@link
+	 * @return the text of this field as a {@linkplain Path location} after applying the steps described in {@link
 	 *         #getPathname()}, or {@code null} if the field is empty or the return value of {@link #getPathname()} is
 	 *         not a valid pathname.
 	 */
@@ -539,8 +539,38 @@ public class PathnameField
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the content of this field to the specified pathname, converting it to UNIX style if the field's UNIX-style
-	 * flag is set.
+	 * Returns {@code true} if the text of this field satisfies all of the following:
+	 * <ul>
+	 *   <li>it is not {@code null},</li>
+	 *   <li>it is not empty,</li>
+	 *   <li>it not a valid pathname.</li>
+	 * </ul>
+	 *
+	 * @return {@code true} if the text of this field is not {@code null} AND it is not empty AND it is not a valid
+	 *         pathname.
+	 */
+
+	public boolean isInvalid()
+	{
+		String pathname = getPathname();
+		if (!StringUtils.isNullOrEmpty(pathname))
+		{
+			try
+			{
+				Path.of(pathname);
+			}
+			catch (InvalidPathException e)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the text of this field to the specified pathname.
 	 *
 	 * @param pathname
 	 *          the pathname that will set on this field.
@@ -555,10 +585,10 @@ public class PathnameField
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the content of this field to the absolute pathname of the specified location.
+	 * Sets the text of this field to the absolute pathname of the specified location.
 	 *
 	 * @param location
-	 *          the location to whose absolute pathname the content of this field will be set.
+	 *          the location to whose absolute pathname the text of this field will be set.
 	 */
 
 	public void setLocation(

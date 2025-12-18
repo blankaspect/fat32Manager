@@ -54,7 +54,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 
 import javafx.stage.Window;
-import javafx.stage.WindowEvent;
 
 import uk.blankaspect.common.css.CssSelector;
 
@@ -682,6 +681,25 @@ public class PropertiesPane
 				// Fire 'close' button if Escape key is pressed
 				setKeyFireButton(closeButton, null);
 			}
+
+			@Override
+			protected void onWindowShown()
+			{
+				// Call superclass method
+				super.onWindowShown();
+
+				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum and prevent
+				// height of dialog from changing
+				if (isResizable())
+				{
+					// Reduce width of dialog if it exceeds maximum
+					if (getWidth() > dialogMaxInitialWidth)
+						setWidth(dialogMaxInitialWidth);
+
+					// Prevent height of dialog from changing
+					WindowUtils.preventHeightChange(this);
+				}
+			}
 		};
 
 		// Show dialog
@@ -727,6 +745,25 @@ public class PropertiesPane
 
 				// Fire 'close' button if Escape key is pressed
 				setKeyFireButton(closeButton, null);
+			}
+
+			@Override
+			protected void onWindowShown()
+			{
+				// Call superclass method
+				super.onWindowShown();
+
+				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum and prevent
+				// height of dialog from changing
+				if (isResizable())
+				{
+					// Reduce width of dialog if it exceeds maximum
+					if (getWidth() > dialogMaxInitialWidth)
+						setWidth(dialogMaxInitialWidth);
+
+					// Prevent height of dialog from changing
+					WindowUtils.preventHeightChange(this);
+				}
 			}
 		};
 	}
@@ -896,22 +933,6 @@ public class PropertiesPane
 				event.consume();
 			}
 		});
-
-		// If dialog is resizable, prevent height of dialog from changing and ensure that initial width of dialog does
-		// not exceed maximum
-		if (dialog.isResizable())
-		{
-			// When dialog is shown, reduce its width if it exceeds maximum and prevent its height from changing
-			dialog.addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
-			{
-				// Reduce width of dialog if it exceeds maximum
-				if (dialog.getWidth() > dialogMaxInitialWidth)
-					dialog.setWidth(dialogMaxInitialWidth);
-
-				// Prevent height of dialog from changing
-				WindowUtils.preventHeightChange(dialog);
-			});
-		}
 
 		// Return 'close' button
 		return closeButton;

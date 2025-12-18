@@ -374,11 +374,28 @@ public class SimpleProgressDialog
 			}
 		});
 
-		// When dialog is shown, prevent its height from changing
-		addEventHandler(WindowEvent.WINDOW_SHOWN, event -> WindowUtils.preventHeightChange(this));
-
 		// When dialog is closed, disable progress bar to stop indeterminate-progress timer
 		addEventHandler(WindowEvent.WINDOW_HIDING, event -> progressBar.setDisable(true));
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Instance methods : overriding methods
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Prevents the height of this dialog from changing.
+	 */
+
+	@Override
+	protected void onWindowShown()
+	{
+		// Call superclass method
+		super.onWindowShown();
+
+		// Prevent height of window from changing
+		WindowUtils.preventHeightChange(this);
 	}
 
 	//------------------------------------------------------------------

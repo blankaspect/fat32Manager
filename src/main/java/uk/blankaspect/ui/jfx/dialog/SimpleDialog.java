@@ -479,12 +479,19 @@ public abstract class SimpleDialog
 				setX(location.getX());
 				setY(location.getY());
 
-				// Restore minimum dimensions (Linux/GNOME)
-				setMinWidth(0.0);
-				setMinHeight(0.0);
+				// Make window visible and restore minimum dimensions after a delay
+				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () ->
+				{
+					// Make window visible
+					setOpacity(1.0);
 
-				// Make window visible after a delay
-				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () -> setOpacity(1.0));
+					// Restore minimum dimensions (Linux/GNOME)
+					setMinWidth(0.0);
+					setMinHeight(0.0);
+
+					// Allow subclasses to complete the initialisation of the dialog after the window is shown
+					onWindowShown();
+				});
 			});
 		});
 
@@ -1044,6 +1051,18 @@ public abstract class SimpleDialog
 			addEventFilter(KeyEvent.KEY_PRESSED, eventHandler);
 		else
 			addEventHandler(KeyEvent.KEY_PRESSED, eventHandler);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * This method is called by the {@linkplain #SimpleDialog(Modality, Window, String, String, String, int, ILocator,
+	 * Dimension2D) constructor} at the end of the {@code WindowEvent.WINDOW_SHOWN} event handler.  It may be overridden
+	 * by subclasses to complete the initialisation of the dialog after the window is shown.
+	 */
+
+	protected void onWindowShown()
+	{
 	}
 
 	//------------------------------------------------------------------

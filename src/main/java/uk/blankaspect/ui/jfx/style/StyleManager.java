@@ -242,7 +242,7 @@ public class StyleManager
 				// Load default colours of theme
 				String pathname = ResourceUtils.normalisedPathname(cls, DEFAULT_COLOURS_FILENAME);
 				if (ResourceUtils.hasResource(cls, pathname))
-					theme.loadDefaultColours(pathname, colourKeyPrefix(cls));
+					theme.loadDefaultColours(cls, pathname, colourKeyPrefix(cls));
 			}
 		}
 		catch (BaseException e)
@@ -843,7 +843,7 @@ public class StyleManager
 		{
 			String pathname = coloursResourcePathname(cls, theme.id());
 			if (ResourceUtils.hasResource(cls, pathname))
-				theme.loadDefaultColours(pathname, colourKeyPrefix(cls));
+				theme.loadDefaultColours(cls, pathname, colourKeyPrefix(cls));
 		}
 	}
 

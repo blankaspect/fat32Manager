@@ -78,7 +78,7 @@ public class WindowUtils
 		// Fix the minimum and maximum height of the window after a delay
 		ExecUtils.afterDelay(FIX_WINDOW_HEIGHT_DELAY, () ->
 		{
-			double height = Math.ceil(window.getHeight());
+			double height = window.getHeight();
 			window.setMinHeight(height);
 			window.setMaxHeight(height);
 		});
