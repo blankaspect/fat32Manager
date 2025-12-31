@@ -891,7 +891,7 @@ public class Fat32Volume
 	private static String idToString(
 		int	id)
 	{
-		return NumberUtils.uIntToHexString(id >>> 16, 4, '0') + "-" + NumberUtils.uIntToHexString(id, 4, '0');
+		return NumberUtils.uIntToHexStringUpper(id >>> 16, 4, '0') + "-" + NumberUtils.uIntToHexStringUpper(id, 4, '0');
 	}
 
 	//------------------------------------------------------------------
@@ -899,7 +899,7 @@ public class Fat32Volume
 	private static String mediaDescriptorToString(
 		int	value)
 	{
-		return "0x" + NumberUtils.uIntToHexString(value, 2, '0');
+		return "0x" + NumberUtils.uIntToHexStringUpper(value, 2, '0');
 	}
 
 	//------------------------------------------------------------------

@@ -96,11 +96,8 @@ public class LocationChooser
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 200;
-
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler. */
+	private static final	int		WINDOW_SHOWN_DELAY	= 50;
 
 	/** The delay (in milliseconds) before making the dialog window visible by restoring its opacity. */
 	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
@@ -258,7 +255,7 @@ public class LocationChooser
 
 	private static int getWindowShownDelay()
 	{
-		int delay = OsUtils.isWindows() ? WINDOW_SHOWN_DELAY_WINDOWS : WINDOW_SHOWN_DELAY;
+		int delay = WINDOW_SHOWN_DELAY;
 		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
 		if (value != null)
 		{

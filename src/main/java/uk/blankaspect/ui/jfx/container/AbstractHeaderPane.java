@@ -353,6 +353,21 @@ public abstract class AbstractHeaderPane
 	//------------------------------------------------------------------
 
 	/**
+	 * Sets the specified node as the central content of this pane.
+	 *
+	 * @param content
+	 *          the node that will be set as the central content of this pane.
+	 */
+
+	public void setCentralContent(
+		Node	content)
+	{
+		setContent(ContentPosition.CENTER, content);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Updates the header.
 	 */
 

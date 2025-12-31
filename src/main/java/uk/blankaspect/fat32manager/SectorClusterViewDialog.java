@@ -2599,7 +2599,7 @@ public class SectorClusterViewDialog
 				{
 					if (i > 0)
 						buffer1.append('\n');
-					buffer1.append(NumberUtils.uIntToHexString(i, numOffsetDigitsHex, '0'));
+					buffer1.append(NumberUtils.uIntToHexStringUpper(i, numOffsetDigitsHex, '0'));
 					buffer1.append(": ");
 				}
 
@@ -2608,7 +2608,7 @@ public class SectorClusterViewDialog
 					buffer1.append(' ');
 
 				// Append hex representation of byte
-				buffer1.append(NumberUtils.uIntToHexString(data[i], 2, '0'));
+				buffer1.append(NumberUtils.uIntToHexStringUpper(data[i], 2, '0'));
 				buffer1.append(' ');
 
 				// Convert byte to character and append character to secondary buffer

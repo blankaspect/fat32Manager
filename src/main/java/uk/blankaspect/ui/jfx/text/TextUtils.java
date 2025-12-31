@@ -722,11 +722,12 @@ public class TextUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates a {@link Group} that contains the specified {@linkplain Text text nodes}, and returns it.
+	 * Creates a {@link Group} that contains the specified {@linkplain Text text nodes} laid out in a horizontal
+	 * sequence, and returns it.
 	 *
 	 * @param  textNodes
 	 *           the {@code Text} nodes for which a group will be created.
-	 * @return a {@link Group} that contains {@code textNodes}.
+	 * @return a {@link Group} that contains {@code textNodes} laid out in a horizontal sequence.
 	 */
 
 	public static Group createGroup(

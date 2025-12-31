@@ -57,8 +57,6 @@ import javafx.stage.WindowEvent;
 import uk.blankaspect.common.css.CssRuleSet;
 import uk.blankaspect.common.css.CssSelector;
 
-import uk.blankaspect.common.os.OsUtils;
-
 import uk.blankaspect.ui.jfx.container.DialogButtonPane;
 import uk.blankaspect.ui.jfx.container.PaneStyle;
 
@@ -141,11 +139,8 @@ public abstract class SimpleDialog
 	/** The default minimum width of a button. */
 	private static final	double	DEFAULT_MIN_BUTTON_WIDTH	= 3.0 * TextUtils.textHeight();
 
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on platforms other than Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 200;
-
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler on Windows. */
-	private static final	int		WINDOW_SHOWN_DELAY_WINDOWS	= 50;
+	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler. */
+	private static final	int		WINDOW_SHOWN_DELAY	= 100;
 
 	/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
 	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
@@ -605,7 +600,7 @@ public abstract class SimpleDialog
 
 	private static int getWindowShownDelay()
 	{
-		int delay = OsUtils.isWindows() ? WINDOW_SHOWN_DELAY_WINDOWS : WINDOW_SHOWN_DELAY;
+		int delay = WINDOW_SHOWN_DELAY;
 		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
 		if (value != null)
 		{
