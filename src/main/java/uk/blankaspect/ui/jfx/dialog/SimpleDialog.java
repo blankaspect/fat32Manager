@@ -139,11 +139,14 @@ public abstract class SimpleDialog
 	/** The default minimum width of a button. */
 	private static final	double	DEFAULT_MIN_BUTTON_WIDTH	= 3.0 * TextUtils.textHeight();
 
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 100;
-
-	/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
-	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+	/** A map from system-property keys to the default values of the corresponding delays (in milliseconds) in the
+		<i>WINDOW_SHOWN</i> event handler of the window of the dialog. */
+	private static final	Map<String, Integer>	WINDOW_DELAYS	= Map.of
+	(
+		SystemPropertyKey.WINDOW_DELAY_SIZE,     100,
+		SystemPropertyKey.WINDOW_DELAY_LOCATION,  25,
+		SystemPropertyKey.WINDOW_DELAY_OPACITY,   25
+	);
 
 	/** The margins that are applied to the visual bounds of each screen when determining whether the saved location of
 		the window is within a screen. */
@@ -185,7 +188,9 @@ public abstract class SimpleDialog
 	/** Keys of system properties. */
 	private interface SystemPropertyKey
 	{
-		String	WINDOW_SHOWN_DELAY	= "blankaspect.ui.jfx.simpleDialog.windowShownDelay";
+		String	WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.simpleDialog.windowDelay.location";
+		String	WINDOW_DELAY_OPACITY	= "blankaspect.ui.jfx.simpleDialog.windowDelay.opacity";
+		String	WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.simpleDialog.windowDelay.size";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -329,21 +334,33 @@ public abstract class SimpleDialog
 		setScene(new Scene(mainPane));
 
 		// Set style class on root node of scene graph
-		getScene().getRoot().getStyleClass().add(StyleClass.SIMPLE_DIALOG_ROOT);
-
-		// Resize window to scene
-		sizeToScene();
+		mainPane.getStyleClass().add(StyleClass.SIMPLE_DIALOG_ROOT);
 
 		// Apply style sheet to scene
 		applyStyleSheet();
 
-		// When window is shown, set its size and location after a delay
-		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
+		// Complete initialisation of content after subclass has constructed dialog
+		addEventHandler(WindowEvent.WINDOW_SHOWING, event ->
 		{
+			// Lay out content of dialog
+			mainPane.applyCss();
+			mainPane.layout();
+
 			// Update spacing of button groups
 			for (DialogButtonPane buttonPane : buttonPanes)
 				buttonPane.updateButtonSpacing();
 
+			// Equalise widths of groups of buttons
+			for (DialogButtonPane buttonPane : buttonPanes)
+				buttonPane.equaliseButtonWidths(true);
+
+			// Resize window to scene
+			sizeToScene();
+		});
+
+		// When window is shown, set its size and location after a delay
+		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
+		{
 			// Create container for dimensions of window
 			class Dimensions
 			{
@@ -364,32 +381,20 @@ public abstract class SimpleDialog
 			setMinHeight(dims.h);
 
 			// Set size and location of window after a delay
-			ExecUtils.afterDelay(getWindowShownDelay(), () ->
+			ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_SIZE), () ->
 			{
-				// Set location of window to previous value
-				Point2D location = (locationKey == null) ? null : locations.get(locationKey);
-				if (location != null)
-				{
-					setX(location.getX());
-					setY(location.getY());
-				}
-
 				// If no size was provided, get previous size of window
 				Dimension2D size0 = size;
 				if ((size0 == null) && (sizeKey != null))
 					size0 = sizes.get(sizeKey);
 
-				// Set dimensions of window
-				boolean widthSet = false;
+				// Set width and height of window
 				if (size0 != null)
 				{
 					// Set width
 					double width = size0.getWidth();
 					if (width > 0.0)
-					{
 						setWidth(width);
-						widthSet = true;
-					}
 
 					// Set height
 					double height = size0.getHeight();
@@ -399,93 +404,62 @@ public abstract class SimpleDialog
 				// Update dimensions
 				dims.update();
 
-				// Calculate extra width that will result from equalising widths of groups of buttons
-				double extraWidth = 0.0;
-				for (DialogButtonPane buttonPane : buttonPanes)
+				// Set location of window after a delay
+				ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_LOCATION), () ->
 				{
-					double ew = Math.max(0.0, buttonPane.equaliseButtonWidths(false));
-					if (extraWidth < ew)
-						extraWidth = ew;
-				}
+					// Get location of window from map
+					Point2D location = (locationKey == null) ? null : locations.get(locationKey);
 
-				// If width of window has been set, reset extra width ...
-				if (widthSet)
-					extraWidth = 0.0;
+					// If location of window was obtained from location map, get location from locator ...
+					if (location == null)
+					{
+						if (locator != null)
+							location = locator.getLocation(dims.w, dims.h);
+					}
 
-				// ... otherwise, if button panes have been widened, increase width of window accordingly
-				else if (extraWidth > 0.0)
-				{
-					// Increase width of window
-					setWidth(dims.w + extraWidth);
+					// ... otherwise, ensure that window rectangle intersects a screen
+					else if (Screen.getScreensForRectangle(location.getX(), location.getY(), dims.w, dims.h).isEmpty())
+					{
+						// Remove location from map
+						locations.remove(locationKey);
 
-					// Restore height (Linux/GNOME)
-					setHeight(dims.h);
+						// Invalidate location
+						location = null;
+					}
 
-					// Update dimensions
-					dims.update();
-				}
+					// If there is a location, invalidate it if top centre of window is not within a screen
+					if ((location != null) && !SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w,
+																		 location.getY(), SCREEN_MARGINS))
+						location = null;
 
-				// Equalise widths of groups of buttons
-				for (DialogButtonPane buttonPane : buttonPanes)
-					buttonPane.equaliseButtonWidths(true);
-
-				// If there is no previous location of window, get location from locator ...
-				if (location == null)
-				{
-					if (locator != null)
-						location = locator.getLocation(dims.w, dims.h);
-				}
-
-				// ... otherwise, ensure that window rectangle intersects a screen
-				else if (Screen.getScreensForRectangle(getX(), getY(), dims.w, dims.h).isEmpty())
-				{
-					// Remove location from map
-					locations.remove(locationKey);
-
-					// Invalidate location
-					location = null;
-				}
-
-				// If there is a location, invalidate it if top centre of window is not within a screen
-				if ((location != null)
-						&& !SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(), SCREEN_MARGINS))
-					location = null;
-
-				// If there is no location, locate window relative to owner
-				if (location == null)
-				{
-					// If owner is showing, locate window relative to owner ...
-					if ((owner != null) && owner.isShowing())
+					// If there is no location, locate window relative to owner
+					if ((location == null) && (owner != null) && owner.isShowing())
 					{
 						location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
 																  owner.getWidth(), owner.getHeight());
 					}
 
-					// ... otherwise, if there is no screen, adjust x coordinate of window
-					else if (Screen.getScreens().isEmpty())
-						setX(getX() - 0.5 * extraWidth);
-				}
+					// If there is no location, centre window within primary screen
+					if (location == null)
+						location = SceneUtils.centreInScreen(dims.w, dims.h);
 
-				// If there is no location, centre window within primary screen
-				if (location == null)
-					location = SceneUtils.centreInScreen(dims.w, dims.h);
+					// Set location of window
+					setX(location.getX());
+					setY(location.getY());
 
-				// Set location of window
-				setX(location.getX());
-				setY(location.getY());
+					// Make window visible and restore minimum dimensions after a delay
+					ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_OPACITY), () ->
+					{
+						// Make window visible
+						setOpacity(1.0);
 
-				// Make window visible and restore minimum dimensions after a delay
-				ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () ->
-				{
-					// Make window visible
-					setOpacity(1.0);
+						// Restore minimum dimensions (Linux/GNOME)
+						setMinWidth(0.0);
+						setMinHeight(0.0);
 
-					// Restore minimum dimensions (Linux/GNOME)
-					setMinWidth(0.0);
-					setMinHeight(0.0);
-
-					// Allow subclasses to complete the initialisation of the dialog after the window is shown
-					onWindowShown();
+						// Allow subclasses to complete the initialisation of the dialog after the window is shown
+						onWindowShown();
+					});
 				});
 			});
 		});
@@ -593,15 +567,19 @@ public abstract class SimpleDialog
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 * Returns the delay (in milliseconds) that is defined the system property with the specified key.
 	 *
-	 * @return the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 * @param  key
+	 *           the key of the system property.
+	 * @return the delay (in milliseconds) that is defined the system property whose key is {@code key}, or a default
+	 *         value if there is no such property or the property value is not a valid integer.
 	 */
 
-	private static int getWindowShownDelay()
+	private static int getDelay(
+		String	key)
 	{
-		int delay = WINDOW_SHOWN_DELAY;
-		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
+		int delay = WINDOW_DELAYS.get(key);
+		String value = System.getProperty(key);
 		if (value != null)
 		{
 			try

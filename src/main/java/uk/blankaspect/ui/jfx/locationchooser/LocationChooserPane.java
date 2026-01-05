@@ -2605,7 +2605,7 @@ public class LocationChooserPane
 
 		/** The formatter that is applied to the last modification time of a file or directory. */
 		private static final	DateTimeFormatter	MODIFICATION_TIME_FORMATTER	=
-				DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
+				DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 		/** Miscellaneous strings. */
 		private static final	String	OPEN_DIRECTORY_STR		= "Open directory";
@@ -4574,7 +4574,7 @@ public class LocationChooserPane
 		/** The number of columns of the text field. */
 		private static final	int		TEXT_FIELD_NUM_COLUMNS	= 24;
 
-		/** Invalid filename characters on UNIX-like systems. */
+		/** Invalid filename characters on Unix-like systems. */
 		private static final	String	INVALID_FILENAME_CHARS_UNIX		= "/";
 
 		/** Invalid filename characters on Windows. */

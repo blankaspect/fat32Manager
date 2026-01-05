@@ -124,7 +124,7 @@ public class Logger
 
 	/** The pattern with which a timestamp field is formatted. */
 	private static final	DateTimeFormatter	TIMESTAMP_FORMATTER	=
-			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS");
+			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
 	/** The name of the thread that is run by the shutdown hook to close a log file. */
 	private static final	String	CLOSE_THREAD_NAME	= "closeLogger";

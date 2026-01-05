@@ -85,7 +85,7 @@ public class DateField
 	private static final	int		NUM_COLUMNS	= 7;
 
 	/** The pattern of a date. */
-	private static final	String	DATE_PATTERN	= "uuuu%sMM%sdd";
+	private static final	String	DATE_PATTERN	= "yyyy%sMM%sdd";
 
 	/** Miscellaneous strings. */
 	private static final	String	PROMPT_STR				= "yyyy%smm%sdd";

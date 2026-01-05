@@ -96,11 +96,14 @@ public class LocationChooser
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler. */
-	private static final	int		WINDOW_SHOWN_DELAY	= 50;
-
-	/** The delay (in milliseconds) before making the dialog window visible by restoring its opacity. */
-	private static final	int		WINDOW_VISIBLE_DELAY	= 50;
+	/** A map from system-property keys to the default values of the corresponding delays (in milliseconds) in the
+		<i>WINDOW_SHOWN</i> event handler of the window of a dialog. */
+	private static final	Map<String, Integer>	DIALOG_WINDOW_DELAYS	= Map.of
+	(
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE,     50,
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_LOCATION, 25,
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_OPACITY,  25
+	);
 
 	/** Miscellaneous strings. */
 	private static final	String	SELECT_STR	= "Select";
@@ -143,7 +146,9 @@ public class LocationChooser
 	/** Keys of system properties. */
 	private interface SystemPropertyKey
 	{
-		String	WINDOW_SHOWN_DELAY	= "blankaspect.ui.jfx.locationChooser.windowShownDelay";
+		String	DIALOG_WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.location";
+		String	DIALOG_WINDOW_DELAY_OPACITY		= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.opacity";
+		String	DIALOG_WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.size";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -248,15 +253,19 @@ public class LocationChooser
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 * Returns the delay (in milliseconds) that is defined the system property with the specified key.
 	 *
-	 * @return the delay (in milliseconds) in a <i>WINDOW_SHOWN</i> event handler.
+	 * @param  key
+	 *           the key of the system property.
+	 * @return the delay (in milliseconds) that is defined the system property whose key is {@code key}, or a default
+	 *         value if there is no such property or the property value is not a valid integer.
 	 */
 
-	private static int getWindowShownDelay()
+	private static int getDelay(
+		String	key)
 	{
-		int delay = WINDOW_SHOWN_DELAY;
-		String value = System.getProperty(SystemPropertyKey.WINDOW_SHOWN_DELAY);
+		int delay = DIALOG_WINDOW_DELAYS.get(key);
+		String value = System.getProperty(key);
 		if (value != null)
 		{
 			try
@@ -519,7 +528,8 @@ public class LocationChooser
 
 	public void setDialogStateKey()
 	{
-		setDialogStateKey(-1);
+		StackWalker.StackFrame sf = StackUtils.stackFrame(1);
+		dialogStateKey = sf.getClassName() + "." + sf.getMethodName();
 	}
 
 	//------------------------------------------------------------------
@@ -528,7 +538,7 @@ public class LocationChooser
 		int	index)
 	{
 		StackWalker.StackFrame sf = StackUtils.stackFrame(1);
-		dialogStateKey = sf.getClassName() + "." + sf.getMethodName() + ((index < 0) ? "" : "-" + index);
+		dialogStateKey = sf.getClassName() + "." + sf.getMethodName() + "-" + index;
 	}
 
 	//------------------------------------------------------------------
@@ -854,8 +864,8 @@ public class LocationChooser
 				Dimensions dims = new Dimensions();
 				dims.update();
 
-				// Set location and size of window after a delay
-				ExecUtils.afterDelay(getWindowShownDelay(), () ->
+				// Set size of window after a delay
+				ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE), () ->
 				{
 					// Set state of window and chooser pane to stored value
 					DialogState state = (dialogStateKey == null) ? null : dialogStates.get(dialogStateKey);
@@ -863,64 +873,72 @@ public class LocationChooser
 					{
 						chooserPane.setSplitPaneDividerPosition(state.splitPaneDividerPosition());
 						chooserPane.setTableViewColumnWidths(state.tableViewColumnWidths());
-						setX(state.x());
-						setY(state.y());
 						setWidth(state.width());
 						setHeight(state.height());
 						dims.update();
 					}
 
-					// If there is no stored dialog state, set location of window relative to owner or in centre of
-					// screen ...
-					Point2D location = null;
-					if (state == null)
+					// Set location of window after a delay
+					ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_LOCATION), () ->
 					{
-						// If there is a locator, locate window relative to it ...
-						if (dialogLocator != null)
-							location = dialogLocator.getLocation(dims.w, dims.h);
-
-						// ... otherwise, if there is no owner that is showing, locate window relative to screen ...
-						else if ((owner == null) || !owner.isShowing())
-							location = SceneUtils.centreInScreen(dims.w, dims.h);
-
-						// ... otherwise, locate window relative to owner
-						else
+						// If there is no stored dialog state, set location of window relative to owner or in centre of
+						// screen ...
+						Point2D location = null;
+						if (state == null)
 						{
-							location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
-																	  owner.getWidth(), owner.getHeight());
+							// If there is a locator, locate window relative to it ...
+							if (dialogLocator != null)
+								location = dialogLocator.getLocation(dims.w, dims.h);
+
+							// ... otherwise, if there is no owner that is showing, locate window relative to screen ...
+							else if ((owner == null) || !owner.isShowing())
+								location = SceneUtils.centreInScreen(dims.w, dims.h);
+
+							// ... otherwise, locate window relative to owner
+							else
+							{
+								location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
+																		  owner.getWidth(), owner.getHeight());
+							}
 						}
-					}
 
-					// ... otherwise, ensure that window rectangle intersects a screen
-					else if (Screen.getScreensForRectangle(getX(), getY(), dims.w, dims.h).isEmpty())
-					{
-						// Remove dialog state from map
-						dialogStates.remove(dialogStateKey);
+						// ... otherwise, if stored window rectangle does not intersects a screen, centre window in
+						// primary screen ...
+						else if (Screen.getScreensForRectangle(state.x, state.y, dims.w, dims.h).isEmpty())
+						{
+							// Remove dialog state from map
+							dialogStates.remove(dialogStateKey);
 
-						// Get location of window within primary screen
-						location = SceneUtils.centreInScreen(dims.w, dims.h);
-					}
-
-					// Set location of window
-					if (location != null)
-					{
-						// If top centre of window is not within a screen, centre window within primary screen
-						if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(), SCREEN_MARGINS))
+							// Get location of window within primary screen
 							location = SceneUtils.centreInScreen(dims.w, dims.h);
+						}
+
+						// ... otherwise, used stored location
+						else
+							location = new Point2D(state.x, state.y);
 
 						// Set location of window
-						setX(location.getX());
-						setY(location.getY());
-					}
+						if (location != null)
+						{
+							// If top centre of window is not within a screen, centre window within primary screen
+							if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(),
+														   SCREEN_MARGINS))
+								location = SceneUtils.centreInScreen(dims.w, dims.h);
 
-					// Perform remaining initialisation after a delay
-					ExecUtils.afterDelay(WINDOW_VISIBLE_DELAY, () ->
-					{
-						// Make window visible
-						setOpacity(1.0);
+							// Set location of window
+							setX(location.getX());
+							setY(location.getY());
+						}
 
-						// Initialise directory tree in chooser pane
-						chooserPane.initDirectoryTree(initialDirectory, initialFilename);
+						// Perform remaining initialisation after a delay
+						ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_OPACITY), () ->
+						{
+							// Make window visible
+							setOpacity(1.0);
+
+							// Initialise directory tree in chooser pane
+							chooserPane.initDirectoryTree(initialDirectory, initialFilename);
+						});
 					});
 				});
 			});

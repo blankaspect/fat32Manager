@@ -83,11 +83,11 @@ public class Fat32Directory
 	public static final		String	SPECIAL_DIRECTORY_NAME_PARENT	= "..";
 
 	public static final		DateTimeFormatter	CREATION_TIME_FORMATTER	=
-			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SS");
+			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SS");
 	public static final		DateTimeFormatter	LAST_MODIFICATION_TIME_FORMATTER	=
-			DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
+			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 	public static final		DateTimeFormatter	ACCESS_DATE_FORMATTER	=
-			DateTimeFormatter.ofPattern("uuuu-MM-dd");
+			DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public static final		int		SHORT_NAME_OFFSET	= 0x00;
 	private static final	int		SHORT_NAME_LENGTH	= 8;
