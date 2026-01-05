@@ -7,7 +7,7 @@
   /* A light grey that is the base color for objects.  Instead of using
    * -fx-base directly, the sections in this file will typically use -fx-color.
    */
-  -fx-base: rgb(80, 80, 80);
+  -fx-base: rgb(72, 72, 72);
 
   /* A very light grey used for the background of windows.  See also
    * -fx-text-background-color, which should be used as the -fx-text-fill
@@ -78,7 +78,7 @@
   -fx-text-box-border: ladder(
       -fx-background,
       derive(-fx-background, 15%) 20%,
-      rgb(224, 224, 224) 30%
+      rgb(224, 224, 224) 22.75%
   );
 
   /* Lighter than -fx-background and used to provide a small highlight when
@@ -156,8 +156,8 @@
    */
   -fx-mark-color: ladder(
       -fx-color,
-      derive(-fx-color, 45%) 30%,
-      white 31%
+      derive(-fx-color, 45%) 20%,
+      white 25%
   );
 
   /* The small thin light "shadow" for mark-like objects. Typically used in
@@ -170,7 +170,7 @@
 
   /* Background color to use for selection of list cells etc. This is when
    * the control doesn't have focus or the row of a previously selected item. */
-  -fx-selection-bar-non-focused: rgb(152, 152, 152);
+  -fx-selection-bar-non-focused: rgb(112, 112, 112);
 }
 
 .list-view:focused .list-cell:filled:selected,
