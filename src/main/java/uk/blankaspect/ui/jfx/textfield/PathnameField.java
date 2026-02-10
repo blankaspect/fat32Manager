@@ -63,6 +63,7 @@ import uk.blankaspect.ui.jfx.popup.MessagePopUp;
 
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
+import uk.blankaspect.ui.jfx.style.FxStyleClass;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 import uk.blankaspect.ui.jfx.style.StyleUtils;
@@ -128,6 +129,15 @@ public class PathnameField
 			CssSelector.builder()
 					.cls(StyleClass.PATHNAME_FIELD).pseudo(PseudoClassKey.INVALID)
 					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			ColourKey.CONTEXT_MENU_BACKGROUND,
+			CssSelector.builder()
+					.cls(StyleClass.PATHNAME_FIELD)
+					.desc(FxStyleClass.CONTEXT_MENU)
+					.build()
 		)
 	);
 
@@ -148,13 +158,15 @@ public class PathnameField
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	BACKGROUND_INVALID	= PREFIX + "background.invalid";
+		String	BACKGROUND_INVALID		= PREFIX + "background.invalid";
+		String	CONTEXT_MENU_BACKGROUND	= PREFIX + "contextMenu.background";
 	}
 
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	NOT_A_VALID_PATHNAME	= "'%s' is not a valid pathname.";
+		String	NOT_A_VALID_PATHNAME =
+				"'%s' is not a valid pathname.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -265,18 +277,22 @@ public class PathnameField
 
 				// Clear 'invalid' style
 				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
-				setStyle(null);
+				if (StyleManager.INSTANCE.notUsingStyleSheet())
+					setStyle(null);
 			}
 			catch (InvalidPathException e)
 			{
 				// Set 'invalid' style
 				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, true);
-				StyleUtils.setProperty(this, FxProperty.CONTROL_INNER_BACKGROUND.getName(),
-									   ColourUtils.colourToHexString(getColour(ColourKey.BACKGROUND_INVALID)));
+				if (StyleManager.INSTANCE.notUsingStyleSheet())
+				{
+					StyleUtils.setProperty(this, FxProperty.CONTROL_INNER_BACKGROUND.getName(),
+										   ColourUtils.colourToHexString(getColour(ColourKey.BACKGROUND_INVALID)));
+				}
 			}
 		});
 
-		// Handle DRAG_OVER drag events
+		// Handle 'drag over' events
 		setOnDragOver(event ->
 		{
 			// Test whether field is editable and clipboard contains matching file-system locations
@@ -287,7 +303,7 @@ public class PathnameField
 			event.consume();
 		});
 
-		// Handle DRAG_DROPPED drag events
+		// Handle 'drag dropped' events
 		setOnDragDropped(event ->
 		{
 			// Get first matching file-system location from dragboard

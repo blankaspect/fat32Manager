@@ -691,12 +691,12 @@ public class DateSelectionPane
 
 	private void updateButtons()
 	{
-		previousMonthButton.setDisable((calendar.get(Calendar.MONTH) <= MIN_MONTH)
-										&& (calendar.get(Calendar.YEAR) <= MIN_YEAR));
 		previousYearButton.setDisable(calendar.get(Calendar.YEAR) <= MIN_YEAR);
-		nextMonthButton.setDisable((calendar.get(Calendar.MONTH) >= MAX_MONTH)
-									&& (calendar.get(Calendar.YEAR) >= MAX_YEAR));
+		previousMonthButton
+				.setDisable((calendar.get(Calendar.MONTH) <= MIN_MONTH) && (calendar.get(Calendar.YEAR) <= MIN_YEAR));
 		nextYearButton.setDisable(calendar.get(Calendar.YEAR) >= MAX_YEAR);
+		nextMonthButton
+				.setDisable((calendar.get(Calendar.MONTH) >= MAX_MONTH) && (calendar.get(Calendar.YEAR) >= MAX_YEAR));
 	}
 
 	//------------------------------------------------------------------
@@ -1006,7 +1006,7 @@ public class DateSelectionPane
 			okButton.setPadding(BUTTON_PADDING);
 			okButton.setOnAction(event ->
 			{
-				result = new int[] { yearSpinner.getValue(), monthSpinner.getValue() };
+				result = new int[] { yearSpinner.getValue(), monthSpinner.value() };
 				hide();
 			});
 			buttonPane.addButton(okButton, HPos.RIGHT);

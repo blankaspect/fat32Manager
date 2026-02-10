@@ -25,7 +25,6 @@ import java.util.Map;
 import javafx.collections.FXCollections;
 
 import javafx.geometry.HPos;
-import javafx.geometry.Point2D;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
@@ -41,9 +40,8 @@ import uk.blankaspect.fat32manager.Fat32Directory.Entry;
 
 import uk.blankaspect.ui.jfx.button.Buttons;
 
+import uk.blankaspect.ui.jfx.dialog.DialogState;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
-
-import uk.blankaspect.ui.jfx.window.WindowState;
 
 //----------------------------------------------------------------------
 
@@ -82,7 +80,7 @@ public class DeletedEntriesDialog
 		List<Fat32Directory.Entry>	entries)
 	{
 		// Call superclass constructor
-		super(owner, DELETED_ENTRIES_STR + " - " + directory0.getPathname(), state.getLocator(), state.getSize());
+		super(owner, DELETED_ENTRIES_STR + " - " + directory0.getPathname(), state.locator(), state.getSize());
 
 		// Set properties
 		setResizable(true);
@@ -159,9 +157,9 @@ public class DeletedEntriesDialog
 	//------------------------------------------------------------------
 
 	public static void decodeState(
-		MapNode	mapNode)
+		MapNode	rootNode)
 	{
-		state.decodeTree(mapNode);
+		state.decodeTree(rootNode);
 	}
 
 	//------------------------------------------------------------------
@@ -175,7 +173,7 @@ public class DeletedEntriesDialog
 
 
 	public static class State
-		extends WindowState
+		extends DialogState
 	{
 
 	////////////////////////////////////////////////////////////////////
@@ -281,21 +279,6 @@ public class DeletedEntriesDialog
 	////////////////////////////////////////////////////////////////////
 	//  Instance methods
 	////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Returns a locator function that returns the location from this dialog state.
-		 *
-		 * @return a locator function that returns the location from this dialog state, or {@code null} if the location
-		 *         is {@code null}.
-		 */
-
-		private ILocator getLocator()
-		{
-			Point2D location = getLocation();
-			return (location == null) ? null : (width, height) -> location;
-		}
-
-		//--------------------------------------------------------------
 
 		private void updateColumnWidths(
 			DirectoryTableView	tableView)

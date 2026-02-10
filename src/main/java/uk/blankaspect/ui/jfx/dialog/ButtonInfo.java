@@ -102,8 +102,8 @@ public class ButtonInfo
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates and returns a button-information item for a button with the specified text that is positioned on the
-	 * left.
+	 * Creates and returns a button-information item for a button with the specified text.  The button is positioned on
+	 * the left of its container.
 	 *
 	 * @param  text
 	 *           the text of the button.
@@ -119,8 +119,25 @@ public class ButtonInfo
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates and returns a button-information item for a button with the specified text that is horizontally
-	 * positioned in the centre.
+	 * Creates and returns a list of button-information items for buttons with the specified texts.  All the buttons are
+	 * positioned on the left of their container.
+	 *
+	 * @param  texts
+	 *           the text of the buttons.
+	 * @return a list of button-information items.
+	 */
+
+	public static List<ButtonInfo> allLeft(
+		String...	texts)
+	{
+		return ButtonInfo.of(HPos.LEFT, texts);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a button-information item for a button with the specified text.  The button is positioned
+	 * horizontally in the centre of its container.
 	 *
 	 * @param  text
 	 *           the text of the button.
@@ -136,8 +153,25 @@ public class ButtonInfo
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates and returns a button-information item for a button with the specified text that is positioned on the
-	 * right.
+	 * Creates and returns a list of button-information items for buttons with the specified texts.  All the buttons are
+	 * positioned horizontally in the centre of their container.
+	 *
+	 * @param  texts
+	 *           the text of the buttons.
+	 * @return a list of button-information items.
+	 */
+
+	public static List<ButtonInfo> allCentre(
+		String...	texts)
+	{
+		return ButtonInfo.of(HPos.CENTER, texts);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a button-information item for a button with the specified text.  The button is positioned on
+	 * the right of its container.
 	 *
 	 * @param  text
 	 *           the text of the button.
@@ -153,11 +187,28 @@ public class ButtonInfo
 	//------------------------------------------------------------------
 
 	/**
-	 * Creates and returns a list of button-information items, with the specified texts for the buttons.  All items have
-	 * the specified horizontal position.
+	 * Creates and returns a list of button-information items for buttons with the specified texts.  All the buttons are
+	 * positioned on the right of their container.
+	 *
+	 * @param  texts
+	 *           the text of the buttons.
+	 * @return a list of button-information items.
+	 */
+
+	public static List<ButtonInfo> allRight(
+		String...	texts)
+	{
+		return ButtonInfo.of(HPos.RIGHT, texts);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a list of button-information items for buttons with the specified texts.  All the buttons
+	 * have the specified horizontal position in their container.
 	 *
 	 * @param  position
-	 *           the horizontal position of each button.
+	 *           the horizontal position of all the buttons.
 	 * @param  texts
 	 *           the text of the buttons.
 	 * @return a list of button-information items.

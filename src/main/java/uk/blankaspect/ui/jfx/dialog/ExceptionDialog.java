@@ -29,6 +29,7 @@ import javafx.geometry.Bounds;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -118,6 +119,11 @@ public class ExceptionDialog
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
+	/** The default interval (in milliseconds) after the <i>details</i> window was hidden during which 'mouse released'
+		events on the <i>details</i> button are suppressed to prevent the button from firing and thereby causing the
+		<i>details</i> window to be shown again, immediately. */
+	private static final	int		DEFAULT_DETAILS_WINDOW_DEBOUNCE_INTERVAL = 200;
+
 	/** The vertical gap between adjacent message labels. */
 	private static final	double	MESSAGE_GAP	= 4.0;
 
@@ -130,14 +136,11 @@ public class ExceptionDialog
 	/** The maximum width of a message label. */
 	private static final	double	MAX_MESSAGE_LABEL_WIDTH	= 640.0;
 
+	/** The padding around the content pane. */
+	private static final	Insets	CONTENT_PANE_PADDING	= new Insets(4.0, 2.0, 4.0, 2.0);
+
 	/** The padding around the <i>details</i> button. */
 	private static final	Insets	DETAILS_BUTTON_PADDING	= new Insets(2.0, 6.0, 2.0, 6.0);
-
-	/** The padding around the content pane when there is a <i>details</i> button. */
-	private static final	Insets	CONTENT_PANE_PADDING_DETAILS	= new Insets(8.0, 10.0, 4.0, 10.0);
-
-	/** The padding around the content pane when there is no <i>details</i> button. */
-	private static final	Insets	CONTENT_PANE_PADDING_NO_DETAILS	= new Insets(8.0, 10.0, 8.0, 10.0);
 
 	/** The separator between stack traces. */
 	private static final	String	STACK_TRACE_SEPARATOR	= "-".repeat(64) + "\n";
@@ -237,6 +240,21 @@ public class ExceptionDialog
 		String	DETAILS_BUTTON_BORDER				= PREFIX + "detailsButton.border";
 	}
 
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
+	{
+		String	DETAILS_WINDOW_DEBOUNCE_INTERVAL =
+				"blankaspect.ui.jfx.exceptionDialog.detailsWindowDebounceInterval";
+	}
+
+////////////////////////////////////////////////////////////////////////
+//  Class variables
+////////////////////////////////////////////////////////////////////////
+
+	/** The interval (in milliseconds) after the <i>details</i> window was hidden during which 'mouse released' events
+		on the <i>details</i> button are suppressed. */
+	private static	int	detailsWindowDebounceInterval	= DEFAULT_DETAILS_WINDOW_DEBOUNCE_INTERVAL;
+
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
@@ -244,15 +262,20 @@ public class ExceptionDialog
 	/** The index of the button that was selected. */
 	private	Integer			result;
 
+	/** The last time that the {@linkplain #detailsWindow <i>details</i> window} was hidden. */
+	private	long			detailsWindowHiddenTime;
+
 	/** A list of the message labels. */
 	private	List<Label>		messageLabels;
 
 	/** A list of the buttons. */
 	private	List<Button>	buttons;
 
-	/** The button that shows and hides the window in which the stack traces of an exception and its chain of causes are
-		displayed. */
+	/** The button that shows and hides the {@linkplain #detailsWindow <i>details</i> window}. */
 	private	ToggleButton	detailsButton;
+
+	/** The window in which the stack traces of an exception and its chain of causes are displayed. */
+	private	DetailsWindow	detailsWindow;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -262,6 +285,20 @@ public class ExceptionDialog
 	{
 		// Register the style properties of this class with the style manager
 		StyleManager.INSTANCE.register(ExceptionDialog.class, COLOUR_PROPERTIES, RULE_SETS);
+
+		// Get the debounce interval of the 'details' window from a system property
+		String value = System.getProperty(SystemPropertyKey.DETAILS_WINDOW_DEBOUNCE_INTERVAL);
+		if (value != null)
+		{
+			try
+			{
+				detailsWindowDebounceInterval = Integer.parseInt(value);
+			}
+			catch (NumberFormatException e)
+			{
+				e.printStackTrace();
+			}
+		}
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -452,23 +489,14 @@ public class ExceptionDialog
 		// Create pane for icon and message labels
 		HBox contentPane = new HBox(ICON_TEXT_GAP, icon.get(), messagePane);
 		contentPane.setAlignment(Pos.CENTER_LEFT);
+		contentPane.setPadding(CONTENT_PANE_PADDING);
 
-		// If there are no causes, add content pane to content ...
-		if (causes.isEmpty())
+		// Add content pane
+		addContent(contentPane);
+
+		// Create button to show causes in a separate window
+		if (!causes.isEmpty())
 		{
-			// Add content pane
-			addContent(contentPane);
-
-			// Set padding around content pane
-			getContentPane().setPadding(CONTENT_PANE_PADDING_NO_DETAILS);
-		}
-
-		// ... otherwise, create button to show causes in a separate window
-		else
-		{
-			// Create 'details' window
-			DetailsWindow detailsWindow = new DetailsWindow(causes);
-
 			// Create up arrowhead for 'details' button
 			double arrowheadSize = (double)((int)TextUtils.textHeight() / 4 * 4);
 			Shape upArrowhead = Shapes.arrowhead01(VHDirection.UP, arrowheadSize);
@@ -491,14 +519,45 @@ public class ExceptionDialog
 			{
 				if (selected)
 				{
-					detailsButton.setGraphic(downIcon);
-					detailsWindow.show();
+					if (detailsWindow == null)
+					{
+						detailsButton.setGraphic(downIcon);
+						detailsWindow = new DetailsWindow(causes);
+						detailsWindow.show();
+					}
 				}
 				else
 				{
-					detailsButton.setGraphic(upIcon);
-					detailsWindow.hide();
+					if (detailsWindow != null)
+					{
+						detailsWindow.hide();
+						detailsWindow = null;
+						detailsWindowHiddenTime = System.currentTimeMillis();
+						detailsButton.setGraphic(upIcon);
+					}
 				}
+			});
+
+			// This is a WORKAROUND for a problem that has been observed with JavaFX on Linux/GNOME (specifically, with
+			// JavaFX 21.0.3 on Ubuntu 24.04.3 LTS, though it may be present with other versions of JavaFX and on other
+			// platforms).
+			// - The problem :
+			//   The 'details' window is closed by a listener on its 'focused' property when the window loses focus.  If
+			//   a 'mouse pressed' event occurs on the 'details' button while the 'details' window is shown, the window
+			//   loses focus and is hidden, as intended.  However, the accompanying 'mouse released' event then fires
+			//   the 'details' button, thereby causing the 'details' window to be shown again, immediately.
+			// - The solution :
+			//   A 'mouse released' event on the 'details' button is suppressed if it occurs too soon after the
+			//   'details' window was hidden, thereby preventing the button from firing.
+			//
+			// The problem is not present on Windows because of a difference in the way in which JavaFX handles a 'mouse
+			// pressed' event on the 'details' button.  On Windows, if such an event occurs while the 'details' window
+			// is shown, it causes the 'details' window to lose focus, but, unlike on Linux/GNOME, it doesn't cause the
+			// 'details' button to fire.
+			detailsButton.addEventFilter(MouseEvent.MOUSE_RELEASED, event ->
+			{
+				if (System.currentTimeMillis() - detailsWindowHiddenTime < detailsWindowDebounceInterval)
+					event.consume();
 			});
 
 			// Create procedure to update 'details' button
@@ -513,37 +572,15 @@ public class ExceptionDialog
 						: SceneUtils.createSolidBorder(getColour(ColourKey.DETAILS_BUTTON_BORDER)));
 			};
 
-			// Update 'details' button when its focus changes
+			// Update 'details' button when it gains or loses focus
 			if (StyleManager.INSTANCE.notUsingStyleSheet())
-				detailsButton.focusedProperty().addListener(observable -> updateDetailsButton.invoke());
-
-			// Hide 'details' window if mouse is pressed on dialog
-			addEventHandler(MouseEvent.MOUSE_PRESSED, event -> hideDetailsWindow());
-
-			// Update 'details' button
-			if (StyleManager.INSTANCE.notUsingStyleSheet())
-				updateDetailsButton.invoke();
-
-			// Create procedure to update location of 'details' window
-			IProcedure0 updateCauseWindowLocation = () ->
 			{
-				Bounds bounds = detailsButton.localToScreen(detailsButton.getLayoutBounds());
-				detailsWindow.setX(bounds.getMinX());
-				detailsWindow.setY(bounds.getMaxY());
-			};
+				detailsButton.focusedProperty().addListener(observable -> updateDetailsButton.invoke());
+				updateDetailsButton.invoke();
+			}
 
-			// Set location of 'details' window when it is opened
-			detailsWindow.setOnShowing(event -> updateCauseWindowLocation.invoke());
-
-			// Update location of 'details' window when location of dialog changes
-			xProperty().addListener(observable -> updateCauseWindowLocation.invoke());
-			yProperty().addListener(observable -> updateCauseWindowLocation.invoke());
-
-			// Create container for message pane and 'details' button, and add it to content pane
-			addContent(new VBox(ICON_TEXT_GAP, contentPane, detailsButton));
-
-			// Set padding around content pane
-			getContentPane().setPadding(CONTENT_PANE_PADDING_DETAILS);
+			// Add button to button pane
+			addButton(detailsButton, HPos.LEFT, false);
 		}
 
 		// Create button: copy
@@ -569,7 +606,7 @@ public class ExceptionDialog
 		{
 			// Create button
 			Button button = Buttons.hNoShrink(buttonInfo.getText());
-			button.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
+			button.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP2);
 			button.setOnAction(event ->
 			{
 				result = buttons.indexOf(button);
@@ -1216,10 +1253,10 @@ public class ExceptionDialog
 	////////////////////////////////////////////////////////////////////
 
 		/** The preferred width of the text area. */
-		private static final	double	WIDTH	= 480.0;
+		private static final	double	TEXT_AREA_WIDTH		= 480.0;
 
 		/** The preferred height of the text area. */
-		private static final	double	HEIGHT	= 240.0;
+		private static final	double	TEXT_AREA_HEIGHT	= 240.0;
 
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
@@ -1244,7 +1281,7 @@ public class ExceptionDialog
 			// Create text area for stack traces
 			TextArea textArea = new TextArea();
 			textArea.setEditable(false);
-			textArea.setPrefSize(WIDTH, HEIGHT);
+			textArea.setPrefSize(TEXT_AREA_WIDTH, TEXT_AREA_HEIGHT);
 			textArea.setFont(Fonts.monoFontSmaller());
 			for (String stackTrace : stackTraces)
 			{
@@ -1260,6 +1297,20 @@ public class ExceptionDialog
 
 			// Add style sheet to scene
 			StyleManager.INSTANCE.addStyleSheet(getScene());
+
+			// Hide window if it loses focus
+			focusedProperty().addListener((observable, oldFocused, focused) ->
+			{
+				if (!focused)
+					hideDetailsWindow();
+			});
+
+			// Hide window if mouse button is pressed on window with Control key down
+			addEventFilter(MouseEvent.MOUSE_PRESSED, event ->
+			{
+				if (event.isControlDown())
+					hideDetailsWindow();
+			});
 
 			// Hide window if Escape key is pressed
 			addEventFilter(KeyEvent.KEY_PRESSED, event ->
@@ -1278,6 +1329,16 @@ public class ExceptionDialog
 					region.setBackground(SceneUtils.createColouredBackground(
 							getColour(ColourKey.DETAILS_AREA_BACKGROUND)));
 				}
+
+				// Set location of window
+				Window owner = getOwner();
+				Rectangle2D rect =
+						SceneUtils.findScreenBounds(owner.getX(), owner.getY(), owner.getWidth(), owner.getHeight());
+				if (rect == null)
+					rect = Rectangle2D.EMPTY;
+				Bounds bounds = detailsButton.localToScreen(detailsButton.getLayoutBounds());
+				setX(Math.max(0.0, Math.min(rect.getMaxX() - getWidth(), bounds.getMinX())));
+				setY(Math.max(0.0, Math.min(rect.getMaxY() - getHeight(), bounds.getMaxY())));
 
 				// Request focus on text area
 				textArea.requestFocus();

@@ -108,13 +108,26 @@ public abstract class AbstractTheme
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_READ_COLOURS			= "Failed to read the set of colours.";
-		String	MALFORMED_KEY_VALUE_PAIR		= "The key-value pair is malformed.";
-		String	DUPLICATE_KEY					= "The key '%s' occurs more than once.";
-		String	INVALID_COLOUR					= "The colour specifier is invalid.";
-		String	ERROR_PARSING_BASE_STYLE_SHEET	= "An error occurred when parsing the base style sheet:";
-		String	ERRORS_PARSING_BASE_STYLE_SHEET	= "%d errors occurred when parsing the base style sheet.\nFirst error:";
-		String	ERROR_WRITING_FILE				= "An error occurred when writing the file.";
+		String	FAILED_TO_READ_COLOURS =
+				"Failed to read the set of colours.";
+
+		String	MALFORMED_KEY_VALUE_PAIR =
+				"The key-value pair is malformed.";
+
+		String	DUPLICATE_KEY =
+				"The key '%s' occurs more than once.";
+
+		String	INVALID_COLOUR =
+				"The colour specifier is invalid.";
+
+		String	ERROR_PARSING_BASE_STYLE_SHEET =
+				"An error occurred when parsing the base style sheet:";
+
+		String	ERRORS_PARSING_BASE_STYLE_SHEET =
+				"%d errors occurred when parsing the base style sheet.\nFirst error:";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred when writing the file.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

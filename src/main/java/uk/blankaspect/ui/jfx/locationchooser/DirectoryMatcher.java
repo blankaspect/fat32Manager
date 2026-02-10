@@ -70,8 +70,18 @@ public class DirectoryMatcher
 	public boolean matches(
 		Path	location)
 	{
-		return (location != null) && Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS)
-				&& super.matches(location);
+		return (location != null) && super.matches(location)
+				&& (Files.notExists(location, LinkOption.NOFOLLOW_LINKS)
+						|| Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS));
+	}
+
+	//------------------------------------------------------------------
+
+	@Override
+	public boolean matchesExists(
+		Path	location)
+	{
+		return (location != null) && super.matches(location) && Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS);
 	}
 
 	//------------------------------------------------------------------

@@ -48,8 +48,6 @@ import uk.blankaspect.ui.jfx.scene.SceneUtils;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.StyleUtils;
 
-import uk.blankaspect.ui.jfx.window.WindowUtils;
-
 //----------------------------------------------------------------------
 
 
@@ -395,7 +393,8 @@ public class SimpleProgressDialog
 		super.onWindowShown();
 
 		// Prevent height of window from changing
-		WindowUtils.preventHeightChange(this);
+		setMinHeight(prefHeight());
+		setMaxHeight(prefHeight());
 	}
 
 	//------------------------------------------------------------------

@@ -1050,8 +1050,106 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Relocates a <i>target</i> of the specified location and dimensions so that the top left corner of the target is
-	 * within the specified bounds and the change to the location of the target is minimised, and returns the new
+	 * Returns the screen whose visual bounds have the greatest area of intersection with the specified rectangle.
+	 *
+	 * @param  x
+	 *           the <i>x</i> coordinate of the reference rectangle.
+	 * @param  y
+	 *           the <i>y</i> coordinate of the reference rectangle.
+	 * @param  width
+	 *           the width of the reference rectangle.
+	 * @param  height
+	 *           the height of the reference rectangle.
+	 * @return the screen whose visual bounds have the greatest area of intersection with the specified rectangle, or
+	 *         {@code null} if there is no screen.
+	 */
+
+	public static Screen findIntersectingScreen(
+		double	x,
+		double	y,
+		double	width,
+		double	height)
+	{
+		// Find screen that has maximal intersection with reference object
+		double maxIntersection = 0.0;
+		Screen maxIntersectionScreen = null;
+		for (Screen screen : Screen.getScreens())
+		{
+			// Get visual bounds of screen
+			Rectangle2D bounds = screen.getVisualBounds();
+
+			// Get extent of horizontal intersection between screen and reference object
+			double dx = Math.min(bounds.getMaxX(), x + width) - Math.max(bounds.getMinX(), x);
+
+			// Get extent of vertical intersection between screen and reference object
+			double dy = Math.min(bounds.getMaxY(), y + height) - Math.max(bounds.getMinY(), y);
+
+			// Calculate area of intersection between screen and reference object
+			double intersection = ((dx > 0.0) && (dy > 0.0)) ? dx * dy : 0.0;
+
+			// Update maximum intersection
+			if (maxIntersection < intersection)
+			{
+				maxIntersection = intersection;
+				maxIntersectionScreen = screen;
+			}
+		}
+
+		// Return maximally intersecting screen
+		return maxIntersectionScreen;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the visual bounds of the screen whose visual bounds have the greatest area of intersection with the
+	 * specified rectangle.
+	 *
+	 * @param  rect
+	 *           the reference rectangle.
+	 * @return the visual bounds of the screen whose visual bounds have the greatest area of intersection with the
+	 *         specified rectangle, or {@code null} if there is no screen.
+	 */
+
+	public static Rectangle2D findScreenBounds(
+		Rectangle2D	rect)
+	{
+		return findScreenBounds(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the visual bounds of the screen whose visual bounds have the greatest area of intersection with the
+	 * specified rectangle.
+	 *
+	 * @param  x
+	 *           the <i>x</i> coordinate of the reference rectangle.
+	 * @param  y
+	 *           the <i>y</i> coordinate of the reference rectangle.
+	 * @param  width
+	 *           the width of the reference rectangle.
+	 * @param  height
+	 *           the height of the reference rectangle.
+	 * @return the visual bounds of the screen whose visual bounds have the greatest area of intersection with the
+	 *         specified rectangle, or {@code null} if there is no screen.
+	 */
+
+	public static Rectangle2D findScreenBounds(
+		double	x,
+		double	y,
+		double	width,
+		double	height)
+	{
+		Screen screen = findIntersectingScreen(x, y, width, height);
+		return (screen == null) ? null : screen.getVisualBounds();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Relocates a <i>target</i> with the specified coordinates and dimensions so that the top left corner of the target
+	 * is within the specified bounds and the change to the location of the target is minimised, and returns the new
 	 * location.
 	 *
 	 * @param  x
@@ -1081,8 +1179,8 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
-	 * Relocates a <i>target</i> of the specified location and dimensions so that the top left corner of the target is
-	 * within the specified bounds and the change to the location of the target is minimised, and returns the new
+	 * Relocates a <i>target</i> with the specified coordinates and dimensions so that the top left corner of the target
+	 * is within the specified bounds and the change to the location of the target is minimised, and returns the new
 	 * location.
 	 *
 	 * @param  x
@@ -1204,39 +1302,12 @@ public class SceneUtils
 		double targetY = referenceY + 0.5 * (referenceHeight - height);
 
 		// Find screen that has maximal intersection with reference object
-		double maxIntersection = 0.0;
-		Screen maxIntersectionScreen = null;
-		for (Screen screen : Screen.getScreens())
-		{
-			// Get visual bounds of screen
-			Rectangle2D bounds = screen.getVisualBounds();
-
-			// Get extent of horizontal intersection between screen and reference object
-			double dx = Math.min(bounds.getMaxX(), referenceX + referenceWidth)
-							- Math.max(bounds.getMinX(), referenceX);
-
-			// Get extent of vertical intersection between screen and reference object
-			double dy = Math.min(bounds.getMaxY(), referenceY + referenceHeight)
-							- Math.max(bounds.getMinY(), referenceY);
-
-			// Calculate area of intersection between screen and reference object
-			double intersection = ((dx > 0) && (dy > 0)) ? dx * dy : 0.0;
-
-			// Update maximum intersection
-			if (maxIntersection < intersection)
-			{
-				maxIntersection = intersection;
-				maxIntersectionScreen = screen;
-			}
-		}
+		Screen screen = findIntersectingScreen(referenceX, referenceY, referenceWidth, referenceHeight);
 
 		// Determine location of target within visual bounds of screen that has maximal intersection with reference
 		// object
-		if (maxIntersectionScreen != null)
-		{
-			location = getLocationWithinBounds(targetX, targetY, width, height,
-											   maxIntersectionScreen.getVisualBounds());
-		}
+		if (screen != null)
+			location = getLocationWithinBounds(targetX, targetY, width, height, screen.getVisualBounds());
 
 		// Return location
 		return (location == null) ? new Point2D(0.0, 0.0) : location;

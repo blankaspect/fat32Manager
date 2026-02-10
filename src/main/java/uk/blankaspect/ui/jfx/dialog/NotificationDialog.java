@@ -18,8 +18,6 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
-import javafx.geometry.HPos;
-
 import javafx.scene.Node;
 
 import javafx.stage.Window;
@@ -43,13 +41,6 @@ import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 public class NotificationDialog
 {
-
-////////////////////////////////////////////////////////////////////////
-//  Constants
-////////////////////////////////////////////////////////////////////////
-
-	/** Miscellaneous strings. */
-	private static final	String	OK_STR	= "OK";
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -89,7 +80,7 @@ public class NotificationDialog
 		Node	icon,
 		String	message)
 	{
-		MessageDialog.show(owner, title, icon, message, new ButtonInfo(OK_STR, HPos.RIGHT));
+		MessageDialog.show(owner, title, icon, message, ButtonInfo.right(SimpleDialog.OK_STR));
 	}
 
 	//------------------------------------------------------------------
@@ -117,7 +108,7 @@ public class NotificationDialog
 		String	message,
 		String	acceptText)
 	{
-		MessageDialog.show(owner, title, icon, message, new ButtonInfo(acceptText, HPos.RIGHT));
+		MessageDialog.show(owner, title, icon, message, ButtonInfo.right(acceptText));
 	}
 
 	//------------------------------------------------------------------

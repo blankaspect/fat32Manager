@@ -45,7 +45,7 @@ public class Logging
 	private static final	String	FIELD_SEPARATOR	= ",";
 
 	/** The prefix of Java system properties. */
-	private static final	String	SYSTEM_PROPERTY_PREFIX	= "uk.blankaspect.log.";
+	private static final	String	SYSTEM_PROPERTY_PREFIX	= "blankaspect.log.";
 
 	/** Keys of Java system properties. */
 	private interface SystemPropertyKey
@@ -62,8 +62,11 @@ public class Logging
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	INVALID_SYSTEM_PROPERTY	= "Key: %s\nValue: %s\nThe value of the system property is invalid.";
-		String	FAILED_TO_OPEN_LOG_FILE	= "Failed to open the log file: ";
+		String	INVALID_SYSTEM_PROPERTY =
+				"Key: %s\nValue: %s\nThe value of the system property is invalid.";
+
+		String	FAILED_TO_OPEN_LOG_FILE =
+				"Failed to open the log file: ";
 	}
 
 ////////////////////////////////////////////////////////////////////////

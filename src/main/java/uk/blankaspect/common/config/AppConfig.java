@@ -77,12 +77,23 @@ public class AppConfig
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	ERROR_READING_FILE				= "An error occurred when reading the file.";
-		String	ERROR_WRITING_FILE				= "An error occurred when writing the file.";
-		String	NOT_A_CONFIG_FILE				= "The file is not a configuration file for %s.";
-		String	MALFORMED_CONFIG_FILE			= "The configuration file is malformed.";
-		String	UNEXPECTED_CONFIG_FILE_FORMAT	= "The configuration file does not have the expected format.";
-		String	UNSUPPORTED_CONFIG_FILE_VERSION	= "Version %d of the configuration file is not supported.";
+		String	ERROR_READING_FILE =
+				"An error occurred when reading the file.";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred when writing the file.";
+
+		String	NOT_A_CONFIG_FILE =
+				"The file is not a configuration file for %s.";
+
+		String	MALFORMED_CONFIG_FILE =
+				"The configuration file is malformed.";
+
+		String	UNEXPECTED_CONFIG_FILE_FORMAT =
+				"The configuration file does not have the expected format.";
+
+		String	UNSUPPORTED_CONFIG_FILE_VERSION =
+				"Version %d of the configuration file is not supported.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

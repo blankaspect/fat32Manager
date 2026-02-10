@@ -60,7 +60,8 @@ public class ClipboardUtils
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_COPY_TO_SYSTEM_CLIPBOARD	= "Failed to copy to the system clipboard.";
+		String	FAILED_TO_COPY_TO_SYSTEM_CLIPBOARD =
+				"Failed to copy to the system clipboard.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

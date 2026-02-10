@@ -54,6 +54,7 @@ import javafx.stage.Window;
 
 import uk.blankaspect.common.exception2.LocationException;
 
+import uk.blankaspect.common.function.IFunction0;
 import uk.blankaspect.common.function.IProcedure0;
 
 import uk.blankaspect.common.logging.Logger;
@@ -119,8 +120,11 @@ public class MainDirectoryTableView
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	DIRECTORY_DOES_NOT_EXIST	= "Location: %s\nThe directory does not exist.";
-		String	DIRECTORY_NO_LONGER_EXISTS	= "The directory no longer exists.";
+		String	DIRECTORY_DOES_NOT_EXIST =
+				"Location: %s\nThe directory does not exist.";
+
+		String	DIRECTORY_NO_LONGER_EXISTS =
+				"The directory no longer exists.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -932,8 +936,7 @@ public class MainDirectoryTableView
 	//  Instance variables
 	////////////////////////////////////////////////////////////////////
 
-		private	EnumMap<Column, CheckBox>	checkBoxes;
-		private	Set<Column>					result;
+		private	Set<Column>	result;
 
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
@@ -945,13 +948,13 @@ public class MainDirectoryTableView
 		 *
 		 * @param owner
 		 *          the window that will own this dialog, or {@code null} if the dialog has no owner.
-		 * @param columns
-		 *          the columns that are currently selected.
+		 * @param initialColumns
+		 *          the columns that will be initially selected.
 		 */
 
 		private ColumnSelectionDialog(
 			Window				owner,
-			Collection<Column>	columns)
+			Collection<Column>	initialColumns)
 		{
 			// Call superclass constructor
 			super(owner, MethodHandles.lookup().lookupClass().getCanonicalName(), null, SELECT_TABLE_COLUMNS_STR);
@@ -962,6 +965,28 @@ public class MainDirectoryTableView
 			controlPane.setAlignment(Pos.CENTER_LEFT);
 			controlPane.setPadding(CONTROL_PANE_PADDING);
 
+			// Create a check box for each possible column and add it to control pane
+			EnumMap<Column, CheckBox> checkBoxes = new EnumMap<>(Column.class);
+			for (Column column : Column.values())
+			{
+				CheckBox checkBox = new CheckBox(column.getLongText());
+				checkBox.setSelected(initialColumns.contains(column));
+				checkBoxes.put(column, checkBox);
+				controlPane.getChildren().add(checkBox);
+			}
+
+			// Create function to return set of selected columns
+			IFunction0<EnumSet<Column>> selectedColumns = () ->
+			{
+				EnumSet<Column> columns = EnumSet.noneOf(Column.class);
+				for (Column column : checkBoxes.keySet())
+				{
+					if (checkBoxes.get(column).isSelected())
+						columns.add(column);
+				}
+				return columns;
+			};
+
 			// Add control pane to content pane
 			addContent(controlPane);
 
@@ -970,7 +995,7 @@ public class MainDirectoryTableView
 			okButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 			okButton.setOnAction(event ->
 			{
-				result = getColumns();
+				result = selectedColumns.invoke();
 				hide();
 			});
 			addButton(okButton, HPos.RIGHT);
@@ -981,22 +1006,18 @@ public class MainDirectoryTableView
 			cancelButton.setOnAction(event -> requestClose());
 			addButton(cancelButton, HPos.RIGHT);
 
-			// Add check boxes for columns to control pane
-			checkBoxes = new EnumMap<>(Column.class);
-			for (Column column : Column.values())
-			{
-				CheckBox checkBox = new CheckBox(column.getLongText());
-				checkBoxes.put(column, checkBox);
-				checkBox.setSelected(columns.contains(column));
-				checkBox.selectedProperty().addListener(observable -> okButton.setDisable(getColumns().isEmpty()));
-				controlPane.getChildren().add(checkBox);
-			}
-
-			// Update 'OK' button
-			okButton.setDisable(getColumns().isEmpty());
-
 			// Fire 'cancel' button if Escape key is pressed; fire 'OK' button if Ctrl+Enter is pressed
 			setKeyFireButton(cancelButton, okButton);
+
+			// Create procedure to update 'OK' button
+			IProcedure0 updateOkButton = () -> okButton.setDisable(selectedColumns.invoke().isEmpty());
+
+			// Update 'OK' button if 'selected' state of a check box changes
+			checkBoxes.values().stream().forEach(checkBox ->
+					checkBox.selectedProperty().addListener(observable -> updateOkButton.invoke()));
+
+			// Update 'OK' button
+			updateOkButton.invoke();
 		}
 
 		//--------------------------------------------------------------
@@ -1009,23 +1030,6 @@ public class MainDirectoryTableView
 		protected Set<Column> getResult()
 		{
 			return result;
-		}
-
-		//--------------------------------------------------------------
-
-	////////////////////////////////////////////////////////////////////
-	//  Instance methods
-	////////////////////////////////////////////////////////////////////
-
-		private Set<Column> getColumns()
-		{
-			EnumSet<Column> columns = EnumSet.noneOf(Column.class);
-			for (Column column : checkBoxes.keySet())
-			{
-				if (checkBoxes.get(column).isSelected())
-					columns.add(column);
-			}
-			return columns;
 		}
 
 		//--------------------------------------------------------------

@@ -68,9 +68,14 @@ public class ImageUtils
 
 	private interface ErrorMsg
 	{
-		String	IMAGE_FORMAT_NOT_SUPPORTED		= "This implementation of Java does not support the '%s' image format.";
-		String	FAILED_TO_CONVERT_IMAGE			= "Failed to convert image between internal types.";
-		String	FAILED_TO_ENCODE_IMAGE_AS_PNG	= "Failed to encode the image as a PNG file.";
+		String	IMAGE_FORMAT_NOT_SUPPORTED =
+				"This implementation of Java does not support the '%s' image format.";
+
+		String	FAILED_TO_CONVERT_IMAGE =
+				"Failed to convert image between internal types.";
+
+		String	FAILED_TO_ENCODE_IMAGE_AS_PNG =
+				"Failed to encode the image as a PNG file.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

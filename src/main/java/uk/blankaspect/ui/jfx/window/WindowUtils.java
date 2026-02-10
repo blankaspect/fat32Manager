@@ -47,9 +47,6 @@ public class WindowUtils
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The delay (in milliseconds) before the height of a window is fixed by {@link #preventHeightChange(Stage)}. */
-	private static final	int	FIX_WINDOW_HEIGHT_DELAY	= 100;
-
 	/** The delay (in milliseconds) before making the window visible by restoring its opacity. */
 	private static final	int	WINDOW_VISIBLE_DELAY	= 50;
 
@@ -70,21 +67,6 @@ public class WindowUtils
 ////////////////////////////////////////////////////////////////////////
 //  Class methods
 ////////////////////////////////////////////////////////////////////////
-
-
-	public static void preventHeightChange(
-		Stage	window)
-	{
-		// Fix the minimum and maximum height of the window after a delay
-		ExecUtils.afterDelay(FIX_WINDOW_HEIGHT_DELAY, () ->
-		{
-			double height = window.getHeight();
-			window.setMinHeight(height);
-			window.setMaxHeight(height);
-		});
-	}
-
-	//------------------------------------------------------------------
 
 	public static void showAtRelativeLocation(
 		Stage	window,

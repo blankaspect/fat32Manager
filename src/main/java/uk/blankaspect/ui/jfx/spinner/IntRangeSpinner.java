@@ -66,6 +66,9 @@ import javafx.stage.Popup;
 
 import uk.blankaspect.common.css.CssSelector;
 
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
+
+import uk.blankaspect.common.function.IFunction1;
 import uk.blankaspect.common.function.IFunction2;
 import uk.blankaspect.common.function.IProcedure0;
 import uk.blankaspect.common.function.IProcedure1;
@@ -117,7 +120,7 @@ public class IntRangeSpinner
 ////////////////////////////////////////////////////////////////////////
 
 	/** The horizontal inset of the text box. */
-	private static final	double	TEXT_BOX_H_INSET	= 6.0;
+	private static final	double	TEXT_BOX_H_INSET	= 8.0;
 
 	/** The vertical inset of the text box. */
 	private static final	double	TEXT_BOX_V_INSET	= 3.0;
@@ -305,6 +308,10 @@ public class IntRangeSpinner
 
 	/** The function that creates a string representation of a value. */
 	private	IntFunction<String>		converter;
+
+	/** The maximum width of the text of {@link #textNode}, if a prototype string was supplied to {@link #setRange(int,
+		int, String, IntFunction)}. */
+	private	double					maxTextWidth;
 
 	/** The background colour of the text box. */
 	private	Color					textBoxBackgroundColour;
@@ -757,12 +764,51 @@ public class IntRangeSpinner
 ////////////////////////////////////////////////////////////////////////
 
 	/**
+	 * Returns the minimum value of this spinner.
+	 *
+	 * @return the minimum value of this spinner.
+	 */
+
+	public int minValue()
+	{
+		return minValue;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the maximum value of this spinner.
+	 *
+	 * @return the maximum value of this spinner.
+	 */
+
+	public int maxValue()
+	{
+		return maxValue;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the number of values between the minimum and maximum values (inclusive) of this spinner.
+	 *
+	 * @return the number of values between the minimum and maximum values (inclusive) of this spinner.
+	 */
+
+	public int numValues()
+	{
+		return maxValue - minValue + 1;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns the current value of this spinner.
 	 *
 	 * @return the current value of this spinner.
 	 */
 
-	public int getValue()
+	public int value()
 	{
 		return value.get();
 	}
@@ -870,6 +916,7 @@ public class IntRangeSpinner
 		this.maxValue = maxValue;
 		if (converter != null)
 			this.converter = converter;
+		maxTextWidth = 0.0;
 
 		// Determine width of text
 		double textWidth = 0.0;
@@ -883,7 +930,10 @@ public class IntRangeSpinner
 			}
 		}
 		else
+		{
 			textWidth = TextUtils.textWidth(prototypeText);
+			maxTextWidth = textWidth;
+		}
 
 		// Create text node
 		textNode = Text2.createCentred("");
@@ -892,9 +942,9 @@ public class IntRangeSpinner
 
 		// Create background of text box
 		double textHeight = textNode.getHeight();
-		double boxWidth = Math.ceil(textWidth + 2.0 * TEXT_BOX_H_INSET);
-		double boxHeight = Math.ceil(textHeight + 2.0 * TEXT_BOX_V_INSET);
-		textBoxBackground = new Rectangle(boxWidth, boxHeight, textBoxBackgroundColour);
+		double textBoxWidth = Math.ceil(textWidth + 2.0 * TEXT_BOX_H_INSET);
+		double textBoxHeight = Math.ceil(textHeight + 2.0 * TEXT_BOX_V_INSET);
+		textBoxBackground = new Rectangle(textBoxWidth, textBoxHeight, textBoxBackgroundColour);
 		textBoxBackground.setStrokeWidth(0.0);
 		textBoxBackground.getStyleClass().add(StyleClass.TEXT_BOX);
 
@@ -906,7 +956,7 @@ public class IntRangeSpinner
 		textNode.relocate(TEXT_BOX_H_INSET, TEXT_BOX_V_INSET);
 
 		// Create focus-indicator border of button
-		List<Rectangle> textBoxFocusedBorder = ShapeUtils.createFocusBorder(boxWidth, boxHeight);
+		List<Rectangle> textBoxFocusedBorder = ShapeUtils.createFocusBorder(textBoxWidth, textBoxHeight);
 
 		// Create pop-up for list view
 		Popup popUp = new Popup();
@@ -947,7 +997,7 @@ public class IntRangeSpinner
 					super.updateItem(item, empty);
 
 					// Set graphic
-					setGraphic((empty || (getIndex() != getValue() - minValue)) ? blank : marker);
+					setGraphic((empty || (getIndex() != value() - minValue)) ? blank : marker);
 
 					// Set text
 					setText(empty ? null : item);
@@ -1034,66 +1084,21 @@ public class IntRangeSpinner
 			popUp.show(this, bounds.getMinX(), bounds.getMaxY() - 1.0);
 
 			// Select spinner value in list view
-			int index = getValue() - minValue;
+			int index = value() - minValue;
 			listView.getSelectionModel().clearAndSelect(index);
 			if (numRows < numValues)
 				ListViewUtils.scrollToCentred(listView, index);
 		};
 
-		// Get dimensions of arrowhead
-		ButtonInfo buttonInfo = BUTTON_INFOS.get(arrowOrientation);
-		double arrowHeight = textHeight * buttonInfo.heightFactor;
-		double arrowWidth = Math.rint(buttonInfo.widthFactor * textHeight);
+		// Create components and add them to this spinner
+		Buttons buttons = addComponents(textHeight, textBoxWidth, textBoxHeight);
 
-		// Create left arrowhead
-		Polygon leftArrow = null;
-		switch (arrowOrientation)
+		// Create decorator for buttons
+		IFunction2<Group, Group, Integer> buttonDecorator = (button, increment) ->
 		{
-			case HORIZONTAL:
-				leftArrow = new Polygon(arrowWidth, 0.0, arrowWidth, arrowHeight, 0.0, 0.5 * arrowHeight);
-				break;
-
-			case VERTICAL:
-				leftArrow = new Polygon(0.0, 0.0, arrowWidth, 0.0, 0.5 * arrowWidth, arrowHeight);
-				break;
-		}
-		leftArrow.setFill(getColour(ColourKey.BUTTON_ICON));
-		leftArrow.getStyleClass().add(StyleClass.ARROWHEAD);
-
-		// Create right arrowhead
-		Polygon rightArrow = null;
-		switch (arrowOrientation)
-		{
-			case HORIZONTAL:
-				rightArrow = new Polygon(0.0, 0.0, 0.0, arrowHeight, arrowWidth, 0.5 * arrowHeight);
-				break;
-
-			case VERTICAL:
-				rightArrow = new Polygon(0.0, arrowHeight, arrowWidth, arrowHeight, 0.5 * arrowWidth, 0.0);
-				break;
-		}
-		rightArrow.setFill(getColour(ColourKey.BUTTON_ICON));
-		rightArrow.getStyleClass().add(StyleClass.ARROWHEAD);
-
-		// Get dimensions of button
-		double buttonWidth = arrowWidth + 2.0 * buttonInfo.horizontalInset;
-		double buttonHeight = boxHeight;
-
-		// Create factory for button
-		IFunction2<Group, Polygon, Integer> buttonFactory = (arrow, increment) ->
-		{
-			// Create background of button
-			Rectangle background = new Rectangle(buttonWidth, buttonHeight, getColour(ColourKey.BUTTON_BACKGROUND));
-			background.setStrokeWidth(0.0);
-			background.getStyleClass().add(StyleClass.BUTTON);
-
-			// Create focus-indicator border of button
-			List<Rectangle> focusedBorder = ShapeUtils.createFocusBorder(buttonWidth, buttonHeight);
-
-			// Create button
-			Group button = new Group(background, arrow);
-			button.setFocusTraversable(true);
-			arrow.relocate(buttonInfo.horizontalInset, 0.5 * (buttonHeight - arrowHeight));
+			// Get background of button
+			if (!(button.getChildren().get(0) instanceof Rectangle background))
+				throw new UnexpectedRuntimeException();
 
 			// Create timer to update value of spinner after interval
 			UpdateTimer updateTimer = new UpdateTimer(increment);
@@ -1104,7 +1109,7 @@ public class IntRangeSpinner
 				// Stop updating value
 				updateTimer.stop();
 
-				// Highlight background and border of button
+				// Highlight background of button
 				background.pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, true);
 				background.setFill(getColour(ColourKey.BUTTON_BACKGROUND_PRESSED));
 
@@ -1118,7 +1123,7 @@ public class IntRangeSpinner
 				// Stop updating value
 				updateTimer.stop();
 
-				// Restore normal background and border of button
+				// Restore normal background of button
 				background.pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
 				background.setFill(getColour(ColourKey.BUTTON_BACKGROUND));
 			};
@@ -1194,6 +1199,20 @@ public class IntRangeSpinner
 				}
 			});
 
+			// Update button when it is enabled or disabled
+			button.disabledProperty().addListener((observable, oldDisabled, disabled) ->
+			{
+				// If button is disabled, stop updating value
+				if (disabled)
+					stopUpdatingValue.invoke();
+
+				// Update opacity
+				button.setOpacity(disabled ? DISABLED_OPACITY : 1.0);
+			});
+
+			// Create focus-indicator border of button
+			List<Rectangle> focusedBorder = ShapeUtils.createFocusBorder(background.getWidth(), background.getHeight());
+
 			// Add or remove focus-indicator border when button gains or loses focus
 			button.focusedProperty().addListener((observable, oldFocused, focused) ->
 			{
@@ -1212,120 +1231,13 @@ public class IntRangeSpinner
 				}
 			});
 
-			// Update button when it is enabled or disabled
-			button.disabledProperty().addListener((observable, oldDisabled, disabled) ->
-			{
-				// If button is disabled, stop updating value
-				if (disabled)
-					stopUpdatingValue.invoke();
-
-				// Update opacity
-				button.setOpacity(disabled ? DISABLED_OPACITY : 1.0);
-			});
-
 			// Return button
 			return button;
 		};
 
-		// Create frame
-		Rectangle frame = new Rectangle(boxWidth + 2.0 * buttonWidth + 4.0, boxHeight + 2.0, Color.TRANSPARENT);
-		frame.setStroke(getColour(ColourKey.FRAME));
-		frame.setStrokeType(StrokeType.INSIDE);
-		frame.getStyleClass().add(StyleClass.FRAME);
-
-		// Create left button
-		Group leftButton = buttonFactory.invoke(leftArrow, -1);
-
-		// Create right button
-		Group rightButton = buttonFactory.invoke(rightArrow, 1);
-
-		// Create first separator
-		Line separator1 = new Line(0.0, 1.0, 0.0, boxHeight + 1.0);
-		separator1.setStroke(getColour(ColourKey.FRAME));
-		separator1.setStrokeLineCap(StrokeLineCap.BUTT);
-		separator1.getStyleClass().add(StyleClass.FRAME);
-
-		// Create second separator
-		Line separator2 = new Line(0.0, 1.0, 0.0, boxHeight + 1.0);
-		separator2.setStroke(getColour(ColourKey.FRAME));
-		separator2.setStrokeLineCap(StrokeLineCap.BUTT);
-		separator2.getStyleClass().add(StyleClass.FRAME);
-
-		// Add children
-		getChildren().setAll(frame, separator1, separator2);
-		switch (buttonPos)
-		{
-			case LEFT:
-				getChildren().addAll(leftButton, rightButton, textBox);
-				break;
-
-			case RIGHT:
-				getChildren().addAll(textBox, leftButton, rightButton);
-				break;
-
-			case LEFT_RIGHT:
-				getChildren().addAll(leftButton, textBox, rightButton);
-				break;
-		}
-
-		// Set location of children
-		double x = 1.0;
-		switch (buttonPos)
-		{
-			case LEFT:
-				leftButton.relocate(x, 1.0);
-				x += buttonWidth;
-
-				separator1.setStartX(x + 0.5);
-				separator1.setEndX(x + 0.5);
-				x += 1.0;
-
-				rightButton.relocate(x, 1.0);
-				x += buttonWidth;
-
-				separator2.setStartX(x + 0.5);
-				separator2.setEndX(x + 0.5);
-				x += 1.0;
-
-				textBox.relocate(x, 1.0);
-				break;
-
-			case RIGHT:
-				textBox.relocate(x, 1.0);
-				x += boxWidth;
-
-				separator1.setStartX(x + 0.5);
-				separator1.setEndX(x + 0.5);
-				x += 1.0;
-
-				leftButton.relocate(x, 1.0);
-				x += buttonWidth;
-
-				separator2.setStartX(x + 0.5);
-				separator2.setEndX(x + 0.5);
-				x += 1.0;
-
-				rightButton.relocate(x, 1.0);
-				break;
-
-			case LEFT_RIGHT:
-				leftButton.relocate(x, 1.0);
-				x += buttonWidth;
-
-				separator1.setStartX(x + 0.5);
-				separator1.setEndX(x + 0.5);
-				x += 1.0;
-
-				textBox.relocate(x, 1.0);
-				x += boxWidth;
-
-				separator2.setStartX(x + 0.5);
-				separator2.setEndX(x + 0.5);
-				x += 1.0;
-
-				rightButton.relocate(x, 1.0);
-				break;
-		}
+		// Add listeners and event handlers to buttons
+		buttonDecorator.invoke(buttons.left, -1);
+		buttonDecorator.invoke(buttons.right, 1);
 
 		// Show or hide list-view pop-up when primary mouse button is clicked on text box
 		textBox.addEventHandler(MouseEvent.MOUSE_CLICKED, event ->
@@ -1384,7 +1296,10 @@ public class IntRangeSpinner
 		valueUpdater = value ->
 		{
 			// Update text
-			textNode.setText(this.converter.apply(value));
+			String text = this.converter.apply(value);
+			if ((text != null) && (maxTextWidth > 0.0))
+				text = TextUtils.limitToWidth(textNode.getFont(), text, maxTextWidth);
+			textNode.setText(text);
 
 			// Set location of text within text box
 			switch (textAlignment)
@@ -1394,24 +1309,24 @@ public class IntRangeSpinner
 					break;
 
 				case CENTER:
-					textNode.setLayoutX(0.5 * (boxWidth - textNode.getWidth()));
+					textNode.setLayoutX(0.5 * (textBoxWidth - textNode.getWidth()));
 					break;
 
 				case RIGHT:
-					textNode.setLayoutX(boxWidth - textNode.getWidth() - TEXT_BOX_H_INSET);
+					textNode.setLayoutX(textBoxWidth - textNode.getWidth() - TEXT_BOX_H_INSET);
 					break;
 			}
 
 			// Update buttons
 			if (!cyclic)
 			{
-				leftButton.setDisable(value == minValue);
-				rightButton.setDisable(value == maxValue);
+				buttons.left.setDisable(value == minValue);
+				buttons.right.setDisable(value == maxValue);
 			}
 		};
 
 		// Set initial value
-		if (getValue() == minValue)
+		if (value() == minValue)
 			valueUpdater.invoke(minValue);
 		else
 			value.set(minValue);
@@ -1521,49 +1436,67 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets an empty range on this spinner.  The spinner has no buttons: it consists of a text box that contains the
-	 * specified text, and its value is fixed at zero.  This method is intended to be used only by subclasses.
+	 * Returns the text box of this spinner.
+	 *
+	 * @return the text box of this spinner.
+	 */
+
+	public Group textBox()
+	{
+		return textBox;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets an empty range on this spinner.  The text box of the spinner contains the specified text, and the value
+	 * of the spinner is fixed at zero.  The buttons of the spinner are disabled and rendered with reduced opacity.
+	 * This method is intended to be used only by subclasses.
 	 *
 	 * @param text
 	 *          the text that will be displayed in the spinner.
+	 * @param prototypeText
+	 *          the text that will be used to determine the width of the spinner; ignored if it is {@code null}.
 	 */
 
 	protected void setEmptyRange(
-		String	text)
+		String	text,
+		String	prototypeText)
 	{
 		// Update instance variables
 		minValue = maxValue = 0;
 
 		// Create text node
-		textNode = Text2.createCentred(text);
+		textNode = Text2.createCentred((prototypeText == null) ? text : prototypeText);
+		double textWidth = textNode.getWidth();
+		if (prototypeText != null)
+			textNode.setText(TextUtils.limitToWidth(textNode.getFont(), text, textWidth));
 		textNode.setFill(getColour(ColourKey.TEXT_BOX_TEXT_EMPTY));
 		textNode.getStyleClass().add(StyleClass.TEXT);
 		textNode.pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, true);
 
 		// Create background of text box
-		double boxWidth = Math.ceil(textNode.getWidth() + 2.0 * TEXT_BOX_H_INSET);
-		double boxHeight = Math.ceil(textNode.getHeight() + 2.0 * TEXT_BOX_V_INSET);
-		textBoxBackground = new Rectangle(boxWidth, boxHeight, getColour(ColourKey.TEXT_BOX_BACKGROUND_EMPTY));
+		double textBoxWidth = Math.ceil(textWidth + 2.0 * TEXT_BOX_H_INSET);
+		double textBoxHeight = Math.ceil(textNode.getHeight() + 2.0 * TEXT_BOX_V_INSET);
+		textBoxBackground = new Rectangle(textBoxWidth, textBoxHeight, getColour(ColourKey.TEXT_BOX_BACKGROUND_EMPTY));
 		textBoxBackground.setStrokeWidth(0.0);
 		textBoxBackground.getStyleClass().add(StyleClass.TEXT_BOX);
 		textBoxBackground.pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, true);
 
 		// Create text box
-		Group textBox = new Group(textBoxBackground, textNode);
-		textBox.setLayoutX(1.0);
-		textBox.setLayoutY(1.0);
+		textBox = new Group(textBoxBackground, textNode);
 
-		// Set initial position of text within text box
-		textNode.relocate(TEXT_BOX_H_INSET, TEXT_BOX_V_INSET);
+		// Set position of text within text box
+		textNode.relocate(0.5 * (textBoxWidth - textNode.getLayoutBounds().getWidth()), TEXT_BOX_V_INSET);
 
-		// Create frame
-		Rectangle frame = new Rectangle(boxWidth + 2.0, boxHeight + 2.0, Color.TRANSPARENT);
-		frame.setStroke(getColour(ColourKey.FRAME));
-		frame.setStrokeType(StrokeType.INSIDE);
-		frame.getStyleClass().add(StyleClass.FRAME);
+		// Create components and add them to this spinner
+		Buttons buttons = addComponents(textNode.getHeight(), textBoxWidth, textBoxHeight);
 
-		// Set children
-		getChildren().setAll(frame, textBox);
+		// Reduce opacity of buttons
+		buttons.left.setDisable(true);
+		buttons.left.setOpacity(DISABLED_OPACITY);
+		buttons.right.setDisable(true);
+		buttons.right.setOpacity(DISABLED_OPACITY);
 
 		// Set initial value
 		value.set(minValue);
@@ -1572,22 +1505,206 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets an empty range on this spinner.  The spinner has no buttons: it consists of a text box that contains the
-	 * specified text, and its value is fixed at zero.  This method is intended to be used only by subclasses.
+	 * Sets an empty range on this spinner.  The text box of the spinner contains the specified text, and the value
+	 * of the spinner is fixed at zero.  The buttons of the spinner are disabled and rendered with reduced opacity.
+	 * This method is intended to be used only by subclasses.
 	 *
 	 * @param  text
 	 *           the text that will be displayed in the spinner.
+	 * @param  prototypeText
+	 *           the text that will be used to determine the width of the spinner; ignored if it is {@code null}.
 	 * @return this spinner.
 	 */
 
 	protected IntRangeSpinner emptyRange(
-		String	text)
+		String	text,
+		String	prototypeText)
 	{
 		// Set range
-		setEmptyRange(text);
+		setEmptyRange(text, prototypeText);
 
 		// Return this spinner
 		return this;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates the frame, buttons and separators of this spinner and adds them to the spinner.  The text node and text
+	 * box should be created before this method is called.
+	 *
+	 * @param  textHeight
+	 *           the height of the text of the text box.
+	 * @param  textBoxWidth
+	 *           the width of the text box.
+	 * @param  textBoxHeight
+	 *           the height of the text box.
+	 * @return the left and right buttons.
+	 */
+
+	private Buttons addComponents(
+		double	textHeight,
+		double	textBoxWidth,
+		double	textBoxHeight)
+	{
+		// Get dimensions of arrowhead
+		ButtonInfo buttonInfo = BUTTON_INFOS.get(arrowOrientation);
+		double arrowHeight = textHeight * buttonInfo.heightFactor;
+		double arrowWidth = Math.rint(buttonInfo.widthFactor * textHeight);
+
+		// Create left arrowhead
+		Polygon leftArrow = null;
+		switch (arrowOrientation)
+		{
+			case HORIZONTAL:
+				leftArrow = new Polygon(arrowWidth, 0.0, arrowWidth, arrowHeight, 0.0, 0.5 * arrowHeight);
+				break;
+
+			case VERTICAL:
+				leftArrow = new Polygon(0.0, 0.0, arrowWidth, 0.0, 0.5 * arrowWidth, arrowHeight);
+				break;
+		}
+		leftArrow.setFill(getColour(ColourKey.BUTTON_ICON));
+		leftArrow.getStyleClass().add(StyleClass.ARROWHEAD);
+
+		// Create right arrowhead
+		Polygon rightArrow = null;
+		switch (arrowOrientation)
+		{
+			case HORIZONTAL:
+				rightArrow = new Polygon(0.0, 0.0, 0.0, arrowHeight, arrowWidth, 0.5 * arrowHeight);
+				break;
+
+			case VERTICAL:
+				rightArrow = new Polygon(0.0, arrowHeight, arrowWidth, arrowHeight, 0.5 * arrowWidth, 0.0);
+				break;
+		}
+		rightArrow.setFill(getColour(ColourKey.BUTTON_ICON));
+		rightArrow.getStyleClass().add(StyleClass.ARROWHEAD);
+
+		// Get dimensions of button
+		double buttonWidth = arrowWidth + 2.0 * buttonInfo.horizontalInset;
+		double buttonHeight = textBoxHeight;
+
+		// Create frame
+		Rectangle frame = new Rectangle(textBoxWidth + 2.0 * buttonWidth + 4.0, textBoxHeight + 2.0, Color.TRANSPARENT);
+		frame.setStroke(getColour(ColourKey.FRAME));
+		frame.setStrokeType(StrokeType.INSIDE);
+		frame.getStyleClass().add(StyleClass.FRAME);
+
+		// Create factory for buttons
+		IFunction1<Group, Polygon> buttonFactory = (arrow) ->
+		{
+			// Create background of button
+			Rectangle background = new Rectangle(buttonWidth, buttonHeight, getColour(ColourKey.BUTTON_BACKGROUND));
+			background.setStrokeWidth(0.0);
+			background.getStyleClass().add(StyleClass.BUTTON);
+
+			// Create button
+			Group button = new Group(background, arrow);
+			button.setFocusTraversable(true);
+			arrow.relocate(buttonInfo.horizontalInset, 0.5 * (buttonHeight - arrowHeight));
+
+			// Return button
+			return button;
+		};
+
+		// Create left button
+		Group leftButton = buttonFactory.invoke(leftArrow);
+
+		// Create right button
+		Group rightButton = buttonFactory.invoke(rightArrow);
+
+		// Create first separator
+		Line separator1 = new Line(0.0, 1.0, 0.0, textBoxHeight + 1.0);
+		separator1.setStroke(getColour(ColourKey.FRAME));
+		separator1.setStrokeLineCap(StrokeLineCap.BUTT);
+		separator1.getStyleClass().add(StyleClass.FRAME);
+
+		// Create second separator
+		Line separator2 = new Line(0.0, 1.0, 0.0, textBoxHeight + 1.0);
+		separator2.setStroke(getColour(ColourKey.FRAME));
+		separator2.setStrokeLineCap(StrokeLineCap.BUTT);
+		separator2.getStyleClass().add(StyleClass.FRAME);
+
+		// Add children to this spinner
+		getChildren().setAll(frame, separator1, separator2);
+		switch (buttonPos)
+		{
+			case LEFT:
+				getChildren().addAll(leftButton, rightButton, textBox);
+				break;
+
+			case RIGHT:
+				getChildren().addAll(textBox, leftButton, rightButton);
+				break;
+
+			case LEFT_RIGHT:
+				getChildren().addAll(leftButton, textBox, rightButton);
+				break;
+		}
+
+		// Set location of children
+		double x = 1.0;
+		switch (buttonPos)
+		{
+			case LEFT:
+				leftButton.relocate(x, 1.0);
+				x += buttonWidth;
+
+				separator1.setStartX(x + 0.5);
+				separator1.setEndX(x + 0.5);
+				x += 1.0;
+
+				rightButton.relocate(x, 1.0);
+				x += buttonWidth;
+
+				separator2.setStartX(x + 0.5);
+				separator2.setEndX(x + 0.5);
+				x += 1.0;
+
+				textBox.relocate(x, 1.0);
+				break;
+
+			case RIGHT:
+				textBox.relocate(x, 1.0);
+				x += textBoxWidth;
+
+				separator1.setStartX(x + 0.5);
+				separator1.setEndX(x + 0.5);
+				x += 1.0;
+
+				leftButton.relocate(x, 1.0);
+				x += buttonWidth;
+
+				separator2.setStartX(x + 0.5);
+				separator2.setEndX(x + 0.5);
+				x += 1.0;
+
+				rightButton.relocate(x, 1.0);
+				break;
+
+			case LEFT_RIGHT:
+				leftButton.relocate(x, 1.0);
+				x += buttonWidth;
+
+				separator1.setStartX(x + 0.5);
+				separator1.setEndX(x + 0.5);
+				x += 1.0;
+
+				textBox.relocate(x, 1.0);
+				x += textBoxWidth;
+
+				separator2.setStartX(x + 0.5);
+				separator2.setEndX(x + 0.5);
+				x += 1.0;
+
+				rightButton.relocate(x, 1.0);
+				break;
+		}
+
+		// Return buttons
+		return new Buttons(leftButton, rightButton);
 	}
 
 	//------------------------------------------------------------------
@@ -1617,6 +1734,26 @@ public class IntRangeSpinner
 		double	heightFactor,
 		double	widthFactor,
 		double	horizontalInset)
+	{ }
+
+	//==================================================================
+
+
+	// RECORD: A PAIRING OF LEFT AND RIGHT BUTTONS
+
+
+	/**
+	 * This record implements a pairing of the left and right buttons of a spinner.
+	 *
+	 * @param left
+	 *          the left button.
+	 * @param right
+	 *          the right button.
+	 */
+
+	private record Buttons(
+		Group	left,
+		Group	right)
 	{ }
 
 	//==================================================================
@@ -1709,7 +1846,7 @@ public class IntRangeSpinner
 			if (time >= updateTime)
 			{
 				// Update value
-				int value = getValue() + increment;
+				int value = value() + increment;
 				if (cyclic)
 				{
 					if (value < minValue)

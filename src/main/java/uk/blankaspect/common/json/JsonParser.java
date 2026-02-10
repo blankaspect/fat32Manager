@@ -164,23 +164,56 @@ public class JsonParser
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	ERROR_READING_FROM_STREAM		= "An error occured when reading from the input stream.";
-		String	PREMATURE_END_OF_TEXT			= "The input text ended prematurely.";
-		String	EXTRANEOUS_TEXT					= "There is extraneous text after the JSON value.";
-		String	VALUE_EXPECTED					= "A value was expected.";
-		String	OBJECT_MEMBER_NAME_EXPECTED		= "The name of an object member was expected.";
-		String	NAME_SEPARATOR_EXPECTED			= "A name separator was expected.";
-		String	END_OF_OBJECT_EXPECTED			= "An end-of-object character was expected.";
-		String	ARRAY_ELEMENT_EXPECTED			= "An array element was expected.";
-		String	END_OF_ARRAY_EXPECTED			= "An end-of-array character was expected.";
-		String	ILLEGAL_CHARACTER_IN_STRING		= "The character '%s' is not allowed in a string.";
-		String	ILLEGAL_VALUE					= "The value is illegal.";
-		String	ILLEGAL_ESCAPE_SEQUENCE			= "The escape sequence '%s' is illegal.";
-		String	ILLEGAL_UNICODE_ESCAPE_SEQUENCE	= "The Unicode escape sequence '%s' is illegal.";
-		String	DUPLICATE_OBJECT_MEMBER_NAME	= "The object has more than one member with the name '%s'.";
-		String	INVALID_NUMBER					= "The number is not valid";
-		String	NOT_A_VALID_NUMBER				= "'%s' is not a valid number";
-		String	TOO_LARGE_FOR_INTEGER			= "The number is too large for an integer.";
+		String	ERROR_READING_FROM_STREAM =
+				"An error occured when reading from the input stream.";
+
+		String	PREMATURE_END_OF_TEXT =
+				"The input text ended prematurely.";
+
+		String	EXTRANEOUS_TEXT =
+				"There is extraneous text after the JSON value.";
+
+		String	VALUE_EXPECTED =
+				"A value was expected.";
+
+		String	OBJECT_MEMBER_NAME_EXPECTED =
+				"The name of an object member was expected.";
+
+		String	NAME_SEPARATOR_EXPECTED =
+				"A name separator was expected.";
+
+		String	END_OF_OBJECT_EXPECTED =
+				"An end-of-object character was expected.";
+
+		String	ARRAY_ELEMENT_EXPECTED =
+				"An array element was expected.";
+
+		String	END_OF_ARRAY_EXPECTED =
+				"An end-of-array character was expected.";
+
+		String	ILLEGAL_CHARACTER_IN_STRING =
+				"The character '%s' is not allowed in a string.";
+
+		String	ILLEGAL_VALUE =
+				"The value is illegal.";
+
+		String	ILLEGAL_ESCAPE_SEQUENCE =
+				"The escape sequence '%s' is illegal.";
+
+		String	ILLEGAL_UNICODE_ESCAPE_SEQUENCE =
+				"The Unicode escape sequence '%s' is illegal.";
+
+		String	DUPLICATE_OBJECT_MEMBER_NAME =
+				"The object has more than one member with the name '%s'.";
+
+		String	INVALID_NUMBER =
+				"The number is not valid";
+
+		String	NOT_A_VALID_NUMBER =
+				"'%s' is not a valid number";
+
+		String	TOO_LARGE_FOR_INTEGER =
+				"The number is too large for an integer.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

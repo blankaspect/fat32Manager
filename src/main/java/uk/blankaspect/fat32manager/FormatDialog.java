@@ -273,9 +273,9 @@ public class FormatDialog
 		// Create field: volume label
 		TextField volumeLabelField = new TextField();
 		volumeLabelField.setPrefColumnCount(VOLUME_LABEL_FIELD_NUM_COLUMNS);
-		volumeLabelField.setTextFormatter(new TextFormatter<>(FilterFactory.createFilter(VOLUME_LABEL_FIELD_NUM_COLUMNS,
-																						 (ch, index, text) ->
-				Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch).toUpperCase() : "")));
+		volumeLabelField.setTextFormatter(
+				new TextFormatter<>(FilterFactory.createFilter(VOLUME_LABEL_FIELD_NUM_COLUMNS, (ch, index, text) ->
+						Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch).toUpperCase() : "")));
 		GridPane.setFillWidth(volumeLabelField, false);
 		controlPane.addRow(row++, new Label(VOLUME_LABEL_STR), volumeLabelField);
 
@@ -290,9 +290,9 @@ public class FormatDialog
 
 		// Create spinner: minimum number of reserved sectors
 		Spinner<Integer> minNumReservedSectorsSpinner =
-										SpinnerFactory.integerSpinner(Fat32Volume.FORMAT_MIN_NUM_RESERVED_SECTORS,
-																	  numSectors / 2, params.getMinNumReservedSectors(),
-																	  MIN_NUM_RESERVED_SECTORS_SPINNER_NUM_DIGITS);
+				SpinnerFactory.integerSpinner(Fat32Volume.FORMAT_MIN_NUM_RESERVED_SECTORS, numSectors / 2,
+											  params.getMinNumReservedSectors(),
+											  MIN_NUM_RESERVED_SECTORS_SPINNER_NUM_DIGITS);
 		controlPane.addRow(row++, new Label(MIN_NUM_RESERVED_SECTORS_STR), minNumReservedSectorsSpinner);
 
 		// Create function to get minimum number of reserved sectors
@@ -300,8 +300,8 @@ public class FormatDialog
 
 		// Create choice box: cluster alignment
 		CollectionSpinner<ClusterAlignment> clusterAlignmentSpinner =
-					CollectionSpinner.leftRightH(HPos.LEFT, true, ClusterAlignment.class, params.getClusterAlignment(),
-												 null, null);
+				CollectionSpinner.leftRightH(HPos.LEFT, true, ClusterAlignment.class, params.getClusterAlignment(),
+											 null, null);
 		controlPane.addRow(row++, new Label(CLUSTER_ALIGNMENT_STR), clusterAlignmentSpinner);
 
 		// Create function to get cluster alignment
@@ -320,18 +320,18 @@ public class FormatDialog
 		sectorsPerClusterLabel.setAlignment(Pos.CENTER_RIGHT);
 		sectorsPerClusterLabel.setPadding(INFO_LABEL_PADDING);
 		sectorsPerClusterLabel.setTextFill(getColour(ColourKey.INFO_LABEL_TEXT));
-		sectorsPerClusterLabel.setBackground(SceneUtils.createColouredBackground(
-				getColour(ColourKey.INFO_LABEL_BACKGROUND)));
+		sectorsPerClusterLabel.setBackground(
+				SceneUtils.createColouredBackground(getColour(ColourKey.INFO_LABEL_BACKGROUND)));
 		sectorsPerClusterLabel.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.INFO_LABEL_BORDER)));
 
 		// Create spinner: sectors per cluster
 		CollectionSpinner<Integer> sectorsPerClusterSpinner =
-					CollectionSpinner.leftRightH(HPos.CENTER, false, List.of(), 0, null, null);
+				CollectionSpinner.leftRightH(HPos.CENTER, false, List.of(), 0, null, null);
 		sectorsPerClusterSpinner.itemProperty().addListener((observable, oldSectorsPerCluster, sectorsPerCluster) ->
 		{
 			sectorsPerClusterLabel.setText((sectorsPerCluster == null)
-														? null
-														: sectorsPerCluster * bytesPerSector + BYTES_STR);
+													? null
+													: sectorsPerCluster * bytesPerSector + BYTES_STR);
 		});
 
 		// Create pane: sectors per cluster
@@ -356,12 +356,13 @@ public class FormatDialog
 			sectorsPerClusterSpinner.setItems(FXCollections.observableList(validSectorsPerCluster), prototypeText,
 											  null);
 			sectorsPerClusterSpinner.setItem(validSectorsPerCluster.contains(sectorsPerCluster)
-																				? sectorsPerCluster
-																				: DEFAULT_SECTORS_PER_CLUSTER);
+															? sectorsPerCluster
+															: DEFAULT_SECTORS_PER_CLUSTER);
 
 			// Update minimum width of label
-			int spc = validSectorsPerCluster.isEmpty() ? 1
-													   : validSectorsPerCluster.get(validSectorsPerCluster.size() - 1);
+			int spc = validSectorsPerCluster.isEmpty()
+							? 1
+							: validSectorsPerCluster.get(validSectorsPerCluster.size() - 1);
 			String text = spc * bytesPerSector + BYTES_STR;
 			Insets insets = sectorsPerClusterLabel.getInsets();
 			sectorsPerClusterLabel.setMinWidth(

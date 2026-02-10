@@ -52,6 +52,8 @@ public class TextUtils
 	private static final	String	GRAY_FONT_SMOOTHING_STYLE_SHEET	=
 			".text { " + FxProperty.FONT_SMOOTHING_TYPE.getName() + ": gray; }";
 
+	private static final	String	ELLIPSIS_STR	= "...";
+
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
@@ -752,6 +754,72 @@ public class TextUtils
 
 		// Return group
 		return group;
+	}
+
+	//------------------------------------------------------------------
+
+	public static String limitToWidth(
+		String	text,
+		double	maxWidth)
+	{
+		return limitToWidth(null, null, text, maxWidth);
+	}
+
+	//------------------------------------------------------------------
+
+	public static String limitToWidth(
+		Font	font,
+		String	text,
+		double	maxWidth)
+	{
+		return limitToWidth(null, font, text, maxWidth);
+	}
+
+	//------------------------------------------------------------------
+
+	public static String limitToWidth(
+		TextBoundsType	boundsType,
+		Font			font,
+		String			text,
+		double			maxWidth)
+	{
+		// Test whether width of text exceeds maximum width
+		if (textWidth(boundsType, font, text) <= maxWidth)
+			return text;
+
+		// Reduce maximum width by width of ellipsis
+		maxWidth -= textWidth(boundsType, font, ELLIPSIS_STR);
+
+		// If width of ellipsis exceeds maximum width, return empty string
+		if (maxWidth <= 0.0)
+			return "";
+
+		String prefix = "";
+		int textLength = text.length();
+		int lowerIndex = 0;
+		int upperIndex = textLength;
+		while (upperIndex - lowerIndex > 2)
+		{
+			int index = (lowerIndex + upperIndex) / 2;
+			prefix = text.substring(0, index);
+			double width = textWidth(boundsType, font, prefix);
+			if (width < maxWidth)
+				lowerIndex = index;
+			else if (width > maxWidth)
+				upperIndex = index;
+			else
+				upperIndex = lowerIndex = index;
+		}
+
+		int index = upperIndex;
+		while (--index >= lowerIndex)
+		{
+			prefix = text.substring(0, index);
+			if (textWidth(boundsType, font, prefix) <= maxWidth)
+				break;
+		}
+
+		return prefix + ELLIPSIS_STR;
 	}
 
 	//------------------------------------------------------------------

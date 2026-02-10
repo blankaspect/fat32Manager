@@ -18,6 +18,8 @@ package uk.blankaspect.ui.jfx.locationchooser;
 // IMPORTS
 
 
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
@@ -26,6 +28,8 @@ import java.util.List;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import uk.blankaspect.common.filesystem.PathnameUtils;
 
 //----------------------------------------------------------------------
 
@@ -42,6 +46,8 @@ public class LocationMatcher
 
 	public static final	LocationMatcher	ANY_FILE_OR_DIRECTORY	=
 			new LocationMatcher("Any file or directory", location -> true);
+
+	private static final	String	NULL_DESCRIPTION_STR	= "Null description";
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -61,7 +67,7 @@ public class LocationMatcher
 	{
 		// Validate arguments
 		if (description == null)
-			throw new IllegalArgumentException("Null description");
+			throw new IllegalArgumentException(NULL_DESCRIPTION_STR);
 		if (matcher == null)
 			throw new IllegalArgumentException("Null matcher");
 
@@ -78,7 +84,7 @@ public class LocationMatcher
 	{
 		// Validate arguments
 		if (description == null)
-			throw new IllegalArgumentException("Null description");
+			throw new IllegalArgumentException(NULL_DESCRIPTION_STR);
 		if (filenameSuffixes == null)
 			throw new IllegalArgumentException("Null filename suffixes");
 		int numSuffixes = 0;
@@ -96,11 +102,7 @@ public class LocationMatcher
 		this.filenameSuffixes = new ArrayList<>();
 		for (String suffix : filenameSuffixes)
 			this.filenameSuffixes.add(suffix);
-		matcher = location ->
-		{
-			String filename = location.getFileName().toString();
-			return this.filenameSuffixes.stream().anyMatch(suffix -> filename.endsWith(suffix));
-		};
+		matcher = location -> PathnameUtils.suffixMatches(location, this.filenameSuffixes);
 	}
 
 	//------------------------------------------------------------------
@@ -122,7 +124,7 @@ public class LocationMatcher
 	public static Predicate<Path> suffixMatcher(
 		Supplier<String>	suffixSource)
 	{
-		return location -> location.getFileName().toString().endsWith(suffixSource.get());
+		return location -> PathnameUtils.suffixMatches(location, suffixSource.get());
 	}
 
 	//------------------------------------------------------------------
@@ -161,7 +163,9 @@ public class LocationMatcher
 
 	public List<String> getFilenameSuffixes()
 	{
-		return (getNumFilenameSuffixes() > 0) ? Collections.unmodifiableList(filenameSuffixes) : List.of();
+		return (getNumFilenameSuffixes() > 0)
+				? Collections.unmodifiableList(filenameSuffixes)
+				: Collections.emptyList();
 	}
 
 	//------------------------------------------------------------------
@@ -177,6 +181,14 @@ public class LocationMatcher
 		Path	location)
 	{
 		return matcher.test(location);
+	}
+
+	//------------------------------------------------------------------
+
+	public boolean matchesExists(
+		Path	location)
+	{
+		return matcher.test(location) && Files.exists(location, LinkOption.NOFOLLOW_LINKS);
 	}
 
 	//------------------------------------------------------------------

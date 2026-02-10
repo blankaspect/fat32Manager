@@ -18,8 +18,6 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
-import javafx.geometry.HPos;
-
 import javafx.scene.Node;
 
 import javafx.stage.Window;
@@ -44,14 +42,6 @@ import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 public class ConfirmationDialog
 {
-
-////////////////////////////////////////////////////////////////////////
-//  Constants
-////////////////////////////////////////////////////////////////////////
-
-	/** Miscellaneous strings. */
-	private static final	String	OK_STR		= "OK";
-	private static final	String	CANCEL_STR	= "Cancel";
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -93,7 +83,8 @@ public class ConfirmationDialog
 		Node	icon,
 		String	message)
 	{
-		return (MessageDialog.show(owner, title, icon, message, ButtonInfo.of(HPos.RIGHT, OK_STR, CANCEL_STR)) == 0);
+		return (MessageDialog.show(owner, title, icon, message,
+								   ButtonInfo.allRight(SimpleDialog.OK_STR, SimpleDialog.CANCEL_STR)) == 0);
 	}
 
 	//------------------------------------------------------------------
@@ -124,7 +115,7 @@ public class ConfirmationDialog
 		String	acceptText)
 	{
 		return (MessageDialog.show(owner, title, icon, message,
-								   ButtonInfo.of(HPos.RIGHT, acceptText, CANCEL_STR)) == 0);
+								   ButtonInfo.allRight(acceptText, SimpleDialog.CANCEL_STR)) == 0);
 	}
 
 	//------------------------------------------------------------------
@@ -157,8 +148,7 @@ public class ConfirmationDialog
 		String	acceptText,
 		String	cancelText)
 	{
-		return (MessageDialog.show(owner, title, icon, message,
-								   ButtonInfo.of(HPos.RIGHT, acceptText, cancelText)) == 0);
+		return (MessageDialog.show(owner, title, icon, message, ButtonInfo.allRight(acceptText, cancelText)) == 0);
 	}
 
 	//------------------------------------------------------------------

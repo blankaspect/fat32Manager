@@ -135,6 +135,7 @@ import uk.blankaspect.ui.jfx.button.SlideButton;
 import uk.blankaspect.ui.jfx.container.PaneStyle;
 import uk.blankaspect.ui.jfx.container.PathnamePane;
 
+import uk.blankaspect.ui.jfx.dialog.DialogState;
 import uk.blankaspect.ui.jfx.dialog.ErrorDialog;
 import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
@@ -173,8 +174,6 @@ import uk.blankaspect.ui.jfx.text.TextUtils;
 import uk.blankaspect.ui.jfx.textfield.PathnameField;
 
 import uk.blankaspect.ui.jfx.tooltip.TooltipDecorator;
-
-import uk.blankaspect.ui.jfx.window.WindowState;
 
 //----------------------------------------------------------------------
 
@@ -544,7 +543,7 @@ public class SectorClusterViewDialog
 		int						initialIndex)
 	{
 		// Call superclass constructor
-		super(owner, Utils.volumeDisplayName(volume), state.getLocator(), state.getSize());
+		super(owner, Utils.volumeDisplayName(volume), state.locator(), state.getSize());
 
 		// Set style class on root node of scene graph
 		getScene().getRoot().getStyleClass().add(StyleClass.SECTOR_CLUSTER_VIEW_DIALOG_ROOT);
@@ -1249,7 +1248,9 @@ public class SectorClusterViewDialog
 		// Fire 'copy' button if Ctrl+C is pressed
 		addEventFilter(KeyEvent.KEY_PRESSED, event ->
 		{
-			if (KEY_COMBO_COPY.match(event) && (!dataArea.isFocused() || (dataArea.getSelection().getLength() == 0)))
+			if (KEY_COMBO_COPY.match(event)
+					&& (!dataArea.isFocused() || (dataArea.getSelection().getLength() == 0))
+					&& (!sectorIndexSpinner.isFocused() || sectorIndexSpinner.getEditor().getSelectedText().isEmpty()))
 			{
 				copyButton.fire();
 				event.consume();
@@ -1388,9 +1389,9 @@ public class SectorClusterViewDialog
 	//------------------------------------------------------------------
 
 	public static void decodeState(
-		MapNode	mapNode)
+		MapNode	rootNode)
 	{
-		state.decodeTree(mapNode);
+		state.decodeTree(rootNode);
 	}
 
 	//------------------------------------------------------------------
@@ -2195,7 +2196,7 @@ public class SectorClusterViewDialog
 
 
 	public static class State
-		extends WindowState
+		extends DialogState
 	{
 
 	////////////////////////////////////////////////////////////////////
@@ -2404,25 +2405,6 @@ public class SectorClusterViewDialog
 				// Decode flag: autoincrement file index
 				saveFileIndexAutoincrement = saveNode.getBoolean(PropertyKey.FILE_INDEX_AUTOINCREMENT, false);
 			}
-		}
-
-		//--------------------------------------------------------------
-
-	////////////////////////////////////////////////////////////////////
-	//  Instance methods
-	////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Returns a locator function that returns the location from this dialog state.
-		 *
-		 * @return a locator function that returns the location from this dialog state, or {@code null} if the location
-		 *         is {@code null}.
-		 */
-
-		private ILocator getLocator()
-		{
-			Point2D location = getLocation();
-			return (location == null) ? null : (width, height) -> location;
 		}
 
 		//--------------------------------------------------------------

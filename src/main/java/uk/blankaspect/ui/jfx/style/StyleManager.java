@@ -111,6 +111,8 @@ public class StyleManager
 	private static final	char	STYLE_SHEET_ID_DELIMITER	= '~';
 	private static final	String	STYLE_SHEET_ID	=
 			STYLE_SHEET_ID_DELIMITER + StyleManager.class.getName() + STYLE_SHEET_ID_DELIMITER;
+	public static final		String	STYLE_SHEET_ID_COMMENT	=
+			CssConstants.COMMENT_PREFIX + " " + STYLE_SHEET_ID + " " + CssConstants.COMMENT_SUFFIX;
 
 	private static final	String	DEFAULT_COLOURS_FILENAME	= "colours.properties";
 	private static final	String	BASE_STYLE_SHEET_FILENAME	= "base.css";
@@ -889,12 +891,7 @@ public class StyleManager
 		StringBuilder buffer = new StringBuilder(4096);
 
 		// Append comment containing ID
-		buffer.append(CssConstants.COMMENT_PREFIX);
-		buffer.append(' ');
-		buffer.append(STYLE_SHEET_ID);
-		buffer.append(' ');
-		buffer.append(CssConstants.COMMENT_SUFFIX);
-		buffer.append("\n\n");
+		buffer.append(STYLE_SHEET_ID_COMMENT).append("\n\n");
 
 		// Get current theme
 		AbstractTheme theme = getTheme();

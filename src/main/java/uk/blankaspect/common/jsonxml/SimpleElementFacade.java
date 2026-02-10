@@ -59,8 +59,11 @@ public class SimpleElementFacade
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_GET_DOM_IMPLEMENTATION	= "Failed to get an implementation of XML DOM Level 3.";
-		String	FAILED_TO_CREATE_DOCUMENT			= "Failed to create an XML document.";
+		String	FAILED_TO_GET_DOM_IMPLEMENTATION =
+				"Failed to get an implementation of XML DOM Level 3.";
+
+		String	FAILED_TO_CREATE_DOCUMENT =
+				"Failed to create an XML document.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

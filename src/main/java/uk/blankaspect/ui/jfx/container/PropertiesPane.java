@@ -74,22 +74,16 @@ import uk.blankaspect.ui.jfx.dialog.SimpleModelessDialog;
 
 import uk.blankaspect.ui.jfx.dialog.SimpleDialog.ILocator;
 
-import uk.blankaspect.ui.jfx.image.ImageData;
-import uk.blankaspect.ui.jfx.image.ImageUtils;
-
 import uk.blankaspect.ui.jfx.label.OverlayLabel;
 
-import uk.blankaspect.ui.jfx.popup.ActionLabelPopUp;
+import uk.blankaspect.ui.jfx.popup.CopyPopUp;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
-import uk.blankaspect.ui.jfx.style.AbstractTheme;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
-
-import uk.blankaspect.ui.jfx.window.WindowUtils;
 
 //----------------------------------------------------------------------
 
@@ -137,7 +131,6 @@ public class PropertiesPane
 	/** Miscellaneous strings. */
 	private static final	String	EQUALS_STR			= " = ";
 	private static final	String	COPY_STR			= "Copy";
-	private static final	String	COPY_VALUE_STR		= "Copy value";
 	private static final	String	VALUES_STR			= "Values";
 	private static final	String	NAMES_VALUES_STR	= "Names and values";
 	private static final	String	NULL_PROPERTIES_STR	= "Null properties";
@@ -201,14 +194,6 @@ public class PropertiesPane
 		String	VALUE_LABEL_TEXT			= PREFIX + "valueLabel.text";
 	}
 
-	/** Image identifiers. */
-	public interface ImageId
-	{
-		String	PREFIX = MethodHandles.lookup().lookupClass().getEnclosingClass().getName() + ".";
-
-		String	COPY	= PREFIX + "copy";
-	}
-
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
@@ -236,9 +221,6 @@ public class PropertiesPane
 	{
 		// Register the style properties of this class with the style manager
 		StyleManager.INSTANCE.register(PropertiesPane.class, COLOUR_PROPERTIES);
-
-		// Create images from image data
-		ImageData.add(ImageId.COPY, AbstractTheme.MONO_IMAGE_KEY, ImgData.COPY);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -688,16 +670,20 @@ public class PropertiesPane
 				// Call superclass method
 				super.onWindowShown();
 
-				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum and prevent
-				// height of dialog from changing
+				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum, set lower bound
+				// on width of dialog and prevent height of dialog from changing
 				if (isResizable())
 				{
 					// Reduce width of dialog if it exceeds maximum
 					if (getWidth() > dialogMaxInitialWidth)
 						setWidth(dialogMaxInitialWidth);
 
+					// Set lower bound on width of dialog
+					setMinWidth(getWidth());
+
 					// Prevent height of dialog from changing
-					WindowUtils.preventHeightChange(this);
+					setMinHeight(prefHeight());
+					setMaxHeight(prefHeight());
 				}
 			}
 		};
@@ -753,16 +739,20 @@ public class PropertiesPane
 				// Call superclass method
 				super.onWindowShown();
 
-				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum and prevent
-				// height of dialog from changing
+				// If dialog is resizable, ensure that initial width of dialog does	not exceed maximum, set lower bound
+				// on width of dialog and prevent height of dialog from changing
 				if (isResizable())
 				{
 					// Reduce width of dialog if it exceeds maximum
 					if (getWidth() > dialogMaxInitialWidth)
 						setWidth(dialogMaxInitialWidth);
 
+					// Set lower bound on width of dialog
+					setMinWidth(getWidth());
+
 					// Prevent height of dialog from changing
-					WindowUtils.preventHeightChange(this);
+					setMinHeight(prefHeight());
+					setMaxHeight(prefHeight());
 				}
 			}
 		};
@@ -785,23 +775,9 @@ public class PropertiesPane
 		{
 			if (valueLabelHasContextMenu)
 			{
-				// Create pop-up for 'copy' action
+				// Create and display pop-up for 'copy' action
 				Window window = SceneUtils.getWindow(label);
-				ActionLabelPopUp popUp =
-						new ActionLabelPopUp(COPY_STR, ImageUtils.smoothImageView(ImageData.image(ImageId.COPY)), () ->
-						{
-							try
-							{
-								ClipboardUtils.putTextThrow(label.getText());
-							}
-							catch (BaseException e)
-							{
-								ErrorDialog.show(window, COPY_VALUE_STR, e);
-							}
-						});
-
-				// Display pop-up
-				popUp.show(window, event.getScreenX(), event.getScreenY());
+				CopyPopUp.text(window, () -> label.getText()).show(window, event.getScreenX(), event.getScreenY());
 			}
 		});
 		valueLabels.add(label);
@@ -939,43 +915,6 @@ public class PropertiesPane
 	}
 
 	//------------------------------------------------------------------
-
-////////////////////////////////////////////////////////////////////////
-//  Image data
-////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * PNG image data.
-	 */
-
-	private interface ImgData
-	{
-		// File: mono/copy
-		byte[]	COPY	=
-		{
-			(byte)0x89, (byte)0x50, (byte)0x4E, (byte)0x47, (byte)0x0D, (byte)0x0A, (byte)0x1A, (byte)0x0A,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x0D, (byte)0x49, (byte)0x48, (byte)0x44, (byte)0x52,
-			(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x10,
-			(byte)0x08, (byte)0x04, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xB5, (byte)0xFA, (byte)0x37,
-			(byte)0xEA, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x59, (byte)0x49, (byte)0x44, (byte)0x41,
-			(byte)0x54, (byte)0x78, (byte)0x5E, (byte)0x63, (byte)0xF8, (byte)0xC7, (byte)0x80, (byte)0x1F,
-			(byte)0x22, (byte)0x33, (byte)0xDF, (byte)0x33, (byte)0xFC, (byte)0x07, (byte)0xC3, (byte)0xDF,
-			(byte)0x0C, (byte)0x49, (byte)0xD8, (byte)0x15, (byte)0xFC, (byte)0x87, (byte)0xD1, (byte)0x0C,
-			(byte)0x8F, (byte)0x19, (byte)0x32, (byte)0xF1, (byte)0x2B, (byte)0x50, (byte)0x45, (byte)0x28,
-			(byte)0xC1, (byte)0xA6, (byte)0x00, (byte)0x62, (byte)0xD5, (byte)0x6F, (byte)0x14, (byte)0x05,
-			(byte)0x98, (byte)0xF6, (byte)0xC3, (byte)0x95, (byte)0xA3, (byte)0x71, (byte)0xE1, (byte)0xF6,
-			(byte)0xE3, (byte)0x56, (byte)0x00, (byte)0xB5, (byte)0x1F, (byte)0x97, (byte)0x02, (byte)0xB8,
-			(byte)0xFD, (byte)0x38, (byte)0x14, (byte)0x20, (byte)0x78, (byte)0x04, (byte)0x14, (byte)0x00,
-			(byte)0xE1, (byte)0x7B, (byte)0xBC, (byte)0x0A, (byte)0x90, (byte)0xD8, (byte)0x98, (byte)0x42,
-			(byte)0x64, (byte)0x2A, (byte)0x80, (byte)0x05, (byte)0x14, (byte)0x04, (byte)0x42, (byte)0xED,
-			(byte)0x47, (byte)0x52, (byte)0x80, (byte)0x1B, (byte)0x02, (byte)0x00, (byte)0xE5, (byte)0x32,
-			(byte)0xF8, (byte)0x0C, (byte)0x4A, (byte)0x24, (byte)0x84, (byte)0xAC, (byte)0x00, (byte)0x00,
-			(byte)0x00, (byte)0x00, (byte)0x49, (byte)0x45, (byte)0x4E, (byte)0x44, (byte)0xAE, (byte)0x42,
-			(byte)0x60, (byte)0x82
-		};
-	}
-
-	//==================================================================
 
 }
 

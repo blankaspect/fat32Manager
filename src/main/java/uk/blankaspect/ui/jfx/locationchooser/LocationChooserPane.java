@@ -141,6 +141,7 @@ import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.FileException;
 
 import uk.blankaspect.common.filesystem.DirectoryUtils;
+import uk.blankaspect.common.filesystem.PathnameUtils;
 import uk.blankaspect.common.filesystem.PathUtils;
 
 import uk.blankaspect.common.function.IFunction0;
@@ -229,8 +230,6 @@ import uk.blankaspect.ui.jfx.textfield.PathnameField;
 import uk.blankaspect.ui.jfx.tooltip.TooltipDecorator;
 
 import uk.blankaspect.ui.jfx.treeview.TreeViewStyle;
-
-import uk.blankaspect.ui.jfx.window.WindowUtils;
 
 //----------------------------------------------------------------------
 
@@ -997,6 +996,26 @@ public class LocationChooserPane
 		};
 		nameField.setPrefColumnCount(NAME_FIELD_NUM_COLUMNS);
 
+		// Create procedure to update pathname field
+		IProcedure0 updateSelectedLocations = () ->
+		{
+			Path directory = tableView.directory;
+			String name = nameField.getText();
+			if ((directory == null) || StringUtils.isNullOrBlank(name))
+				tableView.selectedLocations.clear();
+			else
+			{
+				try
+				{
+					tableView.selectedLocations.setAll(directory.resolve(name));
+				}
+				catch (InvalidPathException e)
+				{
+					// ignore
+				}
+			}
+		};
+
 		// Create name-filter pane or initialise name field
 		switch (selectionMode)
 		{
@@ -1012,23 +1031,7 @@ public class LocationChooserPane
 				TooltipDecorator.addTooltip(nameField, () -> (nameField.getLength() == 0) ? SUGGESTIONS_STR : null);
 
 				// Update selected location when name changes
-				nameField.textProperty().addListener((observable, oldName, name) ->
-				{
-					Path directory = tableView.directory;
-					if ((directory == null) || StringUtils.isNullOrBlank(name))
-						tableView.selectedLocations.clear();
-					else
-					{
-						try
-						{
-							tableView.selectedLocations.setAll(directory.resolve(name));
-						}
-						catch (InvalidPathException e)
-						{
-							// ignore
-						}
-					}
-				});
+				nameField.textProperty().addListener(observable -> updateSelectedLocations.invoke());
 
 				// If Enter is pressed in name field, notify listeners that a location was chosen
 				nameField.addEventHandler(ActionEvent.ACTION, event -> notifyLocationsChosen());
@@ -1042,8 +1045,8 @@ public class LocationChooserPane
 				// Set properties of name field
 				nameField.setEditable(false);
 				nameField.setPadding(NON_EDITABLE_FIELD_PADDING);
-				nameField.setBackground(SceneUtils.createColouredBackground(
-																getColour(ColourKey.NON_EDITABLE_FIELD_BACKGROUND)));
+				nameField.setBackground(
+						SceneUtils.createColouredBackground(getColour(ColourKey.NON_EDITABLE_FIELD_BACKGROUND)));
 				nameField.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.NON_EDITABLE_FIELD_BORDER)));
 				nameField.getStyleClass().add(StyleClass.NON_EDITABLE_FIELD);
 				namePane.addRow(row++, new Label(NAME_STR), nameField);
@@ -1121,13 +1124,29 @@ public class LocationChooserPane
 			filterSpinner = CollectionSpinner.leftRightH(HPos.CENTER, true, filters, null, null,
 														 LocationMatcher::getDescription);
 			filterSpinner.setItem(null);
-			filterSpinner.itemProperty().addListener((observable, oldFilter, filter) ->
+			filterSpinner.itemProperty().addListener((observable, oldFilter, newFilter) ->
 			{
-				// Clear name field
-				nameField.clear();
+				// If name ends in a filename suffix of a filter other than the new one, replace the suffix with the
+				// first filename suffix of the new filter
+				String name = nameField.getText();
+				List<String> newSuffixes = newFilter.getFilenameSuffixes();
+				if (!StringUtils.isNullOrEmpty(name) && !newSuffixes.isEmpty())
+				{
+					for (LocationMatcher filter : filters)
+					{
+						if (filter == newFilter)
+							continue;
+						String suffix = PathnameUtils.matchingSuffix(name, filter.getFilenameSuffixes());
+						if (suffix != null)
+						{
+							nameField.setText(name.substring(0, name.length() - suffix.length()) + newSuffixes.get(0));
+							break;
+						}
+					}
+				}
 
 				// Update filter of table view
-				tableView.filter = filter;
+				tableView.filter = newFilter;
 
 				// Force update of table view
 				Path directory = tableView.directory;
@@ -1139,8 +1158,8 @@ public class LocationChooserPane
 			});
 			filterSpinner.setItem(filters.stream().skip(filterIndex).findFirst().orElse(null));
 
-			// Add tooltip to spinner
-			LabelPopUpManager popUpManager = TooltipDecorator.addTooltip(filterSpinner, () ->
+			// Add tooltip to text box of spinner
+			LabelPopUpManager popUpManager = TooltipDecorator.addTooltip(filterSpinner.textBox(), () ->
 			{
 				List<String> suffixes = filterSpinner.getItem().getFilenameSuffixes();
 				return suffixes.isEmpty() ? "" : suffixes.stream().collect(Collectors.joining(", *", "*", ""));
@@ -1234,8 +1253,9 @@ public class LocationChooserPane
 			// Update pathname field
 			updatePathnameField.invoke(directory);
 
-			// Clear name field
-			nameField.clear();
+			// Update selected locations
+			if (selectionMode == SelectionMode.SINGLE)
+				updateSelectedLocations.invoke();
 
 			// Update list of suggestions for name filter
 			if (nameFilterPane != null)
@@ -1248,10 +1268,8 @@ public class LocationChooserPane
 			case SINGLE:
 				tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldItem, item) ->
 				{
-					if ((item != null) && tableView.filter.matches(item.location))
+					if ((item != null) && tableView.filter.matchesExists(item.location))
 						nameField.setText(item.location.getFileName().toString());
-					else
-						nameField.clear();
 				});
 				break;
 
@@ -1534,7 +1552,7 @@ public class LocationChooserPane
 
 	public int getFilterIndex()
 	{
-		return (filterSpinner == null) ? -1 : filterSpinner.getValue();
+		return (filterSpinner == null) ? -1 : filterSpinner.value();
 	}
 
 	//------------------------------------------------------------------
@@ -1555,6 +1573,13 @@ public class LocationChooserPane
 			fireEvent(new LocationChooserEvent(LocationChooserEvent.LOCATIONS_CHOSEN, this,
 											   tableView.selectedLocations));
 		}
+	}
+
+	//------------------------------------------------------------------
+
+	public TextField getNameField()
+	{
+		return nameField;
 	}
 
 	//------------------------------------------------------------------
@@ -2265,7 +2290,7 @@ public class LocationChooserPane
 									MessageListDialog.show(
 											getWindow(), EXPAND_DIRECTORY_STR, MessageIcon32.WARNING.get(),
 											ErrorMsg.FAILED_TO_DETERMINE_HIDDEN_STATUS, indeterminateLocations, true,
-											ButtonInfo.of(HPos.RIGHT, OK_STR));
+											ButtonInfo.right(OK_STR));
 								});
 							}
 						}
@@ -2617,8 +2642,11 @@ public class LocationChooserPane
 		/** Error messages. */
 		private interface ErrorMsg
 		{
-			String	DIRECTORY_HAS_NO_ROOT		= "The directory has no root.";
-			String	DIRECTORY_DOES_NOT_EXIST	= "The directory does not exist.";
+			String	DIRECTORY_HAS_NO_ROOT =
+					"The directory has no root.";
+
+			String	DIRECTORY_DOES_NOT_EXIST =
+					"The directory does not exist.";
 		}
 
 	////////////////////////////////////////////////////////////////////
@@ -3025,7 +3053,7 @@ public class LocationChooserPane
 			List<DirectoryEntry> filteredEntries = new ArrayList<>();
 			for (DirectoryEntry entry : entries)
 			{
-				if (entry.isDirectory || filter.matches(entry.location))
+				if (entry.isDirectory || filter.matchesExists(entry.location))
 					filteredEntries.add(entry);
 			}
 
@@ -3191,7 +3219,7 @@ public class LocationChooserPane
 		{
 			return getItems().stream()
 					.map(entry -> entry.location)
-					.filter(location -> filter.matches(location))
+					.filter(location -> filter.matchesExists(location))
 					.toList();
 		}
 
@@ -3201,7 +3229,7 @@ public class LocationChooserPane
 		{
 			return getSelectionModel().getSelectedItems().stream()
 					 .map(entry -> entry.location)
-					 .filter(location -> filter.matches(location))
+					 .filter(location -> filter.matchesExists(location))
 					 .toList();
 		}
 
@@ -3654,7 +3682,7 @@ public class LocationChooserPane
 						{
 							if (entry.isDirectory)
 								openDirectory(entry);
-							else if (filter.matches(entry.location))
+							else if (filter.matchesExists(entry.location))
 							{
 								selectedLocations.setAll(List.of(entry.location));
 								getChooserPane().notifyLocationsChosen();
@@ -4690,7 +4718,8 @@ public class LocationChooserPane
 			super.onWindowShown();
 
 			// Prevent height of window from changing
-			WindowUtils.preventHeightChange(this);
+			setMinHeight(prefHeight());
+			setMaxHeight(prefHeight());
 		}
 
 		//--------------------------------------------------------------

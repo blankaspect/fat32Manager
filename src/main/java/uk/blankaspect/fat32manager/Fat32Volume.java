@@ -283,15 +283,32 @@ public class Fat32Volume
 
 	private interface ErrorMsg
 	{
-		String	VOLUME_NOT_MOUNTED				= "The volume is not mounted.";
-		String	FILE_SYSTEM_NOT_FAT32			= "The file system is not recognised as FAT32.";
-		String	INVALID_BYTES_PER_SECTOR		= "The number of bytes per sector (%d) is not valid.";
-		String	INCONSISTENT_SECTOR_PARAMETERS	= "The sector parameters of the volume are inconsistent.";
-		String	TOO_FEW_SECTORS_PER_FAT			= "The number of sectors per FAT (%d) is less than required.";
-		String	FAT_ENTRIES_DIFFER				= "The entries of FATs 0 and %d differ at index %d.";
-		String	UNEXPECTED_FAT_ENTRY			= "A FAT entry has an unexpected value.";
-		String	UNEXPECTED_DIRECTORY_ENTRY		= "A directory entry has an unexpected value.";
-		String	FAILED_TO_VERIFY_LAST_SECTOR	= "Failed to verify the last sector of the volume.";
+		String	VOLUME_NOT_MOUNTED =
+				"The volume is not mounted.";
+
+		String	FILE_SYSTEM_NOT_FAT32 =
+				"The file system is not recognised as FAT32.";
+
+		String	INVALID_BYTES_PER_SECTOR =
+				"The number of bytes per sector (%d) is not valid.";
+
+		String	INCONSISTENT_SECTOR_PARAMETERS =
+				"The sector parameters of the volume are inconsistent.";
+
+		String	TOO_FEW_SECTORS_PER_FAT =
+				"The number of sectors per FAT (%d) is less than required.";
+
+		String	FAT_ENTRIES_DIFFER =
+				"The entries of FATs 0 and %d differ at index %d.";
+
+		String	UNEXPECTED_FAT_ENTRY =
+				"A FAT entry has an unexpected value.";
+
+		String	UNEXPECTED_DIRECTORY_ENTRY =
+				"A directory entry has an unexpected value.";
+
+		String	FAILED_TO_VERIFY_LAST_SECTOR =
+				"Failed to verify the last sector of the volume.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

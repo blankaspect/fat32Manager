@@ -40,7 +40,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Task;
 
 import javafx.geometry.Dimension2D;
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 
@@ -361,7 +360,7 @@ public class Fat32ManagerApp
 //  Class variables
 ////////////////////////////////////////////////////////////////////////
 
-	/** The instance of this application. */
+	/** The single instance of this class. */
 	private static	Fat32ManagerApp	instance;
 
 	/** The index of the last thread that was created for a background task. */
@@ -1614,7 +1613,7 @@ public class Fat32ManagerApp
 
 				// Display pathnames in dialog
 				MessageListDialog.show(primaryStage, DEFRAGMENT_FILES_STR, MessageIcon32.ALERT.get(),
-									   NOT_ENOUGH_SPACE_STR, pathnames, true, ButtonInfo.of(HPos.RIGHT, OK_STR));
+									   NOT_ENOUGH_SPACE_STR, pathnames, true, ButtonInfo.allRight(OK_STR));
 			}
 		};
 
@@ -1682,7 +1681,7 @@ public class Fat32ManagerApp
 				{
 					// If 'continue' was chosen, continue with next file
 					if (ExceptionDialog.show(primaryStage, getTitle(), MessageIcon32.ERROR, getException(),
-											 ButtonInfo.of(HPos.RIGHT, CONTINUE_STR, CANCEL_STR)) == 0)
+											 ButtonInfo.allRight(CONTINUE_STR, CANCEL_STR)) == 0)
 						defragmentFiles(entryIt, notEnoughSpaceEntries, vars.numClustersProcessed, totalNumClusters);
 
 					// ... otherwise, invoke post-task procedure

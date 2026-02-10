@@ -45,6 +45,7 @@ import uk.blankaspect.ui.jfx.colour.ColourUtils;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.FxPseudoClass;
+import uk.blankaspect.ui.jfx.style.FxStyleClass;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 import uk.blankaspect.ui.jfx.style.StyleUtils;
@@ -128,6 +129,15 @@ public class TimeField
 			CssSelector.builder()
 					.cls(StyleClass.TIME_FIELD).pseudo(FxPseudoClass.FOCUSED)
 					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			ColourKey.CONTEXT_MENU_BACKGROUND,
+			CssSelector.builder()
+					.cls(StyleClass.TIME_FIELD)
+					.desc(FxStyleClass.CONTEXT_MENU)
+					.build()
 		)
 	);
 
@@ -151,6 +161,7 @@ public class TimeField
 
 		String	BACKGROUND_INVALID		= PREFIX + "background.invalid";
 		String	BACKGROUND_VALID		= PREFIX + "background.valid";
+		String	CONTEXT_MENU_BACKGROUND	= PREFIX + "contextMenu.background";
 		String	HIGHLIGHT_FOCUSED		= PREFIX + "highlight.focused";
 		String	HIGHLIGHT_TEXT_FOCUSED	= PREFIX + "highlight.text.focused";
 	}
@@ -229,7 +240,7 @@ public class TimeField
 
 		// Set properties
 		setPrefColumnCount(NUM_COLUMNS);
-		setTextFormatter(new TextFormatter<>(FilterFactory.decInteger(8, 2, separators)));
+		setTextFormatter(new TextFormatter<>(FilterFactory.decInteger(6, 2, separators)));
 		setPromptText(String.format(PROMPT_STR, separator, separator));
 		getStyleClass().add(StyleClass.TIME_FIELD);
 
@@ -250,14 +261,16 @@ public class TimeField
 					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
 					pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
 
-					setStyle(null);
+					if (StyleManager.INSTANCE.notUsingStyleSheet())
+						setStyle(null);
 				}
 				else
 				{
 					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
 					pseudoClassStateChanged(VALID_PSEUDO_CLASS, true);
 
-					setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_VALID));
+					if (StyleManager.INSTANCE.notUsingStyleSheet())
+						setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_VALID));
 				}
 			}
 			catch (DateTimeException e)
@@ -265,7 +278,8 @@ public class TimeField
 				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, true);
 				pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
 
-				setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_INVALID));
+				if (StyleManager.INSTANCE.notUsingStyleSheet())
+					setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_INVALID));
 			}
 		});
 	}
@@ -317,16 +331,35 @@ public class TimeField
 		// If text is not empty, parse it
 		if (!text.isEmpty())
 		{
-			// Test number of time components
+			// Split text into time components: hours, minute, second
 			String[] strs = text.split(separatorRegex, -1);
-			if ((strs.length < 2) || (strs.length > 3))
-				throw new DateTimeException(MALFORMED_TIME_STR);
 
-			// Test for empty components
-			for (int i = 0; i < strs.length; i++)
+			// If text consists of a single string of four or six digits, split it into two or three components
+			// respectively ...
+			if (strs.length == 1)
 			{
-				if (strs[i].isEmpty())
+				String str = strs[0];
+				strs = switch (str.length())
+				{
+					case 4  -> new String[] { str.substring(0, 2), str.substring(2) };
+					case 6  -> new String[] { str.substring(0, 2), str.substring(2, 4), str.substring(4) };
+					default -> throw new DateTimeException(MALFORMED_TIME_STR);
+				};
+			}
+
+			// ... otherwise, accept text only if it has three non-empty components
+			else
+			{
+				// Test for two or three components
+				if (strs.length > 3)
 					throw new DateTimeException(MALFORMED_TIME_STR);
+
+				// Test for empty components
+				for (int i = 0; i < strs.length; i++)
+				{
+					if (strs[i].isEmpty())
+						throw new DateTimeException(MALFORMED_TIME_STR);
+				}
 			}
 
 			// Create time from components

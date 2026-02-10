@@ -132,12 +132,23 @@ public class Logger
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FILE_IS_OPEN				= "A log file is already open.";
-		String	FAILED_TO_OPEN_FILE			= "Failed to open the log file.";
-		String	FAILED_TO_CLOSE_FILE		= "Failed to close the log file.";
-		String	ERROR_READING_FILE			= "An error occurred while reading the log file.";
-		String	ERROR_WRITING_FILE			= "An error occurred while writing the log file.";
-		String	FILE_ACCESS_NOT_PERMITTED	= "Access to the log file was not permitted.";
+		String	FILE_IS_OPEN =
+				"A log file is already open.";
+
+		String	FAILED_TO_OPEN_FILE =
+				"Failed to open the log file.";
+
+		String	FAILED_TO_CLOSE_FILE =
+				"Failed to close the log file.";
+
+		String	ERROR_READING_FILE =
+				"An error occurred while reading the log file.";
+
+		String	ERROR_WRITING_FILE =
+				"An error occurred while writing the log file.";
+
+		String	FILE_ACCESS_NOT_PERMITTED =
+				"Access to the log file was not permitted.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

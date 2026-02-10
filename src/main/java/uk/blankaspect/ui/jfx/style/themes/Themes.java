@@ -48,7 +48,8 @@ public class Themes
 	/** Error messages. */
 	private interface ErrorMsg
 	{
-		String	FAILED_TO_INSTANTIATE_CLASS	= "Class: %s\nFailed to create an instance of the class.";
+		String	FAILED_TO_INSTANTIATE_CLASS =
+				"Class: %s\nFailed to create an instance of the class.";
 	}
 
 ////////////////////////////////////////////////////////////////////////

@@ -47,6 +47,7 @@ import uk.blankaspect.ui.jfx.date.DateSelectionPane;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.FxPseudoClass;
+import uk.blankaspect.ui.jfx.style.FxStyleClass;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 import uk.blankaspect.ui.jfx.style.StyleUtils;
@@ -132,6 +133,15 @@ public class DateField
 			CssSelector.builder()
 					.cls(StyleClass.DATE_FIELD).pseudo(FxPseudoClass.FOCUSED)
 					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			ColourKey.CONTEXT_MENU_BACKGROUND,
+			CssSelector.builder()
+					.cls(StyleClass.DATE_FIELD)
+					.desc(FxStyleClass.CONTEXT_MENU)
+					.build()
 		)
 	);
 
@@ -155,6 +165,7 @@ public class DateField
 
 		String	BACKGROUND_INVALID		= PREFIX + "background.invalid";
 		String	BACKGROUND_VALID		= PREFIX + "background.valid";
+		String	CONTEXT_MENU_BACKGROUND	= PREFIX + "contextMenu.background";
 		String	HIGHLIGHT_FOCUSED		= PREFIX + "highlight.focused";
 		String	HIGHLIGHT_TEXT_FOCUSED	= PREFIX + "highlight.text.focused";
 	}
@@ -254,14 +265,16 @@ public class DateField
 					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
 					pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
 
-					setStyle(null);
+					if (StyleManager.INSTANCE.notUsingStyleSheet())
+						setStyle(null);
 				}
 				else
 				{
 					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
 					pseudoClassStateChanged(VALID_PSEUDO_CLASS, true);
 
-					setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_VALID));
+					if (StyleManager.INSTANCE.notUsingStyleSheet())
+						setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_VALID));
 				}
 			}
 			catch (DateTimeException e)
@@ -269,7 +282,8 @@ public class DateField
 				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, true);
 				pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
 
-				setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_INVALID));
+				if (StyleManager.INSTANCE.notUsingStyleSheet())
+					setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_INVALID));
 			}
 		});
 	}
@@ -321,16 +335,26 @@ public class DateField
 		// If text is not empty, parse it
 		if (!text.isEmpty())
 		{
-			// Test number of date components
+			// Split text into date components: year, month, day
 			String[] strs = text.split(separatorRegex, -1);
-			if (strs.length != 3)
-				throw new DateTimeException(MALFORMED_DATE_STR);
 
-			// Test for empty components
-			for (int i = 0; i < strs.length; i++)
+			// If text consists of a single string of eight digits, split it into three components ...
+			if ((strs.length == 1) && (strs[0].length() == 8))
+				strs = new String[] { strs[0].substring(0, 4), strs[0].substring(4, 6), strs[0].substring(6) };
+
+			// ... otherwise, accept text only if it has three non-empty components
+			else
 			{
-				if (strs[i].isEmpty())
+				// Test for three components
+				if (strs.length != 3)
 					throw new DateTimeException(MALFORMED_DATE_STR);
+
+				// Test for empty components
+				for (int i = 0; i < strs.length; i++)
+				{
+					if (strs[i].isEmpty())
+						throw new DateTimeException(MALFORMED_DATE_STR);
+				}
 			}
 
 			// Validate year

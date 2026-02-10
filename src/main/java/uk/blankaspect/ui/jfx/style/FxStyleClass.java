@@ -20,6 +20,7 @@ package uk.blankaspect.ui.jfx.style;
 
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressBar;
@@ -71,6 +72,9 @@ public interface FxStyleClass
 
 	/** The content of a {@link TextArea} or other components. */
 	String	CONTENT						= "content";
+
+	/** A {@link ContextMenu}. */
+	String	CONTEXT_MENU				= "context-menu";
 
 	/** The filler of a {@link TableView}. */
 	String	FILLER						= "filler";

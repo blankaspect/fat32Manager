@@ -22,6 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
+import java.util.Iterator;
+import java.util.List;
+
 import java.util.function.Predicate;
 
 //----------------------------------------------------------------------
@@ -75,6 +78,42 @@ public class FileMatcher
 	//------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////
+//  Class methods
+////////////////////////////////////////////////////////////////////////
+
+	public static FileMatcher from(
+		String				description,
+		Iterable<String>	filenameSuffixes)
+	{
+		StringBuilder buffer = new StringBuilder(64);
+		buffer.append(description);
+		Iterator<String> it = filenameSuffixes.iterator();
+		if (it.hasNext())
+		{
+			buffer.append("  (");
+			while (it.hasNext())
+			{
+				buffer.append('*').append(it.next());
+				if (it.hasNext())
+					buffer.append(", ");
+			}
+			buffer.append(')');
+		}
+		return new FileMatcher(buffer.toString(), filenameSuffixes);
+	}
+
+	//------------------------------------------------------------------
+
+	public static FileMatcher from(
+		String		description,
+		String...	filenameSuffixes)
+	{
+		return from(description, List.of(filenameSuffixes));
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
 //  Instance methods : overriding methods
 ////////////////////////////////////////////////////////////////////////
 
@@ -90,8 +129,19 @@ public class FileMatcher
 	public boolean matches(
 		Path	location)
 	{
-		return (location != null) && Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS)
-				&& super.matches(location);
+		return (location != null) && super.matches(location)
+				&& (Files.notExists(location, LinkOption.NOFOLLOW_LINKS)
+						|| Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS));
+	}
+
+	//------------------------------------------------------------------
+
+	@Override
+	public boolean matchesExists(
+		Path	location)
+	{
+		return (location != null) && super.matches(location)
+				&& Files.isRegularFile(location, LinkOption.NOFOLLOW_LINKS);
 	}
 
 	//------------------------------------------------------------------

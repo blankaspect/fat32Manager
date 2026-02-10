@@ -126,7 +126,7 @@ public class FilterFactory
 	/**
 	 * Creates and returns a filter for a text-input control that applies the specified filter to each character of a
 	 * change (addition or replacement) that is made to the content of the control.  The length of the content of the
-	 * control may optionally be limited to a specified value.
+	 * control may optionally be limited to the specified value.
 	 *
 	 * @param  maxLength
 	 *           the maximum length of the content of the text-input control, ignored if not greater than 0.
@@ -158,18 +158,23 @@ public class FilterFactory
 
 				// Get the text of the change
 				String inText = change.getText();
+				String outText = inText;
 
 				// Apply the filter to the text of the change
-				StringBuilder buffer = new StringBuilder();
-				for (int i = 0; i < inText.length(); i++)
+				if (charFilter != null)
 				{
-					String str = charFilter.apply(inText.charAt(i), start + i, text);
-					if (!StringUtils.isNullOrEmpty(str))
-						buffer.append(str);
+					int inLength = inText.length();
+					StringBuilder buffer = new StringBuilder(2 * inLength);
+					for (int i = 0; i < inLength; i++)
+					{
+						String str = charFilter.apply(inText.charAt(i), start + i, text);
+						if (!StringUtils.isNullOrEmpty(str))
+							buffer.append(str);
+					}
+					outText = buffer.toString();
 				}
 
 				// Get the filtered text and its length
-				String outText = buffer.toString();
 				int outLength = outText.length();
 
 				// If a maximum length is specified and the change would cause the length of the text to exceed this
@@ -212,6 +217,23 @@ public class FilterFactory
 			}
 			return change;
 		};
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates and returns a filter for a text-input control that limits the length of the content of the control to the
+	 * specified value.
+	 *
+	 * @param  maxLength
+	 *           the maximum length of the content of the text-input control, ignored if not greater than 0.
+	 * @return a filter that limits the length of the content of the control to {@code maxLength}.
+	 */
+
+	public static UnaryOperator<TextFormatter.Change> lengthLimiter(
+		int	maxLength)
+	{
+		return createFilter(maxLength, null);
 	}
 
 	//------------------------------------------------------------------

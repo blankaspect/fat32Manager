@@ -113,7 +113,7 @@ public class DaySelectionPane
 			new Insets(CELL_V_PADDING, CELL_H_PADDING, CELL_V_PADDING, CELL_H_PADDING + 1.0);
 
 	/** The padding around a pop-up window in which the full name of a day of the week is displayed. */
-	private static final	Insets	POP_UP_PADDING	= new Insets(1.0, 4.0, 1.0, 4.0);
+	private static final	Insets	POP_UP_PADDING	= new Insets(1.0, 4.0, 2.0, 4.0);
 
 	/** The delay (in milliseconds) between the triggering of a day-of-the-week pop-up and its display. */
 	private static final	int		POP_UP_DELAY	= 100;
@@ -505,7 +505,7 @@ public class DaySelectionPane
 					popUpManager.showPopUp(label, getDayString(i0, 0), null, event,
 										   PopUpUtils.createLocator(label, VHPos.CENTRE_LEFT, VHPos.CENTRE_LEFT,
 																	0.5 * (textWidth - TextUtils.textWidth(text)) - 2.0,
-																	-1.0));
+																	0.0));
 				}
 			});
 

@@ -153,9 +153,9 @@ public class VolumeLabelDialog
 		// Create field: volume label
 		TextField volumeLabelField = new TextField(volumeLabel);
 		volumeLabelField.setPrefColumnCount(VOLUME_LABEL_FIELD_NUM_COLUMNS);
-		volumeLabelField.setTextFormatter(new TextFormatter<>(FilterFactory.createFilter(VOLUME_LABEL_FIELD_NUM_COLUMNS,
-																						 (ch, index, text) ->
-				Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch).toUpperCase() : "")));
+		volumeLabelField.setTextFormatter(
+				new TextFormatter<>(FilterFactory.createFilter(VOLUME_LABEL_FIELD_NUM_COLUMNS, (ch, index, text) ->
+						Fat32Volume.isValidVolumeLabelChar(ch) ? Character.toString(ch).toUpperCase() : "")));
 		controlPane.addRow(row++, new Label(VOLUME_LABEL_STR), volumeLabelField);
 
 		// Create check box: use current date and time
@@ -205,8 +205,8 @@ public class VolumeLabelDialog
 		okButton.setOnAction(event ->
 		{
 			LocalDateTime dateTime = useCurrDateTimeCheckBox.isSelected()
-														? LocalDateTime.now()
-														: LocalDateTime.of(datePane.getDate(), timeField.getTime());
+												? LocalDateTime.now()
+												: LocalDateTime.of(datePane.getDate(), timeField.getTime());
 			result = new Result(volumeLabelField.getText(), dateTime);
 			hide();
 		});

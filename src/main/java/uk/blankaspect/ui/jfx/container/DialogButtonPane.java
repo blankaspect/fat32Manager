@@ -137,20 +137,11 @@ public class DialogButtonPane
 		Region	button,
 		HPos	position)
 	{
-		// Add button to button pane
 		switch (position)
 		{
-			case LEFT:
-				getChildren().add(numButtonsLeft++, button);
-				break;
-
-			case CENTER:
-				getChildren().add(numButtonsLeft + numButtonsCentre++, button);
-				break;
-
-			case RIGHT:
-				getChildren().add(button);
-				break;
+			case LEFT   -> getChildren().add(numButtonsLeft++, button);
+			case CENTER -> getChildren().add(numButtonsLeft + numButtonsCentre++, button);
+			case RIGHT  -> getChildren().add(button);
 		}
 	}
 

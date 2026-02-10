@@ -835,11 +835,11 @@ public class CollectionSpinner<T>
 		T	item)
 	{
 		// Set value
-		int oldValue = getValue();
+		int oldValue = value();
 		setValue(indexer.apply(item));
 
 		// If value hasn't changed, set item
-		if (getValue() == oldValue)
+		if (value() == oldValue)
 			this.item.set(item);
 	}
 
@@ -879,7 +879,9 @@ public class CollectionSpinner<T>
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the items that may be selected by this spinner to the specified collection.
+	 * Sets the items that may be selected by this spinner to the specified collection.  The default converter, {@link
+	 * Object#toString(int)}, will be used to produce the string representation of an item that is displayed in the text
+	 * box.
 	 *
 	 * @param items
 	 *          the items that may be selected by this spinner.
@@ -904,7 +906,8 @@ public class CollectionSpinner<T>
 	 *          representations that are returned by {@code converter}.
 	 * @param converter
 	 *          the function that returns the string representation of a given item that will be displayed in the text
-	 *          box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
+	 *          box.  If it is {@code null}, the current converter will be used, or, if no converter has been set, the
+	 *          default converter, {@link Object#toString(int)}.
 	 */
 
 	public void setItems(
@@ -926,7 +929,7 @@ public class CollectionSpinner<T>
 		if (items.isEmpty())
 		{
 			// Set range
-			setEmptyRange(emptyItemsText);
+			setEmptyRange(emptyItemsText, prototypeText);
 
 			// Invalidate item
 			item.set(null);
@@ -937,7 +940,7 @@ public class CollectionSpinner<T>
 			setRange(0, items.size() - 1, prototypeText, index -> this.converter.apply(this.items.get(index)));
 
 			// Set item
-			item.set(this.items.get(getValue()));
+			item.set(this.items.get(value()));
 		}
 	}
 
