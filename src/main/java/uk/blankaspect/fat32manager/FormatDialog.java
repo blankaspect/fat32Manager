@@ -723,14 +723,12 @@ public class FormatDialog
 				if (field1.getCaretPosition() == FIELD_NUM_COLUMNS)
 				{
 					String charStr = event.getCharacter();
-					if (charStr.length() == 1)
+					if ((charStr.length() == 1)
+							&& !FilterFactory.HEX_CHAR_FILTER.apply(charStr.charAt(0), 0, charStr).isEmpty())
 					{
-						if (!FilterFactory.HEX_CHAR_FILTER.apply(charStr.charAt(0), 0, charStr).isEmpty())
-						{
-							moveToField2.invoke();
-							field2.insertText(0, charStr);
-							event.consume();
-						}
+						moveToField2.invoke();
+						field2.insertText(0, charStr);
+						event.consume();
 					}
 				}
 			});

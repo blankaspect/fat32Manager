@@ -52,7 +52,7 @@ public class Icons
 
 	/** The factor by which the default text height is multiplied to give the width and height of the <i>clear01</i>
 		icon. */
-	private static final	double	CLEAR01_DEFAULT_SIZE_FACTOR	= 0.8;
+	public static final		double	CLEAR01_DEFAULT_SIZE_FACTOR	= 0.8;
 
 	/** The factor by which the radius of the disc of the <i>clear01</i> icon is multiplied to give a coordinate of
 		the cross of the icon. */
@@ -91,7 +91,7 @@ public class Icons
 		Color	discColour,
 		Color	crossColour)
 	{
-		return clear01(discColour, crossColour, CLEAR01_DEFAULT_SIZE_FACTOR);
+		return clear01(discColour, crossColour, CLEAR01_DEFAULT_SIZE_FACTOR, CLEAR01_DEFAULT_SIZE_FACTOR);
 	}
 
 	//------------------------------------------------------------------
@@ -101,8 +101,25 @@ public class Icons
 		Color	crossColour,
 		double	sizeFactor)
 	{
+		return clear01(discColour, crossColour, sizeFactor, sizeFactor);
+	}
+
+	//------------------------------------------------------------------
+
+	public static Group clear01(
+		Color	discColour,
+		Color	crossColour,
+		double	sizeFactor,
+		double	tileSizeFactor)
+	{
+		// Validate arguments
+		if (sizeFactor > tileSizeFactor)
+			throw new IllegalArgumentException("Size factor is greater than tile-size factor");
+
 		// Calculate size of icon from height of default font
-		double size = sizeFactor * TextUtils.textHeight();
+		double textHeight = TextUtils.textHeight();
+		double size = sizeFactor * textHeight;
+		double tileSize = Math.ceil(tileSizeFactor * textHeight);
 
 		// Create disc
 		double radius = 0.5 * size;
@@ -124,7 +141,6 @@ public class Icons
 		cross.getStyleClass().add(StyleClass.CLEAR01_CROSS);
 
 		// Create background rectangle
-		double tileSize = Math.ceil(size);
 		double tileOffset = -0.5 * tileSize;
 		Rectangle background = new Rectangle(tileOffset, tileOffset, tileSize, tileSize);
 		background.setFill(Color.TRANSPARENT);

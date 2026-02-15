@@ -54,8 +54,6 @@ import javafx.scene.shape.Rectangle;
 
 import uk.blankaspect.common.css.CssSelector;
 
-import uk.blankaspect.common.function.IProcedure1;
-
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
 import uk.blankaspect.ui.jfx.shape.ShapeUtils;
@@ -99,6 +97,24 @@ public class SlideButton
 		ColourProperty.of
 		(
 			FxProperty.FILL,
+			ColourKey.TRACK_DISABLED,
+			CssSelector.builder()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED)
+					.desc(StyleClass.TRACK)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.FILL,
+			ColourKey.TRACK_DISABLED,
+			CssSelector.builder()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
+					.desc(StyleClass.TRACK)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.FILL,
 			ColourKey.TRACK_SELECTED,
 			CssSelector.builder()
 					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
@@ -111,6 +127,24 @@ public class SlideButton
 			ColourKey.SLIDER,
 			CssSelector.builder()
 					.cls(StyleClass.SLIDE_BUTTON)
+					.desc(StyleClass.SLIDER)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.FILL,
+			ColourKey.SLIDER_DISABLED,
+			CssSelector.builder()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED)
+					.desc(StyleClass.SLIDER)
+					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.FILL,
+			ColourKey.SLIDER_DISABLED,
+			CssSelector.builder()
+					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
 					.desc(StyleClass.SLIDER)
 					.build()
 		),
@@ -139,8 +173,10 @@ public class SlideButton
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
 		String	SLIDER			= PREFIX + "slider";
+		String	SLIDER_DISABLED	= PREFIX + "slider.disabled";
 		String	SLIDER_SELECTED	= PREFIX + "slider.selected";
 		String	TRACK			= PREFIX + "track";
+		String	TRACK_DISABLED	= PREFIX + "track.disabled";
 		String	TRACK_SELECTED	= PREFIX + "track.selected";
 	}
 
@@ -694,6 +730,9 @@ public class SlideButton
 		/** The height of the button. */
 		private static final	double	HEIGHT	= 2.0 * MARGIN + 2.0 * SLIDER_RADIUS;
 
+		/** The opacity of the view of a disabled button. */
+		private static final	double	DISABLED_OPACITY	= 0.4;
+
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
 	////////////////////////////////////////////////////////////////////
@@ -724,9 +763,18 @@ public class SlideButton
 			SlideButton button = SlideButton.this;
 
 			// Get colours
+			boolean disabled = button.isDisabled();
 			boolean selected = isSelected();
-			Color trackColour = selected ? trackColourSelected : button.trackColour;
-			Color sliderColour = selected ? sliderColourSelected : button.sliderColour;
+			Color trackColour = disabled
+									? getColour(ColourKey.TRACK_DISABLED)
+									: selected
+											? trackColourSelected
+											: button.trackColour;
+			Color sliderColour = disabled
+									? getColour(ColourKey.SLIDER_DISABLED)
+									: selected
+											? sliderColourSelected
+											: button.sliderColour;
 
 			// Remove all children
 			getChildren().clear();
@@ -739,15 +787,6 @@ public class SlideButton
 			else
 				getChildren().add(new Rectangle(WIDTH, HEIGHT, Color.TRANSPARENT));
 
-			// Create procedure to create rounded end of track and add it to list of children
-			IProcedure1<Double> addTrackEnd = x ->
-			{
-				Circle trackEnd = new Circle(x, MARGIN + SLIDER_RADIUS, TRACK_END_RADIUS);
-				trackEnd.setFill(trackColour);
-				trackEnd.getStyleClass().add(StyleClass.TRACK);
-				getChildren().add(trackEnd);
-			};
-
 			// Create track
 			double x = MARGIN + SLIDER_RADIUS;
 			double y = MARGIN + SLIDER_RADIUS - TRACK_END_RADIUS;
@@ -756,25 +795,23 @@ public class SlideButton
 			track.getStyleClass().add(StyleClass.TRACK);
 			getChildren().add(track);
 
-			// Create rounded left end of track
-			boolean disabled = button.isDisabled();
-			if (selected || disabled)
-				addTrackEnd.invoke(MARGIN + SLIDER_RADIUS);
-
-			// Create rounded right end of track
-			if (!selected || disabled)
-				addTrackEnd.invoke(MARGIN + SLIDER_RADIUS + TRACK_EXTENT);
+			// Create rounded end of track
+			x = MARGIN + (selected ? SLIDER_RADIUS : SLIDER_RADIUS + TRACK_EXTENT);
+			Circle trackEnd = new Circle(x, MARGIN + SLIDER_RADIUS, TRACK_END_RADIUS);
+			trackEnd.setFill(trackColour);
+			trackEnd.getStyleClass().add(StyleClass.TRACK);
+			getChildren().add(trackEnd);
 
 			// Create slider
-			if (!disabled)
-			{
-				x = MARGIN + (selected ? SLIDER_RADIUS + TRACK_EXTENT : SLIDER_RADIUS);
-				y = MARGIN + SLIDER_RADIUS;
-				Circle slider = new Circle(x, y, SLIDER_RADIUS);
-				slider.setFill(sliderColour);
-				slider.getStyleClass().add(StyleClass.SLIDER);
-				getChildren().add(slider);
-			}
+			x = MARGIN + (selected ? SLIDER_RADIUS + TRACK_EXTENT : SLIDER_RADIUS);
+			y = MARGIN + SLIDER_RADIUS;
+			Circle slider = new Circle(x, y, SLIDER_RADIUS);
+			slider.setFill(sliderColour);
+			slider.getStyleClass().add(StyleClass.SLIDER);
+			getChildren().add(slider);
+
+			// If button is disabled, reduce opacity of this view
+			setOpacity(disabled ? DISABLED_OPACITY : 1.0);
 		}
 
 		//--------------------------------------------------------------

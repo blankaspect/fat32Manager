@@ -70,8 +70,6 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
-
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -1000,20 +998,18 @@ public class SectorClusterViewDialog
 			updatingSpinners = true;
 
 			// Update bounds of sector-index spinner
-			SpinnerValueFactory<Integer> factory = sectorIndexSpinner.getValueFactory();
-			if (factory instanceof SpinnerValueFactory.IntegerSpinnerValueFactory integerFactory)
+			if (sectorIndexSpinner.getValueFactory() instanceof SpinnerValueFactory.IntegerSpinnerValueFactory factory)
 			{
-				integerFactory.setMax(maxSectorIndex);
-				integerFactory.setValue(MIN_SECTOR_INDEX);
+				factory.setMax(maxSectorIndex);
+				factory.setValue(MIN_SECTOR_INDEX);
 			}
 
 			// Update bounds of cluster-index spinner
-			factory = clusterIndexSpinner.getValueFactory();
-			if (factory instanceof SpinnerValueFactory.IntegerSpinnerValueFactory integerFactory)
+			if (clusterIndexSpinner.getValueFactory() instanceof SpinnerValueFactory.IntegerSpinnerValueFactory factory)
 			{
-				integerFactory.setMin(minClusterIndex);
-				integerFactory.setMax(maxClusterIndex);
-				integerFactory.setValue(minClusterIndex);
+				factory.setMin(minClusterIndex);
+				factory.setMax(maxClusterIndex);
+				factory.setValue(minClusterIndex);
 			}
 
 			// Allow listeners on spinners to update sector/cluster
@@ -2780,11 +2776,15 @@ public class SectorClusterViewDialog
 			// Create procedure to update maximum index
 			IProcedure0 updateIndexSpinner = () ->
 			{
-				int numDigits = numIndexDigitsSpinner.getValue();
-				int maxValue = 1;
-				for (int i = 0; i < numDigits; i++)
-					maxValue *= 10;
-				((IntegerSpinnerValueFactory)fileIndexSpinner.getValueFactory()).setMax(maxValue - 1);
+				if (fileIndexSpinner.getValueFactory() instanceof
+						SpinnerValueFactory.IntegerSpinnerValueFactory factory)
+				{
+					int numDigits = numIndexDigitsSpinner.getValue();
+					int maxValue = 1;
+					for (int i = 0; i < numDigits; i++)
+						maxValue *= 10;
+					factory.setMax(maxValue - 1);
+				}
 			};
 
 			// Update maximum index
@@ -2888,14 +2888,17 @@ public class SectorClusterViewDialog
 				operationLabeller.selectText(operationSpinner.getItem());
 
 				// Update data length and maximum data length
-				int length = switch (state.dataUnit)
+				if (dataLengthSpinner.getValueFactory() instanceof
+						SpinnerValueFactory.IntegerSpinnerValueFactory factory)
 				{
-					case SECTOR  -> bytesPerSector;
-					case CLUSTER -> sectorsPerCluster * bytesPerSector;
-				};
-				IntegerSpinnerValueFactory factory = (IntegerSpinnerValueFactory)dataLengthSpinner.getValueFactory();
-				factory.setMax(length);
-				factory.setValue(length);
+					int length = switch (state.dataUnit)
+					{
+						case SECTOR  -> bytesPerSector;
+						case CLUSTER -> sectorsPerCluster * bytesPerSector;
+					};
+					factory.setMax(length);
+					factory.setValue(length);
+				}
 			};
 
 			// Update components for initial operation
