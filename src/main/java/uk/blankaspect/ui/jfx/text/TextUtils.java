@@ -52,6 +52,7 @@ public class TextUtils
 	private static final	String	GRAY_FONT_SMOOTHING_STYLE_SHEET	=
 			".text { " + FxProperty.FONT_SMOOTHING_TYPE.getName() + ": gray; }";
 
+	/** Miscellaneous strings. */
 	private static final	String	ELLIPSIS_STR	= "...";
 
 ////////////////////////////////////////////////////////////////////////
@@ -719,6 +720,23 @@ public class TextUtils
 		String...		strs)
 	{
 		return Math.ceil(maxWidth(boundsType, font, strs));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a {@link Group} that contains the specified {@linkplain Text text nodes} laid out in a horizontal
+	 * sequence, and returns it.
+	 *
+	 * @param  textNodes
+	 *           the {@code Text} nodes for which a group will be created.
+	 * @return a {@link Group} that contains {@code textNodes} laid out in a horizontal sequence.
+	 */
+
+	public static Group createGroup(
+		Text...	textNodes)
+	{
+		return createGroup(List.of(textNodes));
 	}
 
 	//------------------------------------------------------------------

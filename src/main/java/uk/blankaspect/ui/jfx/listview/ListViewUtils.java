@@ -107,7 +107,7 @@ public class ListViewUtils
 			int numCells = getNumViewableCells(listView);
 			if (numCells > 2)
 				index -= (numCells - 1) / 2;
-			listView.scrollTo(Math.max(0, index));
+			listView.scrollTo(Math.min(Math.max(0, index), listView.getItems().size() - numCells));
 		}
 	}
 
