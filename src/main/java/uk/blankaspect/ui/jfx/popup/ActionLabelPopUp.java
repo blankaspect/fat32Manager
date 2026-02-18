@@ -26,6 +26,7 @@ import javafx.geometry.Insets;
 
 import javafx.scene.Node;
 
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 
 import javafx.scene.input.MouseButton;
@@ -65,14 +66,21 @@ public class ActionLabelPopUp
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
+	/** The horizontal position of the graphic in the label. */
+	public enum GraphicPos
+	{
+		LEFT,
+		RIGHT
+	}
+
 	/** The vertical padding of the label. */
 	private static final	double	V_PADDING	= 4.0;
 
 	/** The horizontal padding of the label. */
 	private static final	double	H_PADDING	= 8.0;
 
-	/** The left padding of a label that has a graphic. */
-	private static final	double	LEFT_PADDING_GRAPHIC	= 4.0;
+	/** The outer horizontal padding of a label that has a graphic. */
+	private static final	double	OUTER_H_PADDING_GRAPHIC	= 4.0;
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -131,13 +139,42 @@ public class ActionLabelPopUp
 	}
 
 ////////////////////////////////////////////////////////////////////////
+//  Instance variables
+////////////////////////////////////////////////////////////////////////
+
+	/** The label that is the content of this pop-up. */
+	private	Label	label;
+
+////////////////////////////////////////////////////////////////////////
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates a new instance of a pop-up window that contains a label with the specified text and graphic.  The
-	 * specified action is performed when the primary mouse button is clicked on the label.  The pop-up is hidden when
-	 * the mouse button is clicked, immediately before the action is performed.
+	 * Creates a new instance of a pop-up window that contains a label with the specified text.  The specified action is
+	 * performed when the primary mouse button is clicked on the label.  The pop-up is hidden when the mouse button is
+	 * clicked, immediately <i>before</i> the action is performed.
+	 *
+	 * @param text
+	 *          the text of the label.
+	 * @param action
+	 *          the action that will be performed, which may be {@code null}.
+	 */
+
+	public ActionLabelPopUp(
+		String		text,
+		Runnable	action)
+	{
+		// Call alternative constructor
+		this(text, null, GraphicPos.LEFT, action);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a new instance of a pop-up window that contains a label with the specified text and optional graphic.
+	 * The graphic is positioned on the left of the label.  The specified action is performed when the primary mouse
+	 * button is clicked on the label.  The pop-up is hidden when the mouse button is clicked, immediately <i>before</i>
+	 * the action is performed.
 	 *
 	 * @param text
 	 *          the text of the label, which may be {@code null}.
@@ -152,13 +189,62 @@ public class ActionLabelPopUp
 		Node		graphic,
 		Runnable	action)
 	{
+		// Call alternative constructor
+		this(text, graphic, GraphicPos.LEFT, action);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a new instance of a pop-up window that contains a label with the specified text and optional graphic.
+	 * The specified action is performed when the primary mouse button is clicked on the label.  The pop-up is hidden
+	 * when the mouse button is clicked, immediately <i>before</i> the action is performed.
+	 *
+	 * @param text
+	 *          the text of the label, which may be {@code null}.
+	 * @param graphic
+	 *          the graphic of the label, which may be {@code null}.
+	 * @param graphicPos
+	 *          the horizontal position of {@code graphic} in the label; ignored if {@code graphic} is {@code null}.
+	 * @param action
+	 *          the action that will be performed, which may be {@code null}.
+	 */
+
+	public ActionLabelPopUp(
+		String		text,
+		Node		graphic,
+		GraphicPos	graphicPos,
+		Runnable	action)
+	{
+		// Validate arguments
+		if ((graphic != null) && (graphicPos == null))
+			throw new IllegalArgumentException("Null graphic position");
+
 		// Set properties
 		setAutoHide(true);
 
 		// Create label
-		Label label = new Label(text, graphic);
-		label.setPadding(new Insets(V_PADDING, H_PADDING, V_PADDING,
-									(graphic == null) ? H_PADDING : LEFT_PADDING_GRAPHIC));
+		label = new Label(text, graphic);
+		ContentDisplay contentDisplay = ContentDisplay.TEXT_ONLY;
+		double leftPadding = H_PADDING;
+		double rightPadding = H_PADDING;
+		if (graphic != null)
+		{
+			switch (graphicPos)
+			{
+				case LEFT:
+					contentDisplay = ContentDisplay.LEFT;
+					leftPadding = OUTER_H_PADDING_GRAPHIC;
+					break;
+
+				case RIGHT:
+					contentDisplay = ContentDisplay.RIGHT;
+					rightPadding = OUTER_H_PADDING_GRAPHIC;
+					break;
+			}
+		}
+		label.setContentDisplay(contentDisplay);
+		label.setPadding(new Insets(V_PADDING, rightPadding, V_PADDING, leftPadding));
 		label.setTextFill(getColour(ColourKey.TEXT));
 		if (action != null)
 		{
@@ -205,6 +291,23 @@ public class ActionLabelPopUp
 		String	key)
 	{
 		return StyleManager.INSTANCE.getColourOrDefault(key);
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Instance methods
+////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Returns the label that is the content of this pop-up.
+	 *
+	 * @return the label that is the content of this pop-up.
+	 */
+
+	public Label label()
+	{
+		return label;
 	}
 
 	//------------------------------------------------------------------
