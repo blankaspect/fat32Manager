@@ -106,7 +106,7 @@ public class PreferencesDialog
 	private static final	double	MIN_TAB_WIDTH	= 64.0;
 
 	private static final	String	PREFERENCES_STR					= "Preferences";
-	private static final	String	THEME_STR						= "Theme";
+	private static final	String	COLOUR_SCHEME_STR				= "Colour scheme";
 	private static final	String	COLUMN_HEADER_POP_UP_DELAY_STR	= "Table-column header pop-up delay";
 	private static final	String	MS_STR							= "ms";
 	private static final	String	SHOW_SPECIAL_DIRECTORIES_STR	= "Show special directories ( '.' and '..' )";
@@ -229,7 +229,7 @@ public class PreferencesDialog
 		themeSpinner.itemProperty().addListener((observable, oldId, id) -> selectTheme.invoke(id));
 
 		// Pane: appearance
-		HBox appearancePane = new HBox(CONTROL_H_GAP, Labels.hNoShrink(THEME_STR), themeSpinner);
+		HBox appearancePane = new HBox(CONTROL_H_GAP, Labels.hNoShrink(COLOUR_SCHEME_STR), themeSpinner);
 		appearancePane.setAlignment(Pos.CENTER);
 		appearancePane.setPadding(CONTROL_PANE_PADDING);
 
