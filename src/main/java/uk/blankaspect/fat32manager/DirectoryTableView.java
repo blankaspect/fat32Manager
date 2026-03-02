@@ -39,6 +39,7 @@ import java.util.Set;
 import javafx.application.Platform;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleSetProperty;
@@ -351,6 +352,9 @@ public class DirectoryTableView
 	/** Flag: if {@code true}, the header of this table view has been initialised. */
 	private		boolean								headerInitialised;
 
+	/** The listener that responds to a change of theme. */
+	private		InvalidationListener				themeListener;
+
 	// WORKAROUND for a bug in JavaFX: isFocused() sometimes returns false when the table view has focus
 	/** Flag: if {@code true}, this table view has keyboard focus. */
 	private		boolean								focused;
@@ -473,14 +477,15 @@ public class DirectoryTableView
 		StyleManager.INSTANCE.register(getClass(), COLOUR_PROPERTIES, createRuleSets.invoke(), TableViewStyle.class);
 
 		// Update rule sets when theme changes
-		StyleManager.INSTANCE.themeProperty().addListener(observable ->
+		themeListener = observable ->
 		{
 			// Update rule sets
 			StyleManager.INSTANCE.updateRuleSets(getClass(), createRuleSets.invoke());
 
 			// Redraw cells
 			refresh();
-		});
+		};
+		StyleManager.INSTANCE.themeProperty().addListener(new WeakInvalidationListener(themeListener));
 
 		// Create columns
 		setColumns(EnumSet.allOf(Column.class), true);

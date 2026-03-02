@@ -722,12 +722,11 @@ public class FormatDialog
 			{
 				if (field1.getCaretPosition() == FIELD_NUM_COLUMNS)
 				{
-					String charStr = event.getCharacter();
-					if ((charStr.length() == 1)
-							&& !FilterFactory.HEX_CHAR_FILTER.apply(charStr.charAt(0), 0, charStr).isEmpty())
+					String str = event.getCharacter();
+					if ((str.length() == 1) && !FilterFactory.HEX_CHAR_FILTER.apply(str.charAt(0), 0, str).isEmpty())
 					{
 						moveToField2.invoke();
-						field2.insertText(0, charStr);
+						field2.insertText(0, str);
 						event.consume();
 					}
 				}

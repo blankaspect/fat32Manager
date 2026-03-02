@@ -559,7 +559,7 @@ public class LocationChooser
 
 	//------------------------------------------------------------------
 
-	public void setDialogTitle(
+	public void setDialogLocator(
 		IDialogLocator	locator)
 	{
 		dialogLocator = locator;

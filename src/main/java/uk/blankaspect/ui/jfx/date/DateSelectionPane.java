@@ -1036,6 +1036,7 @@ public class DateSelectionPane
 
 			// Set scene on this window
 			setScene(scene);
+			sizeToScene();
 
 			// Add handler for 'key pressed' events
 			addEventFilter(KeyEvent.KEY_PRESSED, event ->

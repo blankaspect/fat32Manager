@@ -30,8 +30,6 @@ import java.util.stream.IntStream;
 
 import javafx.animation.AnimationTimer;
 
-import javafx.beans.InvalidationListener;
-
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
@@ -73,6 +71,7 @@ import uk.blankaspect.common.function.IFunction2;
 import uk.blankaspect.common.function.IProcedure0;
 import uk.blankaspect.common.function.IProcedure1;
 
+import uk.blankaspect.ui.jfx.listview.ListViewStyle;
 import uk.blankaspect.ui.jfx.listview.ListViewUtils;
 
 import uk.blankaspect.ui.jfx.shape.Shapes;
@@ -81,6 +80,7 @@ import uk.blankaspect.ui.jfx.shape.ShapeUtils;
 import uk.blankaspect.ui.jfx.style.ColourProperty;
 import uk.blankaspect.ui.jfx.style.FxProperty;
 import uk.blankaspect.ui.jfx.style.FxPseudoClass;
+import uk.blankaspect.ui.jfx.style.FxStyleClass;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 
@@ -246,6 +246,21 @@ public class IntRangeSpinner
 			CssSelector.builder()
 					.cls(StyleClass.LIST_VIEW_TICK)
 					.build()
+		),
+		ColourProperty.of
+		(
+			FxProperty.BACKGROUND_COLOUR,
+			ListViewStyle.ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED,
+			CssSelector.builder()
+					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.HOVERED, FxPseudoClass.EVEN)
+					.build(),
+			CssSelector.builder()
+					.cls(StyleClass.LIST_VIEW).pseudo(FxPseudoClass.FOCUSED)
+					.desc(FxStyleClass.LIST_CELL)
+							.pseudo(FxPseudoClass.FILLED, FxPseudoClass.HOVERED, FxPseudoClass.ODD)
+					.build()
 		)
 	);
 
@@ -257,6 +272,7 @@ public class IntRangeSpinner
 		String	ARROWHEAD			= StyleConstants.CLASS_PREFIX + "arrowhead";
 		String	BUTTON				= StyleConstants.CLASS_PREFIX + "button";
 		String	FRAME				= StyleConstants.CLASS_PREFIX + "frame";
+		String	LIST_VIEW			= INT_RANGE_SPINNER + "-list-view";
 		String	LIST_VIEW_TICK		= INT_RANGE_SPINNER + "-list-view-tick";
 		String	TEXT				= StyleConstants.CLASS_PREFIX + "text";
 		String	TEXT_BOX			= StyleConstants.CLASS_PREFIX + "text-box";
@@ -334,8 +350,9 @@ public class IntRangeSpinner
 
 	static
 	{
-		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(IntRangeSpinner.class, COLOUR_PROPERTIES);
+		// Register the style properties of this class and its dependencies with the style manager
+		StyleManager.INSTANCE.register(IntRangeSpinner.class, COLOUR_PROPERTIES,
+									   ListViewStyle.class);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -1004,19 +1021,10 @@ public class IntRangeSpinner
 				}
 			};
 
-			// Set 'selected' pseudo-class of cell if it is selected or mouse is hovering over it
-			cell.getPseudoClassStates().addListener((InvalidationListener) observable ->
-			{
-				boolean selected =
-						!cell.isEmpty() && (listView.getSelectionModel().getSelectedIndex() == cell.getIndex());
-				boolean hovered =
-						cell.getPseudoClassStates().contains(PseudoClass.getPseudoClass(FxPseudoClass.HOVERED));
-				cell.pseudoClassStateChanged(PseudoClass.getPseudoClass(FxPseudoClass.SELECTED), selected || hovered);
-			});
-
 			// Return cell
 			return cell;
 		});
+		listView.getStyleClass().addAll(StyleClass.LIST_VIEW, ListViewStyle.StyleClass.LIST_VIEW);
 
 		// Set items on list view
 		List<String> items = IntStream.range(minValue, maxValue + 1).mapToObj(this.converter).toList();
