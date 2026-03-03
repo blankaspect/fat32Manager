@@ -70,8 +70,8 @@ public class SimpleProgressDialog
 	/** The default width of the control pane. */
 	private static final	double	DEFAULT_CONTROL_PANE_WIDTH	= 480.0;
 
-	/** The padding around the content pane. */
-	private static final	Insets	CONTENT_PANE_PADDING	= new Insets(8.0, 8.0, 4.0, 8.0);
+	/** The padding around the control pane. */
+	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(2.0, 2.0, -2.0, 2.0);
 
 	/** The gap between the message label and the progress bar. */
 	private static final	double	GAP	= 8.0;
@@ -289,14 +289,12 @@ public class SimpleProgressDialog
 
 		// Create control pane
 		VBox controlPane = new VBox(GAP, messageLabel, progressBar);
-		controlPane.setAlignment(Pos.CENTER_LEFT);
 		controlPane.setPrefWidth(width);
+		controlPane.setAlignment(Pos.CENTER_LEFT);
+		controlPane.setPadding(CONTROL_PANE_PADDING);
 
 		// Add control pane to content pane
 		addContent(controlPane);
-
-		// Adjust padding around content pane
-		getContentPane().setPadding(CONTENT_PANE_PADDING);
 
 		// Remove border from content pane
 		StyleUtils.setProperty(getContentPane(), FxProperty.BORDER_WIDTH.getName(), "0");
@@ -393,8 +391,7 @@ public class SimpleProgressDialog
 		super.onWindowShown();
 
 		// Prevent height of window from changing
-		setMinHeight(prefHeight());
-		setMaxHeight(prefHeight());
+		setMaxHeight(getHeight());
 	}
 
 	//------------------------------------------------------------------

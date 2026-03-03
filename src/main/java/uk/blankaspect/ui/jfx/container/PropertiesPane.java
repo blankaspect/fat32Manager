@@ -682,8 +682,7 @@ public class PropertiesPane
 					setMinWidth(getWidth());
 
 					// Prevent height of dialog from changing
-					setMinHeight(prefHeight());
-					setMaxHeight(prefHeight());
+					setMaxHeight(getHeight());
 				}
 			}
 		};
@@ -751,8 +750,7 @@ public class PropertiesPane
 					setMinWidth(getWidth());
 
 					// Prevent height of dialog from changing
-					setMinHeight(prefHeight());
-					setMaxHeight(prefHeight());
+					setMaxHeight(getHeight());
 				}
 			}
 		};
