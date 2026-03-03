@@ -743,6 +743,12 @@ public class LocationChooser
 
 		private static final	Insets	BUTTON_PANE_PADDING	= new Insets(8.0, 14.0, 8.0, 14.0);
 
+		/** The minimum width of the window. */
+		private static final	double	MIN_WIDTH	= 120.0;
+
+		/** The minimum height of the window. */
+		private static final	double	MIN_HEIGHT	= 96.0;
+
 		/** The margins that are applied to the visual bounds of each screen when determining whether the saved location
 			of the window is within a screen. */
 		private static final	Insets	SCREEN_MARGINS	= new Insets(0.0, 32.0, 32.0, 0.0);
@@ -864,6 +870,10 @@ public class LocationChooser
 				Dimensions dims = new Dimensions();
 				dims.update();
 
+				// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+				setMinWidth(dims.w);
+				setMinHeight(dims.h);
+
 				// Set size of window after a delay
 				ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE), () ->
 				{
@@ -933,6 +943,10 @@ public class LocationChooser
 						// Perform remaining initialisation after a delay
 						ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_OPACITY), () ->
 						{
+							// Set minimum dimensions of window
+							setMinWidth(MIN_WIDTH);
+							setMinHeight(MIN_HEIGHT);
+
 							// Make window visible
 							setOpacity(1.0);
 
