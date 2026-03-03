@@ -83,6 +83,8 @@ import uk.blankaspect.ui.jfx.style.RuleSetBuilder;
 import uk.blankaspect.ui.jfx.style.StyleConstants;
 import uk.blankaspect.ui.jfx.style.StyleManager;
 
+import uk.blankaspect.ui.jfx.window.WindowDims;
+
 //----------------------------------------------------------------------
 
 
@@ -100,9 +102,9 @@ public class LocationChooser
 		<i>WINDOW_SHOWN</i> event handler of the window of a dialog. */
 	private static final	Map<String, Integer>	DIALOG_WINDOW_DELAYS	= Map.of
 	(
-		SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE,     50,
-		SystemPropertyKey.DIALOG_WINDOW_DELAY_LOCATION, 25,
-		SystemPropertyKey.DIALOG_WINDOW_DELAY_OPACITY,  25
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE,     100,
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_LOCATION,  25,
+		SystemPropertyKey.DIALOG_WINDOW_DELAY_OPACITY,   25
 	);
 
 	/** Miscellaneous strings. */
@@ -855,28 +857,18 @@ public class LocationChooser
 			// When window is shown, set its size and location after a delay
 			addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 			{
-				// Create container for dimensions of window
-				class Dimensions
-				{
-					double	w;
-					double	h;
-
-					void update()
-					{
-						w = getWidth();
-						h = getHeight();
-					}
-				}
-				Dimensions dims = new Dimensions();
-				dims.update();
-
-				// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
-				setMinWidth(dims.w);
-				setMinHeight(dims.h);
+				// Get dimensions of window
+				WindowDims dims = new WindowDims(this);
 
 				// Set size of window after a delay
 				ExecUtils.afterDelay(getDelay(SystemPropertyKey.DIALOG_WINDOW_DELAY_SIZE), () ->
 				{
+					// Update dimensions
+					dims.update(false);
+
+					// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+					dims.setMin();
+
 					// Set state of window and chooser pane to stored value
 					DialogState state = (dialogStateKey == null) ? null : dialogStates.get(dialogStateKey);
 					if (state != null)
@@ -885,7 +877,7 @@ public class LocationChooser
 						chooserPane.setTableViewColumnWidths(state.tableViewColumnWidths());
 						setWidth(state.width());
 						setHeight(state.height());
-						dims.update();
+						dims.update(true);
 					}
 
 					// Set location of window after a delay
@@ -898,29 +890,30 @@ public class LocationChooser
 						{
 							// If there is a locator, locate window relative to it ...
 							if (dialogLocator != null)
-								location = dialogLocator.getLocation(dims.w, dims.h);
+								location = dialogLocator.getLocation(dims.w(), dims.h());
 
 							// ... otherwise, if there is no owner that is showing, locate window relative to screen ...
 							else if ((owner == null) || !owner.isShowing())
-								location = SceneUtils.centreInScreen(dims.w, dims.h);
+								location = SceneUtils.centreInScreen(dims.w(), dims.h());
 
 							// ... otherwise, locate window relative to owner
 							else
 							{
-								location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
-																		  owner.getWidth(), owner.getHeight());
+								location = SceneUtils.getRelativeLocation(dims.w(), dims.h(), owner.getX(),
+																		  owner.getY(), owner.getWidth(),
+																		  owner.getHeight());
 							}
 						}
 
 						// ... otherwise, if stored window rectangle does not intersects a screen, centre window in
 						// primary screen ...
-						else if (Screen.getScreensForRectangle(state.x, state.y, dims.w, dims.h).isEmpty())
+						else if (Screen.getScreensForRectangle(state.x, state.y, dims.w(), dims.h()).isEmpty())
 						{
 							// Remove dialog state from map
 							dialogStates.remove(dialogStateKey);
 
 							// Get location of window within primary screen
-							location = SceneUtils.centreInScreen(dims.w, dims.h);
+							location = SceneUtils.centreInScreen(dims.w(), dims.h());
 						}
 
 						// ... otherwise, used stored location
@@ -931,9 +924,9 @@ public class LocationChooser
 						if (location != null)
 						{
 							// If top centre of window is not within a screen, centre window within primary screen
-							if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w, location.getY(),
+							if (!SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w(), location.getY(),
 														   SCREEN_MARGINS))
-								location = SceneUtils.centreInScreen(dims.w, dims.h);
+								location = SceneUtils.centreInScreen(dims.w(), dims.h());
 
 							// Set location of window
 							setX(location.getX());

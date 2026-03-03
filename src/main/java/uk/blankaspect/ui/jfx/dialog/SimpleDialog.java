@@ -72,6 +72,8 @@ import uk.blankaspect.ui.jfx.style.StyleManager;
 
 import uk.blankaspect.ui.jfx.text.TextUtils;
 
+import uk.blankaspect.ui.jfx.window.WindowDims;
+
 //----------------------------------------------------------------------
 
 
@@ -147,6 +149,12 @@ public abstract class SimpleDialog
 		SystemPropertyKey.WINDOW_DELAY_LOCATION,  25,
 		SystemPropertyKey.WINDOW_DELAY_OPACITY,   25
 	);
+
+	/** The minimum width of the window of the dialog. */
+	private static final	double	MIN_WIDTH	= 120.0;
+
+	/** The minimum height of the window of the dialog. */
+	private static final	double	MIN_HEIGHT	= 96.0;
 
 	/** The margins that are applied to the visual bounds of each screen when determining whether the saved location of
 		the window is within a screen. */
@@ -361,28 +369,18 @@ public abstract class SimpleDialog
 		// When window is shown, set its size and location after a delay
 		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 		{
-			// Create container for dimensions of window
-			class Dimensions
-			{
-				double	w;
-				double	h;
-
-				void update()
-				{
-					w = getWidth();
-					h = getHeight();
-				}
-			}
-			Dimensions dims = new Dimensions();
-			dims.update();
-
-			// Set minimum dimensions of window
-			setMinWidth(dims.w);
-			setMinHeight(dims.h);
+			// Get dimensions of window
+			WindowDims dims = new WindowDims(this);
 
 			// Set size and location of window after a delay
 			ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_SIZE), () ->
 			{
+				// Update dimensions
+				dims.update(false);
+
+				// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+				dims.setMin();
+
 				// If no size was provided, get previous size of window
 				Dimension2D size0 = size;
 				if ((size0 == null) && (sizeKey != null))
@@ -398,11 +396,11 @@ public abstract class SimpleDialog
 
 					// Set height
 					double height = size0.getHeight();
-					setHeight((height > 0.0) ? height : dims.h);
+					setHeight((height > 0.0) ? height : dims.h());
 				}
 
 				// Update dimensions
-				dims.update();
+				dims.update(true);
 
 				// Set location of window after a delay
 				ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_LOCATION), () ->
@@ -414,11 +412,12 @@ public abstract class SimpleDialog
 					if (location == null)
 					{
 						if (locator != null)
-							location = locator.getLocation(dims.w, dims.h);
+							location = locator.getLocation(dims.w(), dims.h());
 					}
 
 					// ... otherwise, ensure that window rectangle intersects a screen
-					else if (Screen.getScreensForRectangle(location.getX(), location.getY(), dims.w, dims.h).isEmpty())
+					else if (Screen.getScreensForRectangle(location.getX(), location.getY(), dims.w(), dims.h())
+							.isEmpty())
 					{
 						// Remove location from map
 						locations.remove(locationKey);
@@ -428,20 +427,20 @@ public abstract class SimpleDialog
 					}
 
 					// If there is a location, invalidate it if top centre of window is not within a screen
-					if ((location != null) && !SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w,
+					if ((location != null) && !SceneUtils.isWithinScreen(location.getX() + 0.5 * dims.w(),
 																		 location.getY(), SCREEN_MARGINS))
 						location = null;
 
 					// If there is no location, locate window relative to owner
 					if ((location == null) && (owner != null) && owner.isShowing())
 					{
-						location = SceneUtils.getRelativeLocation(dims.w, dims.h, owner.getX(), owner.getY(),
+						location = SceneUtils.getRelativeLocation(dims.w(), dims.h(), owner.getX(), owner.getY(),
 																  owner.getWidth(), owner.getHeight());
 					}
 
 					// If there is no location, centre window within primary screen
 					if (location == null)
-						location = SceneUtils.centreInScreen(dims.w, dims.h);
+						location = SceneUtils.centreInScreen(dims.w(), dims.h());
 
 					// Set location of window
 					setX(location.getX());
@@ -450,6 +449,10 @@ public abstract class SimpleDialog
 					// Make window visible and restore minimum dimensions after a delay
 					ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_OPACITY), () ->
 					{
+						// Set minimum dimensions of window
+						setMinWidth(MIN_WIDTH);
+						setMinHeight(MIN_HEIGHT);
+
 						// Make window visible
 						setOpacity(1.0);
 
