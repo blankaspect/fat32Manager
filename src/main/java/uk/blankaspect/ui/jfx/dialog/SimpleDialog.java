@@ -213,12 +213,6 @@ public abstract class SimpleDialog
 	/** The minimum width of a button. */
 	private	double					minButtonWidth;
 
-	/** The preferred width of this dialog. */
-	private	double					prefWidth;
-
-	/** The preferred height of this dialog. */
-	private	double					prefHeight;
-
 	/** The main pane of this dialog. */
 	private	VBox					mainPane;
 
@@ -367,10 +361,6 @@ public abstract class SimpleDialog
 		// When window is shown, set its size and location after a delay
 		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
 		{
-			// Set preferred dimensions
-			prefWidth = getWidth();
-			prefHeight = getHeight();
-
 			// Create container for dimensions of window
 			class Dimensions
 			{
@@ -386,7 +376,7 @@ public abstract class SimpleDialog
 			Dimensions dims = new Dimensions();
 			dims.update();
 
-			// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+			// Set minimum dimensions of window
 			setMinWidth(dims.w);
 			setMinHeight(dims.h);
 
@@ -462,10 +452,6 @@ public abstract class SimpleDialog
 					{
 						// Make window visible
 						setOpacity(1.0);
-
-						// Restore minimum dimensions (Linux/GNOME)
-						setMinWidth(0.0);
-						setMinHeight(0.0);
 
 						// Allow subclasses to complete the initialisation of the dialog after the window is shown
 						onWindowShown();
@@ -905,32 +891,6 @@ public abstract class SimpleDialog
 	public void requestClose()
 	{
 		fireEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSE_REQUEST));
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * Returns the preferred width of this dialog.  The returned value is not valid until the dialog is shown.
-	 *
-	 * @return the preferred width of this dialog.
-	 */
-
-	protected double prefWidth()
-	{
-		return prefWidth;
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * Returns the preferred height of this dialog.  The returned value is not valid until the dialog is shown.
-	 *
-	 * @return the preferred height of this dialog.
-	 */
-
-	protected double prefHeight()
-	{
-		return prefHeight;
 	}
 
 	//------------------------------------------------------------------
