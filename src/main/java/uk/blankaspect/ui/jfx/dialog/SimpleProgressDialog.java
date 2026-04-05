@@ -18,18 +18,27 @@ package uk.blankaspect.ui.jfx.dialog;
 // IMPORTS
 
 
+import java.util.Map;
+
 import javafx.concurrent.Task;
 
 import javafx.event.ActionEvent;
 
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
+
+import javafx.scene.Scene;
 
 import javafx.scene.control.Button;
 
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
@@ -39,14 +48,17 @@ import uk.blankaspect.common.string.StringUtils;
 
 import uk.blankaspect.ui.jfx.button.Buttons;
 
+import uk.blankaspect.ui.jfx.exec.ExecUtils;
+
 import uk.blankaspect.ui.jfx.label.CompoundPathnameLabel;
 
 import uk.blankaspect.ui.jfx.progress.SimpleProgressBar;
 
 import uk.blankaspect.ui.jfx.scene.SceneUtils;
 
-import uk.blankaspect.ui.jfx.style.FxProperty;
-import uk.blankaspect.ui.jfx.style.StyleUtils;
+import uk.blankaspect.ui.jfx.style.StyleManager;
+
+import uk.blankaspect.ui.jfx.window.WindowDims;
 
 //----------------------------------------------------------------------
 
@@ -55,12 +67,12 @@ import uk.blankaspect.ui.jfx.style.StyleUtils;
 
 
 /**
- * This class implements a dialog that displays the progress of a {@linkplain Task task} with a message and a progress
- * bar that are bound to properties of the task.  The dialog may optionally have a <i>cancel</i> button.
+ * This class implements a modal dialog that displays the progress of a {@linkplain Task task} with a message and a
+ * progress bar that are bound to properties of the task.  The dialog may optionally have a <i>cancel</i> button.
  */
 
 public class SimpleProgressDialog
-	extends SimpleModalDialog<Void>
+	extends Stage
 {
 
 ////////////////////////////////////////////////////////////////////////
@@ -70,17 +82,32 @@ public class SimpleProgressDialog
 	/** The default width of the control pane. */
 	private static final	double	DEFAULT_CONTROL_PANE_WIDTH	= 480.0;
 
-	/** The padding around the control pane. */
-	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(2.0, 2.0, -2.0, 2.0);
+	/** The padding around a button. */
+	private static final	Insets	BUTTON_PADDING	= new Insets(3.0, 12.0, 3.0, 12.0);
+
+	/** The padding around the main pane. */
+	private static final	Insets	MAIN_PANE_PADDING	= new Insets(8.0, 10.0, 8.0, 10.0);
+
+	/** The padding around the main pane if there is no <i>cancel</i> button. */
+	private static final	Insets	MAIN_PANE_PADDING_NO_CANCEL	= new Insets(8.0, 10.0, 10.0, 10.0);
 
 	/** The gap between the message label and the progress bar. */
 	private static final	double	GAP	= 8.0;
 
-	/** The width of the progress bar. */
-	private static final	double	PROGRESS_BAR_WIDTH	= 24.0;
+	/** A map from system-property keys to the default values of the corresponding delays (in milliseconds) in the
+		<i>WINDOW_SHOWN</i> event handler of the window of the dialog. */
+	private static final	Map<String, Integer>	WINDOW_DELAYS	= Map.of
+	(
+		SystemPropertyKey.WINDOW_DELAY_SIZE,     100,
+		SystemPropertyKey.WINDOW_DELAY_LOCATION,  25,
+		SystemPropertyKey.WINDOW_DELAY_OPACITY,   25
+	);
 
-	/** The height of the progress bar. */
-	private static final	double	PROGRESS_BAR_HEIGHT	= 12.0;
+	/** The minimum width of the window of the dialog. */
+	private static final	double	MIN_WIDTH	= 120.0;
+
+	/** Miscellaneous strings. */
+	private static final	String	CANCEL_STR	= "Cancel";
 
 	/**
 	 * The cancellation mode.
@@ -105,18 +132,29 @@ public class SimpleProgressDialog
 		INTERRUPT
 	}
 
+	/** Keys of system properties. */
+	private interface SystemPropertyKey
+	{
+		String	WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.location";
+		String	WINDOW_DELAY_OPACITY	= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.opacity";
+		String	WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.size";
+	}
+
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
 	/** Flag: if {@code true}, this dialog will be displayed when the state of {@link #task} is {@code SCHEDULED}. */
-	private	boolean	showDialog;
-
-	/** The <i>cancel</i> button. */
-	private	Button	cancelButton;
+	private	boolean					showDialog;
 
 	/** The maximum number of lines of the message. */
-	private	int		maxNumMessageLines;
+	private	int						maxNumMessageLines;
+
+	/** The label for the message. */
+	private	CompoundPathnameLabel	messageLabel;
+
+	/** The <i>cancel</i> button. */
+	private	Button					cancelButton;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -245,21 +283,21 @@ public class SimpleProgressDialog
 		CancelMode	cancelMode,
 		double		width)
 	{
-		// Call superclass constructor
-		super(owner, null);
-
 		// Initialise instance variables
 		showDialog = true;
+		maxNumMessageLines = 1;
 
-		// Allow dialog to be resized
-		setResizable(true);
+		// Set properties
+		initModality(Modality.APPLICATION_MODAL);
+		initOwner(owner);
 
 		// Bind title to title of task
 		titleProperty().bind(task.titleProperty());
 
 		// Create label for message
-		CompoundPathnameLabel messageLabel = new CompoundPathnameLabel();
+		messageLabel = new CompoundPathnameLabel("");
 		messageLabel.textProperty().bind(task.messageProperty());
+		VBox.setVgrow(messageLabel, Priority.ALWAYS);
 
 		// Resize dialog if number of lines of message increases
 		messageLabel.textProperty().addListener((observable, oldText, text) ->
@@ -277,36 +315,41 @@ public class SimpleProgressDialog
 					// Update instance variable
 					maxNumMessageLines = numLines;
 
+					// Allow height of window to increase
+					setMaxHeight(Double.MAX_VALUE);
+
 					// Resize dialog
 					sizeToScene();
+
+					// Prevent height of window from changing
+					double height = getHeight();
+					setMinHeight(height);
+					setMaxHeight(height);
 				}
 			}
 		});
 
 		// Create progress bar
-		SimpleProgressBar progressBar = new SimpleProgressBar(PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT);
+		SimpleProgressBar progressBar = new SimpleProgressBar();
 		progressBar.progressProperty().bind(task.progressProperty());
 
 		// Create control pane
 		VBox controlPane = new VBox(GAP, messageLabel, progressBar);
 		controlPane.setPrefWidth(width);
 		controlPane.setAlignment(Pos.CENTER_LEFT);
-		controlPane.setPadding(CONTROL_PANE_PADDING);
 
-		// Add control pane to content pane
-		addContent(controlPane);
-
-		// Remove border from content pane
-		StyleUtils.setProperty(getContentPane(), FxProperty.BORDER_WIDTH.getName(), "0");
+		// Initialise main pane
+		Pane mainPane = null;
 
 		// Case: no 'cancel' button
 		if (cancelMode == CancelMode.NONE)
 		{
-			// Remove padding from button pane
-			getButtonPane(0).setPadding(Insets.EMPTY);
-
 			// Ignore dialog's 'close' button
 			addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, WindowEvent::consume);
+
+			// Set control pane as main pane
+			mainPane = controlPane;
+			mainPane.setPadding(MAIN_PANE_PADDING_NO_CANCEL);
 		}
 
 		// Case: 'cancel' button
@@ -314,7 +357,7 @@ public class SimpleProgressDialog
 		{
 			// Create 'cancel' button
 			cancelButton = Buttons.hNoShrink(CANCEL_STR);
-			addButton(cancelButton, HPos.RIGHT);
+			cancelButton.setPadding(BUTTON_PADDING);
 
 			// Create procedure to cancel task
 			IProcedure0 cancel = () ->
@@ -331,19 +374,77 @@ public class SimpleProgressDialog
 
 			// Cancel task if dialog is closed
 			addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, event -> cancel.invoke());
+
+			// Create button pane
+			HBox buttonPane = new HBox(cancelButton);
+			buttonPane.setAlignment(Pos.CENTER_RIGHT);
+
+			// Create content pane
+			mainPane = new VBox(8.0, controlPane, buttonPane);
+			mainPane.setPadding(MAIN_PANE_PADDING);
 		}
 
-		// Resize dialog to scene
+		// Set scene
+		setScene(new Scene(mainPane));
 		sizeToScene();
+
+		// Add style sheet to scene
+		StyleManager.INSTANCE.addStyleSheet(getScene());
+
+		// When window is shown, set its location after a delay
+		addEventHandler(WindowEvent.WINDOW_SHOWN, event ->
+		{
+			// Get dimensions of window
+			WindowDims dims = new WindowDims(this);
+
+			// Set size of window after a delay
+			ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_SIZE), () ->
+			{
+				// Update dimensions
+				dims.update(false);
+
+				// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
+				dims.setMin(MIN_WIDTH, 0.0);
+
+				// Set location of window after a delay
+				ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_LOCATION), () ->
+				{
+					// Locate window relative to owner
+					Point2D location = SceneUtils.getRelativeLocation(getWidth(), getHeight(), owner.getX(),
+																	  owner.getY(), owner.getWidth(),
+																	  owner.getHeight());
+
+					// Set location of window
+					setX(location.getX());
+					setY(location.getY());
+
+					// Perform remaining initialisation after a delay
+					ExecUtils.afterDelay(getDelay(SystemPropertyKey.WINDOW_DELAY_OPACITY), () ->
+					{
+						// Set minimum width of window
+						setMinWidth(MIN_WIDTH);
+
+						// Prevent height of window from changing
+						double height = getHeight();
+						setMinHeight(height);
+						setMaxHeight(height);
+
+						// Make window visible
+						setOpacity(1.0);
+
+						// Allow subclasses to complete the initialisation of the dialog after the window is shown
+						onWindowShown();
+					});
+				});
+			});
+		});
 
 		// Show and hide dialog when state of task changes
 		task.stateProperty().addListener((observable, oldState, state) ->
 		{
 			switch (state)
 			{
-				case CANCELLED:
-				case FAILED:
-				case SUCCEEDED:
+				case CANCELLED, FAILED, SUCCEEDED:
 					showDialog = false;
 					SceneUtils.runOnFxApplicationThread(() ->
 					{
@@ -377,21 +478,35 @@ public class SimpleProgressDialog
 	//------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////
-//  Instance methods : overriding methods
+//  Class methods
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Prevents the height of this dialog from changing.
+	 * Returns the delay (in milliseconds) that is defined the system property with the specified key.
+	 *
+	 * @param  key
+	 *           the key of the system property.
+	 * @return the delay (in milliseconds) that is defined the system property whose key is {@code key}, or a default
+	 *         value if there is no such property or the property value is not a valid integer.
 	 */
 
-	@Override
-	protected void onWindowShown()
+	private static int getDelay(
+		String	key)
 	{
-		// Call superclass method
-		super.onWindowShown();
-
-		// Prevent height of window from changing
-		setMaxHeight(getHeight());
+		int delay = WINDOW_DELAYS.get(key);
+		String value = System.getProperty(key);
+		if (value != null)
+		{
+			try
+			{
+				delay = Integer.parseInt(value);
+			}
+			catch (NumberFormatException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return delay;
 	}
 
 	//------------------------------------------------------------------
@@ -399,6 +514,19 @@ public class SimpleProgressDialog
 ////////////////////////////////////////////////////////////////////////
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Returns the message label of this dialog.
+	 *
+	 * @return the message label of this dialog.
+	 */
+
+	public CompoundPathnameLabel getMessageLabel()
+	{
+		return messageLabel;
+	}
+
+	//------------------------------------------------------------------
 
 	/**
 	 * Returns the <i>cancel</i> button of this dialog.
@@ -409,6 +537,18 @@ public class SimpleProgressDialog
 	public Button getCancelButton()
 	{
 		return cancelButton;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * This method is called by the {@linkplain #SimpleProgressDialog(Window, Task, CancelMode, double) primary
+	 * constructor} at the end of the {@code WindowEvent.WINDOW_SHOWN} event handler.  It may be overridden by
+	 * subclasses to complete the initialisation of the dialog after the window is shown.
+	 */
+
+	protected void onWindowShown()
+	{
 	}
 
 	//------------------------------------------------------------------

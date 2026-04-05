@@ -20,30 +20,31 @@ package uk.blankaspect.ui.jfx.progress;
 
 import java.lang.invoke.MethodHandles;
 
-import java.nio.IntBuffer;
-
 import java.util.List;
 
-import javafx.animation.AnimationTimer;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 
 import javafx.geometry.Insets;
 
-import javafx.scene.image.PixelFormat;
-import javafx.scene.image.PixelWriter;
-import javafx.scene.image.WritableImage;
+import javafx.scene.Group;
 
 import javafx.scene.layout.Region;
 
 import javafx.scene.paint.Color;
-import javafx.scene.paint.ImagePattern;
 
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeType;
+
+import javafx.util.Duration;
 
 import uk.blankaspect.common.css.CssSelector;
 
@@ -74,26 +75,20 @@ public class SimpleProgressBar
 	/** The width of the border of a progress bar. */
 	private static final	double	BORDER_WIDTH	= 1.0;
 
-	/** The minimum width of a progress bar. */
-	private static final	double	MIN_WIDTH	= 2.0 * BORDER_WIDTH + 2.0;
+	/** The default width of the frame of a progress bar. */
+	private static final	double	DEFAULT_FRAME_WIDTH		= 400.0;
 
-	/** The minimum height of a progress bar. */
-	private static final	double	MIN_HEIGHT	= 2.0 * BORDER_WIDTH + 2.0;
+	/** The default height of the frame of a progress bar. */
+	private static final	double	DEFAULT_FRAME_HEIGHT	= 12.0;
 
 	/** The increment of the offset of the pattern of the indicator of indeterminate progress. */
-	private static final	double	PATTERN_OFFSET_INCREMENT	= 0.75;
-
-	/** The maximum value of an ARGB component of a colour. */
-	private static final	double	MAX_ARGB_COMPONENT_VALUE	= 255.0;
+	private static final	double	PATTERN_OFFSET_INCREMENT	= 1.0;
 
 	/** The opacity of a disabled progress bar. */
 	private static final	double	DISABLED_OPACITY	= 0.4;
 
-	/** The interval (in nanoseconds) between successive updates of the progress bar. */
-	private static final	long	BAR_UPDATE_INTERVAL	= 25_000_000;
-
-	/** The default margins of the bar of a progress bar. */
-	private static final	Insets	DEFAULT_BAR_MARGINS	= Insets.EMPTY;
+	/** The interval (in milliseconds) between successive updates of the indeterminate-progress indicator. */
+	private static final	double	BAR_UPDATE_INTERVAL	= 40.0;
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -101,7 +96,7 @@ public class SimpleProgressBar
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.FRAME_BACKGROUND,
+			ColourKey.BACKGROUND,
 			CssSelector.builder()
 					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
 					.desc(StyleClass.FRAME)
@@ -110,7 +105,7 @@ public class SimpleProgressBar
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
-			ColourKey.FRAME_BORDER,
+			ColourKey.BORDER,
 			CssSelector.builder()
 					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
 					.desc(StyleClass.FRAME)
@@ -119,10 +114,10 @@ public class SimpleProgressBar
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.BAR,
+			ColourKey.INDICATOR,
 			CssSelector.builder()
 					.cls(StyleClass.SIMPLE_PROGRESS_BAR)
-					.desc(StyleClass.BAR)
+					.desc(StyleClass.INDICATOR)
 					.build()
 		)
 	);
@@ -130,8 +125,8 @@ public class SimpleProgressBar
 	/** CSS style classes. */
 	public interface StyleClass
 	{
-		String	BAR					= StyleConstants.CLASS_PREFIX + "bar";
 		String	FRAME				= StyleConstants.CLASS_PREFIX + "frame";
+		String	INDICATOR			= StyleConstants.CLASS_PREFIX + "indicator";
 		String	SIMPLE_PROGRESS_BAR	= StyleConstants.CLASS_PREFIX + "simple-progress-bar";
 	}
 
@@ -140,35 +135,23 @@ public class SimpleProgressBar
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	BAR					= PREFIX + "bar";
-		String	FRAME_BACKGROUND	= PREFIX + "frame.background";
-		String	FRAME_BORDER		= PREFIX + "frame.border";
+		String	BACKGROUND	= PREFIX + "background";
+		String	BORDER		= PREFIX + "border";
+		String	INDICATOR	= PREFIX + "indicator";
 	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
-	/** The width of this progress bar. */
-	private	double					width;
+	/** The background colour of this progress bar. */
+	private	Color					backgroundColour;
 
-	/** The height of this progress bar. */
-	private	double					height;
+	/** The border colour of this progress bar. */
+	private	Color					borderColour;
 
-	/** The background colour of the frame of this progress bar. */
-	private	Color					frameBackgroundColour;
-
-	/** The border colour of the frame of this progress bar. */
-	private	Color					frameBorderColour;
-
-	/** The colour of the bar of this progress bar. */
-	private	Color					barColour;
-
-	/** The margins of the bar of this progress bar. */
-	private	Insets					barMargins;
-
-	/** The height of the progress bar. */
-	private	double					barHeight;
+	/** The colour of the indicator of this progress bar. */
+	private	Color					indicatorColour;
 
 	/** The offset of the pattern of the indicator of indeterminate progress. */
 	private	double					patternOffset;
@@ -179,17 +162,14 @@ public class SimpleProgressBar
 	/** The listener that is set on {@link #progress}. */
 	private	ChangeListener<Number>	progressListener;
 
-	/** The timer that animates the pattern of the indicator of indeterminate progress. */
-	private	AnimationTimer			indeterminateTimer;
-
-	/** The image of the pattern of the indicator of indeterminate progress. */
-	private	WritableImage			image;
-
 	/** The frame of the progress bar. */
 	private	Rectangle				frame;
 
-	/** The bar of the progress bar. */
-	private	Rectangle				bar;
+	/** The indicator of the progress bar. */
+	private	Rectangle				indicator;
+
+	/** The container for the shapes that form the indicator of indeterminate progress. */
+	private	Group					indicatorShapes;
 
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
@@ -206,117 +186,79 @@ public class SimpleProgressBar
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates a new instance of a simple progress bar with the specified width and height.
-	 *
-	 * @param  width
-	 *           the width of the progress bar.
-	 * @param  height
-	 *           the height of the progress bar.
-	 * @throws IllegalArgumentException
-	 *           if {@code width} is less than 4 or {@code height} is less than 4.
+	 * Creates a new instance of a simple progress bar.
 	 */
 
-	public SimpleProgressBar(
-		double	width,
-		double	height)
+	public SimpleProgressBar()
 	{
-		// Validate arguments
-		if (width < MIN_WIDTH)
-			throw new IllegalArgumentException("Width must be not be less than " + MIN_WIDTH);
-		if (height < MIN_HEIGHT)
-			throw new IllegalArgumentException("Height must be not be less than " + MIN_HEIGHT);
-
 		// Initialise instance variables
-		this.width = width;
-		this.height = height;
-		frameBackgroundColour = getColour(ColourKey.FRAME_BACKGROUND);
-		frameBorderColour = getColour(ColourKey.FRAME_BORDER);
-		barColour = getColour(ColourKey.BAR);
-		barMargins = DEFAULT_BAR_MARGINS;
+		backgroundColour = getColour(ColourKey.BACKGROUND);
+		borderColour = getColour(ColourKey.BORDER);
+		indicatorColour = getColour(ColourKey.INDICATOR);
 		progress = new SimpleDoubleProperty(0.0);
+
+		// Set properties
+		getStyleClass().add(StyleClass.SIMPLE_PROGRESS_BAR);
+
+		// Create frame
+		frame = new Rectangle(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT);
+		frame.setFill(backgroundColour);
+		frame.setStroke(borderColour);
+		frame.setStrokeWidth(BORDER_WIDTH);
+		frame.setStrokeType(StrokeType.INSIDE);
+		frame.getStyleClass().add(StyleClass.FRAME);
+
+		// Create indicator
+		indicator = new Rectangle();
+		indicator.setFill(indicatorColour);
+		indicator.setMouseTransparent(true);
+		indicator.getStyleClass().add(StyleClass.INDICATOR);
+
+		// Create container for shapes that form indicator of indeterminate progress
+		indicatorShapes = new Group();
+		indicatorShapes.setVisible(false);
+
+		// Add children to this container
+		getChildren().setAll(frame, indicator, indicatorShapes);
+
+		// Create timer that animates indicator of indeterminate progress
+		Timeline indeterminateProgressTimer =
+				new Timeline(new KeyFrame(Duration.millis(BAR_UPDATE_INTERVAL), event -> requestLayout()));
+		indeterminateProgressTimer.setCycleCount(Animation.INDEFINITE);
+
+		// Initialise listener that starts and stops animation of indicator of indeterminate progress
 		progressListener = (observable, oldProgress, newProgress) ->
 		{
 			// If indeterminate progress, start animation of indicator ...
 			double progress = newProgress.doubleValue();
 			if (progress < 0.0)
-				indeterminateTimer.start();
+			{
+				if (!isDisabled())
+					indeterminateProgressTimer.play();
+			}
 
 			// ... otherwise, update progress bar
 			else
 			{
 				// Stop animation of indeterminate progress
-				indeterminateTimer.stop();
+				indeterminateProgressTimer.stop();
 
 				// Redraw control
 				requestLayout();
 			}
 		};
 
-		// Set properties
-		getStyleClass().add(StyleClass.SIMPLE_PROGRESS_BAR);
-
-		// Create frame
-		frame = new Rectangle(width, height);
-		frame.setFill(frameBackgroundColour);
-		frame.setStroke(frameBorderColour);
-		frame.setStrokeWidth(BORDER_WIDTH);
-		frame.setStrokeType(StrokeType.INSIDE);
-		frame.getStyleClass().add(StyleClass.FRAME);
-
-		// Create bar
-		bar = new Rectangle();
-		bar.setFill(barColour);
-		bar.setMouseTransparent(true);
-		bar.getStyleClass().add(StyleClass.BAR);
-
-		// Add children to this container
-		getChildren().setAll(frame, bar);
-
-		// Create timer that animates indicator of indeterminate progress
-		indeterminateTimer = new AnimationTimer()
-		{
-			long	updateTime;
-
-			@Override
-			public void start()
-			{
-				// Reset update time
-				updateTime = 0;
-
-				// Call superclass method
-				super.start();
-			}
-
-			@Override
-			public void handle(long time)
-			{
-				// Initialise update time
-				if (updateTime == 0)
-					updateTime = time;
-
-				// Test whether to update progress bar
-				if (updateTime <= time)
-				{
-					// Set next update time
-					while (updateTime <= time)
-						updateTime += BAR_UPDATE_INTERVAL;
-
-					// Redraw control
-					requestLayout();
-				}
-			}
-		};
-
 		// Update bar when progress changes
-		progress.addListener(progressListener);
+		progress.addListener(new WeakChangeListener<>(progressListener));
 
 		// Reduce opacity of progress bar if disabled
 		disabledProperty().addListener((observable, oldDisabled, disabled) ->
 		{
-			// Stop timer for indeterminate-progress indicator
-			indeterminateTimer.stop();
+			// Stop animation of indeterminate-progress indicator
+			if (disabled)
+				indeterminateProgressTimer.stop();
 
-			// Reduce opacity of progress bar
+			// Update opacity of progress bar
 			setOpacity(disabled ? DISABLED_OPACITY : 1.0);
 		});
 	}
@@ -354,25 +296,11 @@ public class SimpleProgressBar
 	 */
 
 	@Override
-	protected double computeMinWidth(
-		double	height)
-	{
-		Insets insets = getInsets();
-		return width + insets.getLeft() + insets.getRight();
-	}
-
-	//------------------------------------------------------------------
-
-	/**
-	 * {@inheritDoc}
-	 */
-
-	@Override
 	protected double computeMinHeight(
 		double	width)
 	{
 		Insets insets = getInsets();
-		return height + insets.getTop() + insets.getBottom();
+		return snapSizeY(snapSpaceY(insets.getTop()) + snapSpaceY(insets.getBottom()) + frame.getHeight());
 	}
 
 	//------------------------------------------------------------------
@@ -386,93 +314,39 @@ public class SimpleProgressBar
 	{
 		// Get the insets of the progress bar
 		Insets insets = getInsets();
-		double top = insets.getTop();
-		double bottom = insets.getBottom();
-		double left = insets.getLeft();
-		double right = insets.getRight();
+		double top = snapSpaceY(insets.getTop());
+		double bottom = snapSpaceY(insets.getBottom());
+		double left = snapSpaceX(insets.getLeft());
+		double right = snapSpaceX(insets.getRight());
 
-		// Get the preferred width
-		double prefWidth = getPrefWidth();
-		if (prefWidth != USE_PREF_SIZE)
-		{
-			if (prefWidth < 0.0)
-				prefWidth = Math.max(0.0, width - left - right);
-		}
+		// Calculate the available width
+		double width = snapSizeX(getWidth() - left - right);
 
-		// Get the preferred height
-		double prefHeight = getPrefHeight();
-		if (prefHeight != USE_PREF_SIZE)
-		{
-			if (prefHeight < 0.0)
-				prefHeight = Math.max(0.0, height - top - bottom);
-		}
-
-		// Get the available width
-		double width = Math.max(0.0, getWidth() - left - right);
-
-		// Apply the minimum width
-		double minWidth = getMinWidth();
-		if (minWidth == USE_PREF_SIZE)
-			minWidth = prefWidth;
-		if (minWidth >= 0.0)
-			width = Math.max(minWidth, width);
-
-		// Apply the maximum width
-		double maxWidth = getMaxWidth();
-		if (maxWidth == USE_PREF_SIZE)
-			maxWidth = prefWidth;
-		else if (maxWidth < 0.0)
-			maxWidth = Double.MAX_VALUE;
-		width = Math.min(width, maxWidth);
-
-		// Get the available height
-		double height = Math.max(0.0, getHeight() - top - bottom);
-
-		// Apply the minimum height
-		double minHeight = getMinHeight();
-		if (minHeight == USE_PREF_SIZE)
-			minHeight = prefHeight;
-		if (minHeight >= 0.0)
-			height = Math.max(minHeight, height);
-
-		// Apply the maximum height
-		double maxHeight = getMaxHeight();
-		if (maxHeight == USE_PREF_SIZE)
-			maxHeight = prefHeight;
-		else if (maxHeight < 0.0)
-			maxHeight = Double.MAX_VALUE;
-		height = Math.min(height, maxHeight);
+		// Calculate the available height
+		double height = snapSizeY(getHeight() - top - bottom);
 
 		// Set the dimensions of the frame
 		frame.setWidth(width);
 		frame.setHeight(height);
 
-		// Calculate the x coordinate of the frame
-		double hInsets = left + right;
-		double x = Math.min(((hInsets == 0.0) ? 0.5 : left / hInsets) * (getWidth() - width), left);
-
-		// Calculate the y coordinate of the frame
-		double vInsets = top + bottom;
-		double y = Math.min(((vInsets == 0.0) ? 0.5 : top / vInsets) * (getHeight() - height), top);
-
 		// Set the location of the frame
+		double x = left;
+		double y = top;
 		frame.relocate(x, y);
 
-		// Set the height and location of the bar
-		double barX = BORDER_WIDTH + barMargins.getLeft();
-		double barY = BORDER_WIDTH + barMargins.getTop();
-		bar.setHeight(Math.max(0.0, height - barY - BORDER_WIDTH - barMargins.getBottom()));
-		bar.relocate(x + barX, y + barY);
+		// Set the height of the indicator
+		indicator.setHeight(indicatorHeight());
 
-		// Update the image of the pattern of the indicator of indeterminate progress
-		if (barHeight != bar.getHeight())
-		{
-			barHeight = bar.getHeight();
-			updateImage();
-		}
+		// Set the location of the indicator
+		x += BORDER_WIDTH;
+		y += BORDER_WIDTH;
+		indicator.relocate(x, y);
 
-		// Update the bar
-		updateBar();
+		// Set the location of the container for the shapes of the indeterminate-progress indicator
+		indicatorShapes.relocate(x, y);
+
+		// Update the indicator
+		updateIndicator();
 	}
 
 	//------------------------------------------------------------------
@@ -482,12 +356,12 @@ public class SimpleProgressBar
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Returns the progress value of this progress bar.
+	 * Returns the value of the progress of this progress bar.
 	 *
-	 * @return the progress value of this progress bar.
+	 * @return the value of the progress of this progress bar.
 	 */
 
-	public double getProgress()
+	public double progress()
 	{
 		return progress.get();
 	}
@@ -498,14 +372,19 @@ public class SimpleProgressBar
 	 * Sets the progress of this progress bar to the specified value.  If the progress is indeterminate, the value
 	 * should be negative; otherwise, the value should be between 0 and 1 inclusive.
 	 *
-	 * @param progress
-	 *          the value to which the progress of this progress bar will be set.
+	 * @param  progress
+	 *           the value to which the progress of this progress bar will be set.
+	 * @return this progress bar.
 	 */
 
-	public void setProgress(
+	public SimpleProgressBar progress(
 		double	progress)
 	{
+		// Update instance variable
 		this.progress.set(progress);
+
+		// Return this progress bar
+		return this;
 	}
 
 	//------------------------------------------------------------------
@@ -529,7 +408,7 @@ public class SimpleProgressBar
 	 * @return the content of this progress bar (ie, the bar itself, without any padding).
 	 */
 
-	public Rectangle getContent()
+	public Rectangle content()
 	{
 		return frame;
 	}
@@ -539,27 +418,31 @@ public class SimpleProgressBar
 	/**
 	 * Sets the background colour of this progress bar to the specified value.
 	 *
-	 * @param colour
-	 *          the value to which the background colour of this progress bar will be set.  If it is {@code null}, the
-	 *          default background colour will be used.
+	 * @param  colour
+	 *           the value to which the background colour of this progress bar will be set.  If it is {@code null}, the
+	 *           default background colour will be used.
+	 * @return this progress bar.
 	 */
 
-	public void setBackgroundColour(
+	public SimpleProgressBar backgroundColour(
 		Color	colour)
 	{
 		// Replace null colour with default colour
 		if (colour == null)
-			colour = getColour(ColourKey.FRAME_BACKGROUND);
+			colour = getColour(ColourKey.BACKGROUND);
 
 		// Update instance variable and redraw progress bar
-		if (!colour.equals(frameBackgroundColour))
+		if (!colour.equals(backgroundColour))
 		{
 			// Update instance variable
-			frameBackgroundColour = colour;
+			backgroundColour = colour;
 
 			// Update frame
 			frame.setFill(colour);
 		}
+
+		// Return this progress bar
+		return this;
 	}
 
 	//------------------------------------------------------------------
@@ -567,109 +450,121 @@ public class SimpleProgressBar
 	/**
 	 * Sets the border colour of this progress bar to the specified value.
 	 *
-	 * @param colour
-	 *          the value to which the border colour of this progress bar will be set.  If it is {@code null}, the
-	 *          default border colour will be used.
+	 * @param  colour
+	 *           the value to which the border colour of this progress bar will be set.  If it is {@code null}, the
+	 *           default border colour will be used.
+	 * @return this progress bar.
 	 */
 
-	public void setBorderColour(
+	public SimpleProgressBar borderColour(
 		Color	colour)
 	{
 		// Replace null colour with default colour
 		if (colour == null)
-			colour = getColour(ColourKey.FRAME_BORDER);
+			colour = getColour(ColourKey.BORDER);
 
 		// Update instance variable and redraw progress bar
-		if (!colour.equals(frameBorderColour))
+		if (!colour.equals(borderColour))
 		{
 			// Update instance variable
-			frameBorderColour = colour;
+			borderColour = colour;
 
 			// Update frame
 			frame.setStroke(colour);
 		}
+
+		// Return this progress bar
+		return this;
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the bar colour of this progress bar to the specified value.
+	 * Sets the colour of the indicator of this progress bar to the specified value.
 	 *
-	 * @param colour
-	 *          the value to which the bar colour of this progress bar will be set.  If it is {@code null}, the default
-	 *          bar colour will be used.
+	 * @param  colour
+	 *           the value to which the colour of the indicator of this progress bar will be set.  If it is {@code
+	 *           null}, the default indicator colour will be used.
+	 * @return this progress bar.
 	 */
 
-	public void setBarColour(
+	public SimpleProgressBar indicatorColour(
 		Color	colour)
 	{
 		// Replace null colour with default colour
 		if (colour == null)
-			colour = getColour(ColourKey.BAR);
+			colour = getColour(ColourKey.INDICATOR);
 
 		// Update instance variable and redraw progress bar
-		if (!colour.equals(barColour))
+		if (!colour.equals(indicatorColour))
 		{
 			// Update instance variable
-			barColour = colour;
+			indicatorColour = colour;
 
-			// Redraw progress bar
-			requestLayout();
+			// Redraw indicator
+			updateIndicator();
 		}
+
+		// Return this progress bar
+		return this;
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the margins of this progress bar to the specified value.
+	 * Returns the width of the indicator of this progress bar.
 	 *
-	 * @param margins
-	 *          the value to which the margins of this progress bar will be set.
+	 * @return the width of the indicator of this progress bar.
 	 */
 
-	public void setBarMargins(
-		Insets	margins)
+	private double indicatorWidth()
 	{
-		// Validate arguments
-		if (margins == null)
-			throw new IllegalArgumentException("Null margins");
-
-		// Update instance variable and redraw progress bar
-		if (!margins.equals(barMargins))
-		{
-			// Update instance variable
-			barMargins = margins;
-
-			// Redraw progress bar
-			requestLayout();
-		}
+		return Math.max(0.0, frame.getWidth() - 2.0 * BORDER_WIDTH);
 	}
 
 	//------------------------------------------------------------------
 
 	/**
-	 * Draws the bar of the progress bar.
+	 * Returns the height of the indicator of this progress bar.
+	 *
+	 * @return the height of the indicator of this progress bar.
 	 */
 
-	private void updateBar()
+	private double indicatorHeight()
 	{
-		double barHeight = bar.getHeight();
-		if (barHeight > 0.0)
+		return Math.max(0.0, frame.getHeight() - 2.0 * BORDER_WIDTH);
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Draws the indicator of this progress bar.
+	 */
+
+	private void updateIndicator()
+	{
+		double height = indicator.getHeight();
+		if (height > 0.0)
 		{
-			double progress = getProgress();
-			double barWidth = Math.max(0.0, frame.getWidth() - 2.0 * BORDER_WIDTH - barMargins.getLeft()
-																							- barMargins.getRight());
-			if ((progress < 0.0) && (image != null))
+			// Get value of progress
+			double progress = progress();
+
+			// Case: indeterminate progress
+			if (progress < 0.0)
 			{
-				bar.setWidth(barWidth);
-				double imageWidth = 2.0 * barHeight;
-				bar.setFill(new ImagePattern(image, patternOffset, 0.0, imageWidth, barHeight, false));
-				patternOffset = (patternOffset + PATTERN_OFFSET_INCREMENT) % imageWidth;
+				indicator.setVisible(false);
+				updateIndicatorShapes();
+				indicatorShapes.setVisible(true);
+				patternOffset = (patternOffset + PATTERN_OFFSET_INCREMENT) % (2.0 * height);
 			}
+
+			// Case: determinate progress
 			else
 			{
-				bar.setWidth(Math.min(Math.max(0.0, progress), 1.0) * barWidth);
-				bar.setFill(barColour);
+				indicatorShapes.setVisible(false);
+				indicator.setWidth(Math.min(Math.max(0.0, progress), 1.0) * indicatorWidth());
+				indicator.setFill(indicatorColour);
+				indicator.setVisible(true);
 			}
 		}
 	}
@@ -677,52 +572,152 @@ public class SimpleProgressBar
 	//------------------------------------------------------------------
 
 	/**
-	 * Updates the image of the pattern of the indicator of indeterminate progress.
+	 * Creates the shapes that form the indicator of indeterminate progress.
 	 */
 
-	private void updateImage()
+	private void updateIndicatorShapes()
 	{
-		double barHeight = bar.getHeight();
-		if (barHeight > 0.0)
+		// Remove all indicator shapes
+		indicatorShapes.getChildren().clear();
+
+		// Get width and height of indicator
+		double w = indicatorWidth();
+		double h = indicatorHeight();
+
+		// Get width of pattern
+		double patternWidth = 2.0 * h;
+
+		// Initialise array of vertices: four vertices for unclipped polygon and four vertices for clipped polygon
+		Vertex[] vertices = new Vertex[8];
+
+		// Initialise x coordinate of shape
+		double x = patternOffset;
+		if (x > 0.0)
+			x -= patternWidth;
+
+		// Create shapes
+		while (x < w)
 		{
-			// Get ARGB values of bar colour
-			double red = barColour.getRed() * MAX_ARGB_COMPONENT_VALUE;
-			double green = barColour.getGreen() * MAX_ARGB_COMPONENT_VALUE;
-			double blue = barColour.getGreen() * MAX_ARGB_COMPONENT_VALUE;
-			int argb0 = 128 << 24
-							| (int)Math.round(0.5 * red) << 16
-							| (int)Math.round(0.5 * green) << 8
-							| (int)Math.round(0.5 * blue);
-			int argb1 = 255 << 24
-							| (int)Math.round(red) << 16
-							| (int)Math.round(green) << 8
-							| (int)Math.round(blue);
+			// Initialise x coordinates of unclipped polygon
+			double x0 = x;
+			double x1 = x + h;
+			double x2 = x + patternWidth;
 
-			// Fill buffer with ARGB values
-			int height = (int)Math.ceil(barHeight);
-			int[] buffer = new int[height + 1];
-			int i = 0;
-			buffer[i++] = argb0;
-			while (i < height)
-				buffer[i++] = argb1;
-			buffer[i++] = argb0;
+			// Initialise vertices of unclipped polygon
+			vertices[0] = Vertex.of(x0, h);
+			vertices[1] = null;
+			vertices[2] = Vertex.of(x1, 0.0);
+			vertices[3] = null;
+			vertices[4] = Vertex.of(x2, 0.0);
+			vertices[5] = null;
+			vertices[6] = Vertex.of(x1, h);
+			vertices[7] = null;
 
-			// Create image
-			int width = 2 * height;
-			image = new WritableImage(width, height);
+			// Initialise vertices of polygon whose left part is clipped
+			if (x1 < 0.0)
+			{
+				vertices[0] = null;
+				vertices[2] = null;
+				vertices[3] = Vertex.of(0.0, 0.0);
+				vertices[5] = Vertex.of(0.0, x2);
+				vertices[6] = null;
 
-			// Set pixels of image
-			PixelFormat<IntBuffer> format = PixelFormat.getIntArgbPreInstance();
-			PixelWriter writer = image.getPixelWriter();
-			int x = width - buffer.length;
-			for (int y = 0; y < height; y++)
-				writer.setPixels(x--, y, buffer.length, 1, format, buffer, 0, 0);
+			}
+			else if (x0 < 0.0)
+			{
+				vertices[0] = null;
+				vertices[1] = Vertex.of(0.0, x1);
+				vertices[7] = Vertex.of(0.0, h);
+			}
+
+			// Initialise vertices of polygon whose right part is clipped
+			if (x1 > w)
+			{
+				vertices[1] = Vertex.of(w, x1 - w);
+				vertices[2] = null;
+				vertices[4] = null;
+				vertices[6] = null;
+				vertices[7] = Vertex.of(w, h);
+			}
+			else if (x2 > w)
+			{
+				vertices[3] = Vertex.of(w, 0.0);
+				vertices[4] = null;
+				vertices[5] = Vertex.of(w, x2 - w);
+			}
+
+			// Create polygon
+			Polygon shape = new Polygon();
+			shape.setFill(indicatorColour);
+			shape.setMouseTransparent(true);
+			for (int i = 0; i < vertices.length; i++)
+			{
+				Vertex vertex = vertices[i];
+				if (vertex != null)
+				{
+					shape.getPoints().add(vertex.x);
+					shape.getPoints().add(vertex.y);
+				}
+			}
+
+			// Add shape to container
+			indicatorShapes.getChildren().add(shape);
+
+			// Increment x coordinate of shape
+			x += patternWidth;
 		}
-		else
-			image = null;
 	}
 
 	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member records
+////////////////////////////////////////////////////////////////////////
+
+
+	// RECORD: VERTEX
+
+
+	/**
+	 * This record encapsulates a vertex of a polygon.
+	 *
+	 * @param x
+	 *          the x coordinate.
+	 * @param y
+	 *          the y coordinate.
+	 */
+
+	private record Vertex(
+		double	x,
+		double	y)
+	{
+
+	////////////////////////////////////////////////////////////////////
+	//  Class methods
+	////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Creates and returns a new instance of a vertex with the specified coordinates.
+		 *
+		 * @param  x
+		 *           the x coordinate.
+		 * @param  y
+		 *           the y coordinate.
+		 * @return a new instance of a vertex.
+		 */
+
+		private static Vertex of(
+			double	x,
+			double	y)
+		{
+			return new Vertex(x, y);
+		}
+
+		//--------------------------------------------------------------
+
+	}
+
+	//==================================================================
 
 }
 
