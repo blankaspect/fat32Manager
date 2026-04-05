@@ -20,6 +20,9 @@ package uk.blankaspect.ui.jfx.progress;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import javafx.animation.Animation;
@@ -35,6 +38,7 @@ import javafx.beans.value.WeakChangeListener;
 import javafx.geometry.Insets;
 
 import javafx.scene.Group;
+import javafx.scene.Node;
 
 import javafx.scene.layout.Region;
 
@@ -82,7 +86,7 @@ public class SimpleProgressBar
 	private static final	double	DEFAULT_FRAME_HEIGHT	= 12.0;
 
 	/** The increment of the offset of the pattern of the indicator of indeterminate progress. */
-	private static final	double	PATTERN_OFFSET_INCREMENT	= 1.0;
+	private static final	double	PATTERN_OFFSET_INCREMENT	= 0.5;
 
 	/** The opacity of a disabled progress bar. */
 	private static final	double	DISABLED_OPACITY	= 0.4;
@@ -171,6 +175,9 @@ public class SimpleProgressBar
 	/** The container for the shapes that form the indicator of indeterminate progress. */
 	private	Group					indicatorShapes;
 
+	/** The pool of polygons that may be used for the indicator of indeterminate progress. */
+	private	Deque<Polygon>			polygonPool;
+
 ////////////////////////////////////////////////////////////////////////
 //  Static initialiser
 ////////////////////////////////////////////////////////////////////////
@@ -223,10 +230,10 @@ public class SimpleProgressBar
 
 		// Create timer that animates indicator of indeterminate progress
 		Timeline indeterminateProgressTimer =
-				new Timeline(new KeyFrame(Duration.millis(BAR_UPDATE_INTERVAL), event -> requestLayout()));
+				new Timeline(new KeyFrame(Duration.millis(BAR_UPDATE_INTERVAL), event -> updateIndicator()));
 		indeterminateProgressTimer.setCycleCount(Animation.INDEFINITE);
 
-		// Initialise listener that starts and stops animation of indicator of indeterminate progress
+		// Create listener that starts and stops animation of indicator of indeterminate progress
 		progressListener = (observable, oldProgress, newProgress) ->
 		{
 			// If indeterminate progress, start animation of indicator ...
@@ -241,10 +248,11 @@ public class SimpleProgressBar
 			else
 			{
 				// Stop animation of indeterminate progress
-				indeterminateProgressTimer.stop();
+				if (indeterminateProgressTimer.getStatus() == Animation.Status.RUNNING)
+					indeterminateProgressTimer.stop();
 
-				// Redraw control
-				requestLayout();
+				// Redraw indicator
+				updateIndicator();
 			}
 		};
 
@@ -578,7 +586,20 @@ public class SimpleProgressBar
 	private void updateIndicatorShapes()
 	{
 		// Remove all indicator shapes
+		List<Node> children = new ArrayList<>(indicatorShapes.getChildren());
 		indicatorShapes.getChildren().clear();
+
+		// Add polygons to pool
+		if (polygonPool == null)
+			polygonPool = new ArrayDeque<>();
+		for (Node child : children)
+		{
+			if (child instanceof Polygon polygon)
+			{
+				polygon.getPoints().clear();
+				polygonPool.addLast(polygon);
+			}
+		}
 
 		// Get width and height of indicator
 		double w = indicatorWidth();
@@ -646,22 +667,28 @@ public class SimpleProgressBar
 				vertices[5] = Vertex.of(w, x2 - w);
 			}
 
-			// Create polygon
-			Polygon shape = new Polygon();
-			shape.setFill(indicatorColour);
-			shape.setMouseTransparent(true);
+			// Get polygon from pool; create new polygon if pool is empty
+			Polygon polygon = polygonPool.pollLast();
+			if (polygon == null)
+			{
+				polygon = new Polygon();
+				polygon.setMouseTransparent(true);
+			}
+			polygon.setFill(indicatorColour);
+
+			// Add vertices to polygon
 			for (int i = 0; i < vertices.length; i++)
 			{
 				Vertex vertex = vertices[i];
 				if (vertex != null)
 				{
-					shape.getPoints().add(vertex.x);
-					shape.getPoints().add(vertex.y);
+					polygon.getPoints().add(vertex.x);
+					polygon.getPoints().add(vertex.y);
 				}
 			}
 
 			// Add shape to container
-			indicatorShapes.getChildren().add(shape);
+			indicatorShapes.getChildren().add(polygon);
 
 			// Increment x coordinate of shape
 			x += patternWidth;
