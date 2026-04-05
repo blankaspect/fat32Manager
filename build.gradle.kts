@@ -60,10 +60,15 @@ val jfxLibs     = listOf(
 // Location of the Java launcher in a JRE that includes JavaFX modules.  Note the unconventional test for Windows.
 val jfxLauncher = _path(System.getenv("JRE_DIR"), "bin", if (File.separatorChar.equals('\\')) "java.exe" else "java")
 
-// Java launcher: add JavaFX modules to module path
+// Java-launcher arguments: add JavaFX modules to module path
 val jfxArgs = listOf(
     "--module-path", jfxLibDir,
     "--add-modules", jfxLibs.joinToString(",")
+)
+
+// Java-launcher arguments: enable native access
+val vmArgs = listOf(
+    "--enable-native-access", "javafx.graphics,ALL-UNNAMED"
 )
 
 //----------------------------------------------------------------------
@@ -105,7 +110,7 @@ tasks.jar {
 tasks.register<JavaExec>("runMain") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(mainClassName)
-    jvmArgs = jfxArgs
+    jvmArgs = jfxArgs + vmArgs
 
     systemProperties(_appSystemProperties())
 }
@@ -118,6 +123,7 @@ tasks.register<JavaExec>("runMainJre") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(mainClassName)
     executable(jfxLauncher)
+    jvmArgs = vmArgs
 
     systemProperties(_appSystemProperties())
 }
@@ -128,7 +134,7 @@ tasks.register<JavaExec>("runMainJre") {
 
 tasks.register<JavaExec>("runJar") {
     classpath = files(tasks.jar)
-    jvmArgs = jfxArgs
+    jvmArgs = jfxArgs + vmArgs
 
     systemProperties(_appSystemProperties())
 }
@@ -140,6 +146,7 @@ tasks.register<JavaExec>("runJar") {
 tasks.register<JavaExec>("runJarJre") {
     classpath = files(tasks.jar)
     executable(jfxLauncher)
+    jvmArgs = vmArgs
 
     systemProperties(_appSystemProperties())
 }
