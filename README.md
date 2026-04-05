@@ -43,6 +43,9 @@ JavaFX modules are included in some third-party JREs, such as the
 modules, the [blankaspect/makejre](https://github.com/blankaspect/makejre) repo contains scripts for Linux and Windows
 that may be useful. 
 
+JavaFX 25 is recommended for Linux/GNOME because it appears to have fixed some of the problems around the location and
+sizing of windows on that platform that were present in earlier versions of JavaFX.
+
 ----
 
 The contents of this repository are covered by three licences:
