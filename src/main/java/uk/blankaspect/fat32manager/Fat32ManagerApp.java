@@ -186,9 +186,9 @@ public class Fat32ManagerApp
 		<i>WINDOW_SHOWN</i> event handler of the main window. */
 	private static final	Map<String, Integer>	MAIN_WINDOW_DELAYS	= Map.of
 	(
-		SystemPropertyKey.MAIN_WINDOW_DELAY_SIZE,     50,
-		SystemPropertyKey.MAIN_WINDOW_DELAY_LOCATION, 25,
-		SystemPropertyKey.MAIN_WINDOW_DELAY_OPACITY,  25
+		SystemPropertyKey.MAIN_WINDOW_DELAY_SIZE,     100,
+		SystemPropertyKey.MAIN_WINDOW_DELAY_LOCATION,  25,
+		SystemPropertyKey.MAIN_WINDOW_DELAY_OPACITY,   25
 	);
 
 	/** The minimum width of the main window. */
