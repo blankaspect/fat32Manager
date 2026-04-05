@@ -89,10 +89,12 @@ public class WindowDims
 
 	//------------------------------------------------------------------
 
-	public void setMin()
+	public void setMin(
+		double	minWidth,
+		double	minHeight)
 	{
-		window.setMinWidth(w);
-		window.setMinHeight(h);
+		window.setMinWidth(Math.max(minWidth, w));
+		window.setMinHeight(Math.max(minHeight, h));
 	}
 
 	//------------------------------------------------------------------

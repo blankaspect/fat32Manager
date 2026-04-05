@@ -218,6 +218,12 @@ public abstract class SimpleDialog
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
+	/** The preferred width of this dialog. */
+	private	double					prefWidth;
+
+	/** The preferred height of this dialog. */
+	private	double					prefHeight;
+
 	/** The minimum width of a button. */
 	private	double					minButtonWidth;
 
@@ -378,8 +384,12 @@ public abstract class SimpleDialog
 				// Update dimensions
 				dims.update(false);
 
+				// Set preferred dimensions
+				prefWidth = dims.w();
+				prefHeight = dims.h();
+
 				// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
-				dims.setMin();
+				dims.setMin(MIN_WIDTH, MIN_HEIGHT);
 
 				// If no size was provided, get previous size of window
 				Dimension2D size0 = size;
@@ -391,12 +401,17 @@ public abstract class SimpleDialog
 				{
 					// Set width
 					double width = size0.getWidth();
-					if (width > 0.0)
-						setWidth(width);
+					if (width <= 0.0)
+						width = Math.max(MIN_WIDTH, dims.w());
+					setMinWidth(width);
+					setWidth(width);
 
 					// Set height
 					double height = size0.getHeight();
-					setHeight((height > 0.0) ? height : dims.h());
+					if (height <= 0.0)
+						height = Math.max(MIN_HEIGHT, dims.h());
+					setMinHeight(height);
+					setHeight(height);
 				}
 
 				// Update dimensions
@@ -899,6 +914,32 @@ public abstract class SimpleDialog
 	//------------------------------------------------------------------
 
 	/**
+	 * Returns the preferred width of this dialog.  The returned value is not valid until the dialog is shown.
+	 *
+	 * @return the preferred width of this dialog.
+	 */
+
+	protected double prefWidth()
+	{
+		return prefWidth;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Returns the preferred height of this dialog.  The returned value is not valid until the dialog is shown.
+	 *
+	 * @return the preferred height of this dialog.
+	 */
+
+	protected double prefHeight()
+	{
+		return prefHeight;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Returns the gap between adjacent buttons in the button pane.  This is also the minimum extra gap between adjacent
 	 * zones of the button pane.
 	 *
@@ -1029,8 +1070,8 @@ public abstract class SimpleDialog
 
 	/**
 	 * This method is called by the {@linkplain #SimpleDialog(Modality, Window, String, String, String, int, ILocator,
-	 * Dimension2D) constructor} at the end of the {@code WindowEvent.WINDOW_SHOWN} event handler.  It may be overridden
-	 * by subclasses to complete the initialisation of the dialog after the window is shown.
+	 * Dimension2D) primary constructor} at the end of the {@code WindowEvent.WINDOW_SHOWN} event handler.  It may be
+	 * overridden by subclasses to complete the initialisation of the dialog after the window is shown.
 	 */
 
 	protected void onWindowShown()

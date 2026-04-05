@@ -679,10 +679,11 @@ public class PropertiesPane
 						setWidth(dialogMaxInitialWidth);
 
 					// Set lower bound on width of dialog
-					setMinWidth(getWidth());
+					setMinWidth(prefWidth());
 
 					// Prevent height of dialog from changing
-					setMaxHeight(getHeight());
+					setMinHeight(prefHeight());
+					setMaxHeight(prefHeight());
 				}
 			}
 		};
@@ -747,10 +748,11 @@ public class PropertiesPane
 						setWidth(dialogMaxInitialWidth);
 
 					// Set lower bound on width of dialog
-					setMinWidth(getWidth());
+					setMinWidth(prefWidth());
 
 					// Prevent height of dialog from changing
-					setMaxHeight(getHeight());
+					setMinHeight(prefHeight());
+					setMaxHeight(prefHeight());
 				}
 			}
 		};

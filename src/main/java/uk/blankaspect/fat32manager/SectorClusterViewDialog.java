@@ -1185,7 +1185,7 @@ public class SectorClusterViewDialog
 		// Show or hide 'save' pane when 'selected' state of 'save' button changes
 		saveButton.selectedProperty().addListener((observable, oldSelected, selected) ->
 		{
-			// Set preferred size of sector area to its current size
+			// Set preferred size of data area to its current size
 			dataArea.setPrefSize(dataArea.getWidth(), dataArea.getHeight());
 
 			// Case: show 'save' pane
@@ -1208,7 +1208,7 @@ public class SectorClusterViewDialog
 		copyButton.getProperties().put(BUTTON_GROUP_KEY, BUTTON_GROUP1);
 		copyButton.setOnAction(event ->
 		{
-			// Get text that is selected in sector area
+			// Get text that is selected in data area
 			String text = dataArea.getSelectedText();
 
 			// If no text is selected, use entire text

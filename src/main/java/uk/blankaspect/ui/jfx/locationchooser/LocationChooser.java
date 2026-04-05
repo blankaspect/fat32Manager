@@ -867,16 +867,33 @@ public class LocationChooser
 					dims.update(false);
 
 					// Temporarily set minimum dimensions to prevent window from shrinking (Linux/GNOME)
-					dims.setMin();
+					dims.setMin(MIN_WIDTH, MIN_HEIGHT);
 
 					// Set state of window and chooser pane to stored value
 					DialogState state = (dialogStateKey == null) ? null : dialogStates.get(dialogStateKey);
 					if (state != null)
 					{
+						// Set position of split-pane divider
 						chooserPane.setSplitPaneDividerPosition(state.splitPaneDividerPosition());
+
+						// Set widths of table-view columns
 						chooserPane.setTableViewColumnWidths(state.tableViewColumnWidths());
-						setWidth(state.width());
-						setHeight(state.height());
+
+						// Set width
+						double width = state.width();
+						if (width <= 0.0)
+							width = Math.max(MIN_WIDTH, dims.w());
+						setMinWidth(width);
+						setWidth(width);
+
+						// Set height
+						double height = state.height();
+						if (height <= 0.0)
+							height = Math.max(MIN_HEIGHT, dims.h());
+						setMinHeight(height);
+						setHeight(height);
+
+						// Update stored dimensions
 						dims.update(true);
 					}
 
