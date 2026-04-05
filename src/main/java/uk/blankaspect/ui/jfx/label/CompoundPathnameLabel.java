@@ -109,15 +109,14 @@ public class CompoundPathnameLabel
 
 		// Create prefix label
 		prefixLabel = new Label();
-		prefixLabel.setMinWidth(Region.USE_PREF_SIZE);
 
 		// Create pathname label
 		pathnameLabel = new Label();
 		pathnameLabel.setTextOverrun(OverrunStyle.CENTER_ELLIPSIS);
 		HBox.setHgrow(pathnameLabel, Priority.ALWAYS);
 
-		// Add labels to this container
-		getChildren().addAll(prefixLabel, pathnameLabel);
+		// Set text on labels
+		updateLabels(text);
 
 		// Update prefix and pathname when text changes
 		this.text.addListener((observable, oldText, newText) -> updateLabels(newText));
@@ -261,16 +260,41 @@ public class CompoundPathnameLabel
 	private void updateLabels(
 		String	text)
 	{
+		// Assume one label
+		int numLabels = 1;
+
+		// Case: text is null
 		if (text == null)
-		{
 			prefixLabel.setText(null);
-			pathnameLabel.setText(null);
-		}
+
+		// Case: text is not null
 		else
 		{
+			// Split text into prefix and pathname
 			String[] strs = text.split(separator, 2);
+
+			// Update text of prefix label
 			prefixLabel.setText(strs[0]);
-			pathnameLabel.setText((strs.length < 2) ? null : strs[1]);
+
+			// Update remaining properties of labels
+			if (strs.length < 2)
+				prefixLabel.setMinWidth(Region.USE_COMPUTED_SIZE);
+			else
+			{
+				numLabels = 2;
+				prefixLabel.setMinWidth(Region.USE_PREF_SIZE);
+				pathnameLabel.setText(strs[1]);
+			}
+		}
+
+		// Update children of this container
+		if (getChildren().size() != numLabels)
+		{
+			switch (numLabels)
+			{
+				case 1 -> getChildren().setAll(prefixLabel);
+				case 2 -> getChildren().setAll(prefixLabel, pathnameLabel);
+			}
 		}
 	}
 
