@@ -439,7 +439,7 @@ public class SimpleProgressBar
 		if (colour == null)
 			colour = getColour(ColourKey.BACKGROUND);
 
-		// Update instance variable and redraw progress bar
+		// Update instance variable and frame
 		if (!colour.equals(backgroundColour))
 		{
 			// Update instance variable
@@ -471,7 +471,7 @@ public class SimpleProgressBar
 		if (colour == null)
 			colour = getColour(ColourKey.BORDER);
 
-		// Update instance variable and redraw progress bar
+		// Update instance variable and frame
 		if (!colour.equals(borderColour))
 		{
 			// Update instance variable
@@ -503,7 +503,7 @@ public class SimpleProgressBar
 		if (colour == null)
 			colour = getColour(ColourKey.INDICATOR);
 
-		// Update instance variable and redraw progress bar
+		// Update instance variable and redraw indicator
 		if (!colour.equals(indicatorColour))
 		{
 			// Update instance variable
@@ -585,11 +585,11 @@ public class SimpleProgressBar
 
 	private void updateIndicatorShapes()
 	{
-		// Remove all indicator shapes
+		// Remove all indicator shapes from container
 		List<Node> children = new ArrayList<>(indicatorShapes.getChildren());
 		indicatorShapes.getChildren().clear();
 
-		// Add polygons to pool
+		// Add old polygons to pool
 		if (polygonPool == null)
 			polygonPool = new ArrayDeque<>();
 		for (Node child : children)
@@ -601,6 +601,9 @@ public class SimpleProgressBar
 			}
 		}
 
+		// Clear list of polygons
+		children.clear();
+
 		// Get width and height of indicator
 		double w = indicatorWidth();
 		double h = indicatorHeight();
@@ -608,7 +611,7 @@ public class SimpleProgressBar
 		// Get width of pattern
 		double patternWidth = 2.0 * h;
 
-		// Initialise array of vertices: four vertices for unclipped polygon and four vertices for clipped polygon
+		// Initialise array of vertices: four vertices for unclipped polygon, four vertices for clipped polygon
 		Vertex[] vertices = new Vertex[8];
 
 		// Initialise x coordinate of shape
@@ -624,7 +627,7 @@ public class SimpleProgressBar
 			double x1 = x + h;
 			double x2 = x + patternWidth;
 
-			// Initialise vertices of unclipped polygon
+			// Initialise vertices for unclipped polygon
 			vertices[0] = Vertex.of(x0, h);
 			vertices[1] = null;
 			vertices[2] = Vertex.of(x1, 0.0);
@@ -634,7 +637,7 @@ public class SimpleProgressBar
 			vertices[6] = Vertex.of(x1, h);
 			vertices[7] = null;
 
-			// Initialise vertices of polygon whose left part is clipped
+			// Update vertices if left part of polygon is clipped
 			if (x1 < 0.0)
 			{
 				vertices[0] = null;
@@ -651,7 +654,7 @@ public class SimpleProgressBar
 				vertices[7] = Vertex.of(0.0, h);
 			}
 
-			// Initialise vertices of polygon whose right part is clipped
+			// Update vertices if right part of polygon is clipped
 			if (x1 > w)
 			{
 				vertices[1] = Vertex.of(w, x1 - w);
@@ -687,12 +690,15 @@ public class SimpleProgressBar
 				}
 			}
 
-			// Add shape to container
-			indicatorShapes.getChildren().add(polygon);
+			// Add polygon to list
+			children.add(polygon);
 
 			// Increment x coordinate of shape
 			x += patternWidth;
 		}
+
+		// Add shapes to container
+		indicatorShapes.getChildren().addAll(children);
 	}
 
 	//------------------------------------------------------------------
@@ -702,7 +708,7 @@ public class SimpleProgressBar
 ////////////////////////////////////////////////////////////////////////
 
 
-	// RECORD: VERTEX
+	// RECORD: VERTEX OF A POLYGON
 
 
 	/**
