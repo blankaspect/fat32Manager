@@ -1,8 +1,8 @@
 /*====================================================================*\
 
-SlideButton.java
+ToggleSwitch.java
 
-Class: slide button.
+Class: toggle switch.
 
 \*====================================================================*/
 
@@ -67,10 +67,10 @@ import uk.blankaspect.ui.jfx.style.StyleManager;
 //----------------------------------------------------------------------
 
 
-// CLASS: SLIDE BUTTON
+// CLASS: TOGGLE SWITCH
 
 
-public class SlideButton
+public class ToggleSwitch
 	extends ButtonBase
 	implements Toggle
 {
@@ -80,7 +80,7 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 	/** The pseudo-class that is associated with the <i>selected</i> state. */
-	private static final	PseudoClass	SELECTED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
+	private static final	PseudoClass	PSEUDO_CLASS_SELECTED	= PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -90,7 +90,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.TRACK,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON)
+					.cls(StyleClass.TOGGLE_SWITCH)
 					.desc(StyleClass.TRACK)
 					.build()
 		),
@@ -99,7 +99,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.TRACK_DISABLED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.DISABLED)
 					.desc(StyleClass.TRACK)
 					.build()
 		),
@@ -108,7 +108,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.TRACK_DISABLED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
 					.desc(StyleClass.TRACK)
 					.build()
 		),
@@ -117,7 +117,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.TRACK_SELECTED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.SELECTED)
 					.desc(StyleClass.TRACK)
 					.build()
 		),
@@ -126,7 +126,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.SLIDER,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON)
+					.cls(StyleClass.TOGGLE_SWITCH)
 					.desc(StyleClass.SLIDER)
 					.build()
 		),
@@ -135,7 +135,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.SLIDER_DISABLED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.DISABLED)
 					.desc(StyleClass.SLIDER)
 					.build()
 		),
@@ -144,7 +144,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.SLIDER_DISABLED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.DISABLED).pseudo(FxPseudoClass.SELECTED)
 					.desc(StyleClass.SLIDER)
 					.build()
 		),
@@ -153,7 +153,7 @@ public class SlideButton
 			FxProperty.FILL,
 			ColourKey.SLIDER_SELECTED,
 			CssSelector.builder()
-					.cls(StyleClass.SLIDE_BUTTON).pseudo(FxPseudoClass.SELECTED)
+					.cls(StyleClass.TOGGLE_SWITCH).pseudo(FxPseudoClass.SELECTED)
 					.desc(StyleClass.SLIDER)
 					.build()
 		)
@@ -162,8 +162,8 @@ public class SlideButton
 	/** CSS style classes. */
 	private interface StyleClass
 	{
-		String	SLIDE_BUTTON	= StyleConstants.CLASS_PREFIX + "slide-button";
 		String	SLIDER			= StyleConstants.CLASS_PREFIX + "slider";
+		String	TOGGLE_SWITCH	= StyleConstants.CLASS_PREFIX + "toggle-switch";
 		String	TRACK			= StyleConstants.CLASS_PREFIX + "track";
 	}
 
@@ -184,28 +184,28 @@ public class SlideButton
 //  Instance variables
 ////////////////////////////////////////////////////////////////////////
 
-	/** The node that provides the skin for this button. */
+	/** The node that provides the skin for this toggle switch. */
 	private View    							view;
 
-	/** Flag: if {@code true}, this button behaves as a radio button. */
+	/** Flag: if {@code true}, this toggle switch behaves as a radio button. */
 	private	boolean								radioButton;
 
-	/** Flag: if {@code true}, this button is selected. */
+	/** Flag: if {@code true}, this toggle switch is selected. */
 	private	SimpleBooleanProperty				selected;
 
-	/** The toggle group to which this button belongs. */
+	/** The toggle group to which this toggle switch belongs. */
 	private	SimpleObjectProperty<ToggleGroup>	toggleGroup;
 
 	/** The colour of the track. */
 	private	Color								trackColour;
 
-	/** The colour of the track when this button is selected. */
+	/** The colour of the track when this toggle switch is selected. */
 	private	Color								trackColourSelected;
 
 	/** The colour of the slider. */
 	private	Color								sliderColour;
 
-	/** The colour of the slider when this button is selected. */
+	/** The colour of the slider when this toggle switch is selected. */
 	private	Color								sliderColourSelected;
 
 ////////////////////////////////////////////////////////////////////////
@@ -215,7 +215,7 @@ public class SlideButton
 	static
 	{
 		// Register the style properties of this class with the style manager
-		StyleManager.INSTANCE.register(SlideButton.class, COLOUR_PROPERTIES);
+		StyleManager.INSTANCE.register(ToggleSwitch.class, COLOUR_PROPERTIES);
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -223,10 +223,10 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Creates a new instance of a slide button.
+	 * Creates a new instance of a toggle switch.
 	 */
 
-	public SlideButton()
+	public ToggleSwitch()
 	{
 		// Initialise instance variables
 		view = new View();
@@ -243,40 +243,40 @@ public class SlideButton
 		setBackground(Background.EMPTY);
 		setBorder(Border.EMPTY);
 		setPickOnBounds(true);
-		getStyleClass().add(StyleClass.SLIDE_BUTTON);
+		getStyleClass().add(StyleClass.TOGGLE_SWITCH);
 
-		// Update button view when button is disabled or enabled
+		// Update view when toggle switch is disabled or enabled
 		disabledProperty().addListener(observable -> update());
 
-		// Update button view when button gains or loses focus
+		// Update view when toggle switch gains or loses focus
 		focusedProperty().addListener(observable -> update());
 
-		// Update button view when button's 'selected' state changes
+		// Update view when 'selected' state of toggle switch changes
 		selected.addListener(observable ->
 		{
-			pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, isSelected());
+			pseudoClassStateChanged(PSEUDO_CLASS_SELECTED, isSelected());
 			update();
 		});
 
-		// Update button view when preferred width of button changes
+		// Update view when preferred width of toggle switch changes
 		prefWidthProperty().addListener(observable -> update());
 
-		// Update button view when preferred height of button changes
+		// Update view when preferred height of toggle switch changes
 		prefHeightProperty().addListener(observable -> update());
 
-		// If button is focus-traversable, request focus when mouse button is pressed on it
+		// If toggle switch is focus-traversable, request focus when mouse button is pressed on it
 		addEventHandler(MouseEvent.MOUSE_PRESSED, event ->
 		{
 			if (isFocusTraversable())
 				requestFocus();
 		});
 
-		// Cause button to fire when primary mouse button is clicked on it
+		// Cause toggle switch to fire when primary mouse button is clicked on it
 		addEventHandler(MouseEvent.MOUSE_CLICKED, event ->
 		{
 			if (event.getButton() == MouseButton.PRIMARY)
 			{
-				// Fire button
+				// Fire toggle switch
 				fire();
 
 				// Consume event
@@ -284,12 +284,12 @@ public class SlideButton
 			}
 		});
 
-		// Cause button to fire when space key is pressed
+		// Cause toggle switch to fire when space key is pressed
 		addEventHandler(KeyEvent.KEY_PRESSED, event ->
 		{
 			if (event.getCode() == KeyCode.SPACE)
 			{
-				// Fire button
+				// Fire toggle switch
 				fire();
 
 				// Consume event
@@ -297,7 +297,7 @@ public class SlideButton
 			}
 		});
 
-		// Draw button
+		// Draw toggle switch
 		update();
 	}
 
@@ -409,10 +409,14 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Fires this button.  If the button is not disabled, the following actions are performed:
+	 * Fires this toggle switch.  If the component is not disabled, the following actions are performed:
 	 * <ul>
-	 *   <li>If the button is not a radio button that is currently selected, its <i>selected</i> state is toggled.</li>
-	 *   <li>An {@link ActionEvent} with the event type {@code ACTION} is fired.</li>
+	 *   <li>
+	 *     If the toggle switch is not a radio button that is currently selected, its <i>selected</i> state is toggled.
+	 *   </li>
+	 *   <li>
+	 *     An {@link ActionEvent} with the event type {@code ACTION} is fired.
+	 *   </li>
 	 * </ul>
 	 */
 
@@ -434,14 +438,14 @@ public class SlideButton
 	 */
 
 	@Override
-	protected Skin<SlideButton> createDefaultSkin()
+	protected Skin<ToggleSwitch> createDefaultSkin()
 	{
 		return new Skin<>()
 		{
 			@Override
-			public SlideButton getSkinnable()
+			public ToggleSwitch getSkinnable()
 			{
-				return SlideButton.this;
+				return ToggleSwitch.this;
 			}
 
 			@Override
@@ -465,11 +469,11 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Sets the <i>radio button</i> attribute of this button.  If the <i>radio button</i> attribute is set and the
-	 * button is in the <i>selected</i> state, the button will not be deselected when it is fired.
+	 * Sets the <i>radio button</i> attribute of this toggle switch.  If the <i>radio button</i> attribute is set and
+	 * the toggle switch is in the <i>selected</i> state, the switch will not be deselected when it is fired.
 	 *
 	 * @param radioButton
-	 *          the value to which the <i>radio button</i> attribute of this button will be set.
+	 *          the value to which the <i>radio button</i> attribute of this toggle switch will be set.
 	 */
 
 	public void setRadioButton(
@@ -481,9 +485,9 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour of the track of this button.
+	 * Returns the colour of the track of this toggle switch.
 	 *
-	 * @return the colour of the track of this button.
+	 * @return the colour of the track of this toggle switch.
 	 */
 
 	public Color getTrackColour()
@@ -494,11 +498,11 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the colour of the track of this button to the specified value.
+	 * Sets the colour of the track of this toggle switch to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the colour of the track of this button will be set.  If it is {@code null}, the
-	 *          default colour will be restored.
+	 *          the value to which the colour of the track of this toggle switch will be set.  If it is {@code null},
+	 *          the default colour will be restored.
 	 */
 
 	public void setTrackColour(
@@ -517,9 +521,9 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour of the track of this button when the button is selected.
+	 * Returns the colour of the track of this toggle switch when the switch is selected.
 	 *
-	 * @return the colour of the track of this button when the button is selected.
+	 * @return the colour of the track of this toggle switch when the switch is selected.
 	 */
 
 	public Color getTrackColourSelected()
@@ -530,11 +534,11 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the colour of the track of this button when the button is selected to the specified value.
+	 * Sets the colour of the track of this toggle switch when the switch is selected to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the colour of the track of this button when the button is selected will be set.  If
-	 *          it is {@code null}, the default colour will be restored.
+	 *          the value to which the colour of the track of this toggle switch when the switch is selected will be
+	 *          set.  If it is {@code null}, the default colour will be restored.
 	 */
 
 	public void setTrackColourSelected(
@@ -553,9 +557,9 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour of the slider of this button.
+	 * Returns the colour of the slider of this toggle switch.
 	 *
-	 * @return the colour of the slider of this button.
+	 * @return the colour of the slider of this toggle switch.
 	 */
 
 	public Color getSliderColour()
@@ -566,11 +570,11 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the colour of the slider of this button to the specified value.
+	 * Sets the colour of the slider of this toggle switch to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the colour of the slider of this button will be set.  If it is {@code null}, the
-	 *          default colour will be restored.
+	 *          the value to which the colour of the slider of this toggle switch will be set.  If it is {@code null},
+	 *          the default colour will be restored.
 	 */
 
 	public void setSliderColour(
@@ -589,9 +593,9 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Returns the colour of the slider of this button when the button is selected.
+	 * Returns the colour of the slider of this toggle switch when the switch is selected.
 	 *
-	 * @return the colour of the slider of this button when the button is selected.
+	 * @return the colour of the slider of this toggle switch when the switch is selected.
 	 */
 
 	public Color getSliderColourSelected()
@@ -602,11 +606,11 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the colour of the slider of this button when the button is selected to the specified value.
+	 * Sets the colour of the slider of this toggle switch when the switch is selected to the specified value.
 	 *
 	 * @param colour
-	 *          the value to which the colour of the slider of this button when the button is selected will be set.  If
-	 *          it is {@code null}, the default colour will be restored.
+	 *          the value to which the colour of the slider of this toggle switch when the switch is selected will be
+	 *          set.  If it is {@code null}, the default colour will be restored.
 	 */
 
 	public void setSliderColourSelected(
@@ -625,15 +629,15 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Sets the toggle group to which this button belongs and the <i>radio-button</i> attribute of this button to the
-	 * specified values.
+	 * Sets the toggle group to which this toggle switch belongs and sets the <i>radio-button</i> attribute of this
+	 * switch to the specified values.
 	 *
 	 * @param toggleGroup
-	 *          the toggle group to which this button will belong.  If {@code toggleGroup} is {@code null}, this button
-	 *          will be removed from the toggle group to which it currently belongs.
+	 *          the toggle group to which this toggle switch will belong.  If {@code toggleGroup} is {@code null}, this
+	 *          switch will be removed from the toggle group to which it currently belongs.
 	 * @param radioButton
-	 *          the value to which the <i>radio-button</i> attribute of this button will be set.  This parameter will be
-	 *          ignored if {@code toggleGroup} is {@code null}.
+	 *          the value to which the <i>radio-button</i> attribute of this toggle switch will be set.  This parameter
+	 *          will be ignored if {@code toggleGroup} is {@code null}.
 	 * @see   #setToggleGroup(ToggleGroup)
 	 * @see   #setRadioButton(boolean)
 	 */
@@ -642,15 +646,15 @@ public class SlideButton
 		ToggleGroup	toggleGroup,
 		boolean		radioButton)
 	{
-		// Remove button from its current toggle group
+		// Remove toggle switch from its current toggle group
 		ToggleGroup oldToggleGroup = getToggleGroup();
 		if (oldToggleGroup != null)
 		{
-			// Deselect button
+			// Deselect toggle switch
 			if (oldToggleGroup.getSelectedToggle() == this)
 				setSelected(false);
 
-			// Remove button from toggle group
+			// Remove toggle switch from toggle group
 			oldToggleGroup.getToggles().remove(this);
 		}
 
@@ -665,8 +669,8 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Toggles the <i>selected</i> state of this button (ie, if the button is selected, it will be deselected, and vice
-	 * versa).
+	 * Toggles the <i>selected</i> state of this toggle switch (ie, if the switch is selected, it will be deselected,
+	 * and vice versa).
 	 *
 	 * @see #isSelected()
 	 * @see #setSelected(boolean)
@@ -681,8 +685,8 @@ public class SlideButton
 	//------------------------------------------------------------------
 
 	/**
-	 * Updates the view of this button.  A subclass that provides its own skin for this button may override this method
-	 * to redraw the skin in response to changes to the button's state.
+	 * Updates the view of this toggle switch.  A subclass that provides its own skin for this switch may override this
+	 * method to redraw the skin in response to changes to the state of the switch.
 	 */
 
 	protected void update()
@@ -697,11 +701,11 @@ public class SlideButton
 ////////////////////////////////////////////////////////////////////////
 
 
-	// CLASS: BUTTON VIEW
+	// CLASS: VIEW OF TOGGLE SWITCH
 
 
 	/**
-	 * This class implements a node that provides the default skin for the enclosing button.
+	 * This class implements a node that provides the default skin for the enclosing toggle switch.
 	 */
 
 	private class View
@@ -712,25 +716,25 @@ public class SlideButton
 	//  Constants
 	////////////////////////////////////////////////////////////////////
 
-		/** The radius of the rounded ends of the track of the button. */
+		/** The radius of the rounded ends of the track of the toggle switch. */
 		private static final	double	TRACK_END_RADIUS	= 6.5;
 
 		/** The extent of the track (ie, the distance between the two positions of the slider). */
 		private static final	double	TRACK_EXTENT	= 2.0 * TRACK_END_RADIUS + 2.0;
 
-		/** The radius of the slider of the button. */
+		/** The radius of the slider of the toggle switch. */
 		private static final	double	SLIDER_RADIUS	= 8.5;
 
-		/** The margin around the button to allow for the focus-indicator border. */
+		/** The margin around the toggle switch to allow for the focus-indicator border. */
 		private static final	double	MARGIN	= 2.0;
 
-		/** The width of the button. */
+		/** The width of the toggle switch. */
 		private static final	double	WIDTH	= 2.0 * MARGIN + 2.0 * SLIDER_RADIUS + TRACK_EXTENT;
 
-		/** The height of the button. */
+		/** The height of the toggle switch. */
 		private static final	double	HEIGHT	= 2.0 * MARGIN + 2.0 * SLIDER_RADIUS;
 
-		/** The opacity of the view of a disabled button. */
+		/** The opacity of the view of a disabled toggle switch. */
 		private static final	double	DISABLED_OPACITY	= 0.4;
 
 	////////////////////////////////////////////////////////////////////
@@ -738,7 +742,7 @@ public class SlideButton
 	////////////////////////////////////////////////////////////////////
 
 		/**
-		 * Creates a new instance of a view for the enclosing button.
+		 * Creates a new instance of a view for the enclosing toggle switch.
 		 */
 
 		private View()
@@ -759,28 +763,28 @@ public class SlideButton
 
 		private void update()
 		{
-			// Get button
-			SlideButton button = SlideButton.this;
+			// Get toggle switch
+			ToggleSwitch toggleSwitch = ToggleSwitch.this;
 
 			// Get colours
-			boolean disabled = button.isDisabled();
+			boolean disabled = toggleSwitch.isDisabled();
 			boolean selected = isSelected();
 			Color trackColour = disabled
 									? getColour(ColourKey.TRACK_DISABLED)
 									: selected
 											? trackColourSelected
-											: button.trackColour;
+											: toggleSwitch.trackColour;
 			Color sliderColour = disabled
 									? getColour(ColourKey.SLIDER_DISABLED)
 									: selected
 											? sliderColourSelected
-											: button.sliderColour;
+											: toggleSwitch.sliderColour;
 
 			// Remove all children
 			getChildren().clear();
 
-			// If button has focus, create background and focus-indicator border ...
-			if (button.isFocused())
+			// If toggle switch has focus, create background and focus-indicator border ...
+			if (toggleSwitch.isFocused())
 				getChildren().addAll(ShapeUtils.createFocusBorder(WIDTH, HEIGHT));
 
 			// ... otherwise, create background
@@ -810,7 +814,7 @@ public class SlideButton
 			slider.getStyleClass().add(StyleClass.SLIDER);
 			getChildren().add(slider);
 
-			// If button is disabled, reduce opacity of this view
+			// If toggle switch is disabled, reduce opacity of this view
 			setOpacity(disabled ? DISABLED_OPACITY : 1.0);
 		}
 
