@@ -117,7 +117,7 @@ public class PathnameField
 			location -> Files.isDirectory(location, LinkOption.NOFOLLOW_LINKS);
 
 	/** The pseudo-class that is associated with the <i>invalid</i> state. */
-	private static final	PseudoClass	INVALID_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
+	private static final	PseudoClass	PSEUDO_CLASS_INVALID	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -276,14 +276,14 @@ public class PathnameField
 					Path.of(getPathname());
 
 				// Clear 'invalid' style
-				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
+				pseudoClassStateChanged(PSEUDO_CLASS_INVALID, false);
 				if (StyleManager.INSTANCE.notUsingStyleSheet())
 					setStyle(null);
 			}
 			catch (InvalidPathException e)
 			{
 				// Set 'invalid' style
-				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, true);
+				pseudoClassStateChanged(PSEUDO_CLASS_INVALID, true);
 				if (StyleManager.INSTANCE.notUsingStyleSheet())
 				{
 					StyleUtils.setProperty(this, FxProperty.CONTROL_INNER_BACKGROUND.getName(),

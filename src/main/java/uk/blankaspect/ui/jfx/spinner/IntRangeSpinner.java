@@ -159,10 +159,10 @@ public class IntRangeSpinner
 	}
 
 	/** The pseudo-class that is associated with the <i>empty</i> state. */
-	private static final	PseudoClass	EMPTY_PSEUDO_CLASS		= PseudoClass.getPseudoClass(FxPseudoClass.EMPTY);
+	private static final	PseudoClass	PSEUDO_CLASS_EMPTY		= PseudoClass.getPseudoClass(FxPseudoClass.EMPTY);
 
 	/** The pseudo-class that is associated with the <i>pressed</i> state. */
-	private static final	PseudoClass	PRESSED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(FxPseudoClass.PRESSED);
+	private static final	PseudoClass	PSEUDO_CLASS_PRESSED	= PseudoClass.getPseudoClass(FxPseudoClass.PRESSED);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -411,11 +411,7 @@ public class IntRangeSpinner
 		getStyleClass().add(StyleClass.INT_RANGE_SPINNER);
 
 		// Update text and buttons when value changes
-		value.addListener((observable, oldValue, newValue) ->
-		{
-			if (valueUpdater != null)
-				valueUpdater.invoke(newValue.intValue());
-		});
+		value.addListener(observable -> update());
 	}
 
 	//------------------------------------------------------------------
@@ -471,7 +467,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -524,7 +521,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -577,7 +575,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -630,7 +629,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -685,7 +685,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -740,7 +741,8 @@ public class IntRangeSpinner
 		IntFunction<String>	converter)
 	{
 		return new IntRangeSpinner(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.range(minValue, maxValue, prototypeText, converter)
+						.converter(converter)
+						.range(minValue, maxValue, prototypeText)
 						.value(initialValue);
 	}
 
@@ -881,6 +883,44 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
+	 * Sets the function that returns the string representation of a given value that will be displayed in the text box.
+	 *
+	 * @param converter
+	 *          the function that returns the string representation of a given value .  If it is {@code null}, the
+	 *          default converter, {@link Integer#toString(int)}, will be used.
+	 */
+
+	public void setConverter(
+		IntFunction<String>	converter)
+	{
+		// Update instance variable
+		this.converter = (converter == null) ? Integer::toString : converter;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the function that returns the string representation of a given value that will be displayed in the text box.
+	 *
+	 * @param  converter
+	 *           the function that returns the string representation of a given value.  If it is {@code null}, the
+	 *           default converter, {@link Integer#toString(int)}, will be used.
+	 * @return this spinner.
+	 */
+
+	public IntRangeSpinner converter(
+		IntFunction<String>	converter)
+	{
+		// Set converter
+		setConverter(converter);
+
+		// Return this spinner
+		return this;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Sets the minimum and maximum values of this spinner.  This method recreates the tree of JavaFX nodes of which
 	 * this spinner is the root.  The current converter will be used to create a string representation of a value of the
 	 * spinner, and the widest of those string representations will determine the width of the spinner.
@@ -895,7 +935,7 @@ public class IntRangeSpinner
 		int	minValue,
 		int	maxValue)
 	{
-		setRange(minValue, maxValue, null, null);
+		setRange(minValue, maxValue, null);
 	}
 
 	//------------------------------------------------------------------
@@ -911,18 +951,13 @@ public class IntRangeSpinner
 	 * @param prototypeText
 	 *          the text that will be used to determine the width of the spinner.  If it is {@code null}, the width of
 	 *          the spinner is based on the widest string representation of the values in the range [{@code minValue} ..
-	 *          {@code maxValue}], using the string representations that are returned by {@code converter}.
-	 * @param converter
-	 *          the function that returns the string representation of a given value that will be displayed in the text
-	 *          box.  If it is {@code null}, the current converter will be used, or, if no converter has been set, the
-	 *          default converter, {@link Integer#toString(int)}.
+	 *          {@code maxValue}], using the string representations that are returned by {@link #converter}.
 	 */
 
 	public void setRange(
-		int					minValue,
-		int					maxValue,
-		String				prototypeText,
-		IntFunction<String>	converter)
+		int		minValue,
+		int		maxValue,
+		String	prototypeText)
 	{
 		// Validate arguments
 		if (minValue > maxValue)
@@ -931,8 +966,6 @@ public class IntRangeSpinner
 		// Update instance variables
 		this.minValue = minValue;
 		this.maxValue = maxValue;
-		if (converter != null)
-			this.converter = converter;
 		maxTextWidth = 0.0;
 
 		// Determine width of text
@@ -941,7 +974,7 @@ public class IntRangeSpinner
 		{
 			for (int value = maxValue; value >= minValue; value--)
 			{
-				double width = TextUtils.textWidth(this.converter.apply(value));
+				double width = TextUtils.textWidth(converter.apply(value));
 				if (textWidth < width)
 					textWidth = width;
 			}
@@ -1027,7 +1060,7 @@ public class IntRangeSpinner
 		listView.getStyleClass().addAll(StyleClass.LIST_VIEW, ListViewStyle.StyleClass.LIST_VIEW);
 
 		// Set items on list view
-		List<String> items = IntStream.range(minValue, maxValue + 1).mapToObj(this.converter).toList();
+		List<String> items = IntStream.range(minValue, maxValue + 1).mapToObj(converter).toList();
 		listView.setItems(FXCollections.observableList(items));
 
 		// Create procedure to update value of spinner
@@ -1118,7 +1151,7 @@ public class IntRangeSpinner
 				updateTimer.stop();
 
 				// Highlight background of button
-				background.pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, true);
+				background.pseudoClassStateChanged(PSEUDO_CLASS_PRESSED, true);
 				background.setFill(getColour(ColourKey.BUTTON_BACKGROUND_PRESSED));
 
 				// Start timer to update value
@@ -1132,7 +1165,7 @@ public class IntRangeSpinner
 				updateTimer.stop();
 
 				// Restore normal background of button
-				background.pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
+				background.pseudoClassStateChanged(PSEUDO_CLASS_PRESSED, false);
 				background.setFill(getColour(ColourKey.BUTTON_BACKGROUND));
 			};
 
@@ -1169,6 +1202,9 @@ public class IntRangeSpinner
 					event.consume();
 				}
 			});
+
+			// Handle 'mouse exited' event
+			button.addEventHandler(MouseEvent.MOUSE_EXITED, event -> stopUpdatingValue.invoke());
 
 			// Handle 'key pressed' event
 			button.addEventHandler(KeyEvent.KEY_PRESSED, event ->
@@ -1304,7 +1340,7 @@ public class IntRangeSpinner
 		valueUpdater = value ->
 		{
 			// Update text
-			String text = this.converter.apply(value);
+			String text = converter.apply(value);
 			if ((text != null) && (maxTextWidth > 0.0))
 				text = TextUtils.limitToWidth(textNode.getFont(), text, maxTextWidth);
 			textNode.setText(text);
@@ -1358,7 +1394,7 @@ public class IntRangeSpinner
 		int	minValue,
 		int	maxValue)
 	{
-		return range(minValue, maxValue, null, null);
+		return range(minValue, maxValue, null);
 	}
 
 	//------------------------------------------------------------------
@@ -1374,22 +1410,17 @@ public class IntRangeSpinner
 	 * @param  prototypeText
 	 *           the text that will be used to determine the width of the spinner.  If it is {@code null}, the width of
 	 *           the spinner is based on the widest string representation of the values in the range [{@code minValue}
-	 *           .. {@code maxValue}], using the string representations that are returned by {@code converter}.
-	 * @param  converter
-	 *           the function that returns the string representation of a given value that will be displayed in the text
-	 *           box.  If it is {@code null}, the current converter will be used, or, if no converter has been set, the
-	 *           default converter, {@link Integer#toString(int)}.
+	 *           .. {@code maxValue}], using the string representations that are returned by {@link #converter}.
 	 * @return this spinner.
 	 */
 
 	public IntRangeSpinner range(
-		int					minValue,
-		int					maxValue,
-		String				prototypeText,
-		IntFunction<String>	converter)
+		int		minValue,
+		int		maxValue,
+		String	prototypeText)
 	{
 		// Set range
-		setRange(minValue, maxValue, prototypeText, converter);
+		setRange(minValue, maxValue, prototypeText);
 
 		// Return this spinner
 		return this;
@@ -1457,6 +1488,18 @@ public class IntRangeSpinner
 	//------------------------------------------------------------------
 
 	/**
+	 * Updates the text and buttons of this spinner with the current value.
+	 */
+
+	protected void update()
+	{
+		if (valueUpdater != null)
+			valueUpdater.invoke(value());
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Sets an empty range on this spinner.  The text box of the spinner contains the specified text, and the value
 	 * of the spinner is fixed at zero.  The buttons of the spinner are disabled and rendered with reduced opacity.
 	 * This method is intended to be used only by subclasses.
@@ -1481,7 +1524,7 @@ public class IntRangeSpinner
 			textNode.setText(TextUtils.limitToWidth(textNode.getFont(), text, textWidth));
 		textNode.setFill(getColour(ColourKey.TEXT_BOX_TEXT_EMPTY));
 		textNode.getStyleClass().add(StyleClass.TEXT);
-		textNode.pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, true);
+		textNode.pseudoClassStateChanged(PSEUDO_CLASS_EMPTY, true);
 
 		// Create background of text box
 		double textBoxWidth = Math.ceil(textWidth + 2.0 * TEXT_BOX_H_INSET);
@@ -1489,7 +1532,7 @@ public class IntRangeSpinner
 		textBoxBackground = new Rectangle(textBoxWidth, textBoxHeight, getColour(ColourKey.TEXT_BOX_BACKGROUND_EMPTY));
 		textBoxBackground.setStrokeWidth(0.0);
 		textBoxBackground.getStyleClass().add(StyleClass.TEXT_BOX);
-		textBoxBackground.pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, true);
+		textBoxBackground.pseudoClassStateChanged(PSEUDO_CLASS_EMPTY, true);
 
 		// Create text box
 		textBox = new Group(textBoxBackground, textNode);

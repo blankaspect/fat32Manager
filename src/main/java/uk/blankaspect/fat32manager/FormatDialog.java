@@ -353,8 +353,7 @@ public class FormatDialog
 
 			// Update spinner
 			String prototypeText = "0".repeat(NumberUtils.getNumDecDigitsInt(Fat32Volume.MAX_SECTORS_PER_CLUSTER) + 1);
-			sectorsPerClusterSpinner.setItems(FXCollections.observableList(validSectorsPerCluster), prototypeText,
-											  null);
+			sectorsPerClusterSpinner.setItems(FXCollections.observableList(validSectorsPerCluster), prototypeText);
 			sectorsPerClusterSpinner.setItem(validSectorsPerCluster.contains(sectorsPerCluster)
 															? sectorsPerCluster
 															: DEFAULT_SECTORS_PER_CLUSTER);

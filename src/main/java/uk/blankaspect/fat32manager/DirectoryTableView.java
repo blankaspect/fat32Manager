@@ -220,10 +220,10 @@ public class DirectoryTableView
 	private static final	String	INVALID_CLUSTERS_STR	= "Invalid clusters";
 
 	/** The pseudo-class that is associated with the <i>deleted</i> state. */
-	private static final	PseudoClass	DELETED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.DELETED);
+	private static final	PseudoClass	PSEUDO_CLASS_DELETED	= PseudoClass.getPseudoClass(PseudoClassKey.DELETED);
 
 	/** The pseudo-class that is associated with the <i>preview</i> state. */
-	private static final	PseudoClass	PREVIEW_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.PREVIEW);
+	private static final	PseudoClass	PSEUDO_CLASS_PREVIEW	= PseudoClass.getPseudoClass(PseudoClassKey.PREVIEW);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -719,8 +719,8 @@ public class DirectoryTableView
 					header.setBackground(SceneUtils.createColouredBackground(backgroundColour));
 					header.setBorder(SceneUtils.createSolidBorder(borderColour, Side.RIGHT, Side.BOTTOM));
 				}
-				header.pseudoClassStateChanged(DELETED_PSEUDO_CLASS, deleted);
-				header.pseudoClassStateChanged(PREVIEW_PSEUDO_CLASS, preview);
+				header.pseudoClassStateChanged(PSEUDO_CLASS_DELETED, deleted);
+				header.pseudoClassStateChanged(PSEUDO_CLASS_PREVIEW, preview);
 			}
 		}
 
@@ -732,8 +732,8 @@ public class DirectoryTableView
 				filler.setBackground(SceneUtils.createColouredBackground(backgroundColour));
 				filler.setBorder(SceneUtils.createSolidBorder(borderColour, Side.BOTTOM));
 			}
-			filler.pseudoClassStateChanged(DELETED_PSEUDO_CLASS, deleted);
-			filler.pseudoClassStateChanged(PREVIEW_PSEUDO_CLASS, preview);
+			filler.pseudoClassStateChanged(PSEUDO_CLASS_DELETED, deleted);
+			filler.pseudoClassStateChanged(PSEUDO_CLASS_PREVIEW, preview);
 		}
 
 		// Set alignment and padding of header labels

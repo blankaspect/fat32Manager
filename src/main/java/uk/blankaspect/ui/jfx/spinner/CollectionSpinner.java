@@ -82,7 +82,7 @@ public class CollectionSpinner<T>
 	private	Function<T, Integer>	indexer;
 
 	/** The function that creates a string representation of a given item. */
-	private	Function<T, String>		converter;
+	private	Function<T, String>		itemConverter;
 
 	/** The text that is displayed in a spinner whose collection of items is empty. */
 	private	String					emptyItemsText;
@@ -128,8 +128,16 @@ public class CollectionSpinner<T>
 		items = new ArrayList<>();
 		item = new SimpleObjectProperty<>();
 		indexer = items::indexOf;
-		converter = Object::toString;
+		itemConverter = T::toString;
 		emptyItemsText = DEFAULT_EMPTY_ITEMS_TEXT;
+
+		// Set value-to-text converter
+		setConverter(index ->
+				items.isEmpty()
+						? emptyItemsText
+						: ((index >= 0) && (index < items.size()))
+								? itemConverter.apply(items.get(index))
+								: "");
 
 		// Update item when value changes
 		valueProperty().addListener((observable, oldValue, value) ->
@@ -191,7 +199,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -245,7 +254,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -297,7 +307,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -350,7 +361,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -402,7 +414,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -456,7 +469,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -508,7 +522,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -562,7 +577,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -616,7 +632,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -671,7 +688,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT_RIGHT, Orientation.HORIZONTAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -725,7 +743,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<T> spinner =
 				new CollectionSpinner<T>(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(items, prototypeText, converter);
+						.itemConverter(converter)
+						.items(items, prototypeText);
 		return (initialItem == null) ? spinner : spinner.item(initialItem);
 	}
 
@@ -780,7 +799,8 @@ public class CollectionSpinner<T>
 	{
 		CollectionSpinner<E> spinner =
 				new CollectionSpinner<E>(ButtonPos.LEFT_RIGHT, Orientation.VERTICAL, textAlignment, cyclic)
-						.items(getEnumConstants(cls), prototypeText, converter);
+						.itemConverter(converter)
+						.items(getEnumConstants(cls), prototypeText);
 		return (initialConstant == null) ? spinner : spinner.item(initialConstant);
 	}
 
@@ -840,7 +860,10 @@ public class CollectionSpinner<T>
 
 		// If value hasn't changed, set item
 		if (value() == oldValue)
+		{
 			this.item.set(item);
+			update();
+		}
 	}
 
 	//------------------------------------------------------------------
@@ -890,7 +913,7 @@ public class CollectionSpinner<T>
 	public void setItems(
 		Collection<? extends T>	items)
 	{
-		setItems(items, null, T::toString);
+		setItems(items, null);
 	}
 
 	//------------------------------------------------------------------
@@ -903,17 +926,12 @@ public class CollectionSpinner<T>
 	 * @param prototypeText
 	 *          the text that will be used to determine the width of the spinner.  If it is {@code null}, the width of
 	 *          the spinner is based on the widest string representation of {@code items}, using the string
-	 *          representations that are returned by {@code converter}.
-	 * @param converter
-	 *          the function that returns the string representation of a given item that will be displayed in the text
-	 *          box.  If it is {@code null}, the current converter will be used, or, if no converter has been set, the
-	 *          default converter, {@link Object#toString(int)}.
+	 *          representations that are returned by {@link #itemConverter}.
 	 */
 
 	public void setItems(
 		Collection<? extends T>	items,
-		String					prototypeText,
-		Function<T, String>		converter)
+		String					prototypeText)
 	{
 		// Validate argument
 		if (items == null)
@@ -922,8 +940,6 @@ public class CollectionSpinner<T>
 		// Update instance variables
 		this.items.clear();
 		this.items.addAll(items);
-		if (converter != null)
-			this.converter = converter;
 
 		// Set index range
 		if (items.isEmpty())
@@ -937,7 +953,7 @@ public class CollectionSpinner<T>
 		else
 		{
 			// Set range
-			setRange(0, items.size() - 1, prototypeText, index -> this.converter.apply(this.items.get(index)));
+			setRange(0, items.size() - 1, prototypeText);
 
 			// Set item
 			item.set(this.items.get(value()));
@@ -970,7 +986,7 @@ public class CollectionSpinner<T>
 	public CollectionSpinner<T> items(
 		Collection<? extends T>	items)
 	{
-		return items(items, null, T::toString);
+		return items(items, null);
 	}
 
 	//------------------------------------------------------------------
@@ -983,20 +999,16 @@ public class CollectionSpinner<T>
 	 * @param  prototypeText
 	 *           the text that will be used to determine the width of the spinner.  If it is {@code null}, the width of
 	 *           the spinner is based on the widest string representation of {@code items}, using the string
-	 *           representations that are returned by {@code converter}.
-	 * @param  converter
-	 *           the function that returns the string representation of a given item that will be displayed in the text
-	 *           box.  If it is {@code null}, the default converter, {@link Object#toString()}, will be used.
+	 *           representations that are returned by {@link #itemConverter}.
 	 * @return this spinner.
 	 */
 
 	public CollectionSpinner<T> items(
 		Collection<? extends T>	items,
-		String					prototypeText,
-		Function<T, String>		converter)
+		String					prototypeText)
 	{
 		// Set items
-		setItems(items, prototypeText, converter);
+		setItems(items, prototypeText);
 
 		// Return this spinner
 		return this;
@@ -1013,6 +1025,44 @@ public class CollectionSpinner<T>
 	public boolean isEmpty()
 	{
 		return items.isEmpty();
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the function that returns the string representation of a given item that will be displayed in the text box.
+	 *
+	 * @param converter
+	 *          the function that returns the string representation of a given item.  If it is {@code null}, the default
+	 *          converter, {@link Object#toString()}, will be used.
+	 */
+
+	public void setItemConverter(
+		Function<T, String>	converter)
+	{
+		// Update instance variable
+		itemConverter = (converter == null) ? T::toString : converter;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Sets the function that returns the string representation of a given item that will be displayed in the text box.
+	 *
+	 * @param  converter
+	 *           the function that returns the string representation of a given item.  If it is {@code null}, the
+	 *           default converter, {@link Object#toString()}, will be used.
+	 * @return this spinner.
+	 */
+
+	public CollectionSpinner<T> itemConverter(
+		Function<T, String>	converter)
+	{
+		// Set converter
+		setItemConverter(converter);
+
+		// Return this spinner
+		return this;
 	}
 
 	//------------------------------------------------------------------

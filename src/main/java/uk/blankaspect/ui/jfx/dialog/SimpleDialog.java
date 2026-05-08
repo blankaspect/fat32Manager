@@ -196,9 +196,11 @@ public abstract class SimpleDialog
 	/** Keys of system properties. */
 	private interface SystemPropertyKey
 	{
-		String	WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.simpleDialog.windowDelay.location";
-		String	WINDOW_DELAY_OPACITY	= "blankaspect.ui.jfx.simpleDialog.windowDelay.opacity";
-		String	WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.simpleDialog.windowDelay.size";
+		String	WINDOW_DELAY_PREFIX	= "blankaspect.ui.jfx.simpleDialog.windowDelay.";
+
+		String	WINDOW_DELAY_LOCATION	= WINDOW_DELAY_PREFIX + "location";
+		String	WINDOW_DELAY_OPACITY	= WINDOW_DELAY_PREFIX + "opacity";
+		String	WINDOW_DELAY_SIZE		= WINDOW_DELAY_PREFIX + "size";
 	}
 
 ////////////////////////////////////////////////////////////////////////

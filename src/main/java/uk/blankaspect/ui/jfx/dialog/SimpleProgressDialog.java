@@ -32,6 +32,9 @@ import javafx.scene.Scene;
 
 import javafx.scene.control.Button;
 
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -135,9 +138,11 @@ public class SimpleProgressDialog
 	/** Keys of system properties. */
 	private interface SystemPropertyKey
 	{
-		String	WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.location";
-		String	WINDOW_DELAY_OPACITY	= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.opacity";
-		String	WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.size";
+		String	WINDOW_DELAY_PREFIX	= "blankaspect.ui.jfx.simpleProgressDialog.windowDelay.";
+
+		String	WINDOW_DELAY_LOCATION	= WINDOW_DELAY_PREFIX + "location";
+		String	WINDOW_DELAY_OPACITY	= WINDOW_DELAY_PREFIX + "opacity";
+		String	WINDOW_DELAY_SIZE		= WINDOW_DELAY_PREFIX + "size";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -291,6 +296,13 @@ public class SimpleProgressDialog
 		initModality(Modality.APPLICATION_MODAL);
 		initOwner(owner);
 
+		// Make window invisible until it is displayed
+		setOpacity(0.0);
+
+		// Set icons to those of owner
+		if (owner instanceof Stage stage)
+			getIcons().addAll(stage.getIcons());
+
 		// Bind title to title of task
 		titleProperty().bind(task.titleProperty());
 
@@ -439,6 +451,22 @@ public class SimpleProgressDialog
 			});
 		});
 
+		// When dialog is closed, disable progress bar to stop indeterminate-progress timer
+		addEventHandler(WindowEvent.WINDOW_HIDING, event -> progressBar.setDisable(true));
+
+		// Fire 'request to close window' event when Escape is pressed
+		addEventHandler(KeyEvent.KEY_PRESSED, event ->
+		{
+			if (event.getCode() == KeyCode.ESCAPE)
+			{
+				// Fire 'request to close window' event
+				fireEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSE_REQUEST));
+
+				// Consume event
+				event.consume();
+			}
+		});
+
 		// Show and hide dialog when state of task changes
 		task.stateProperty().addListener((observable, oldState, state) ->
 		{
@@ -470,9 +498,6 @@ public class SimpleProgressDialog
 					break;
 			}
 		});
-
-		// When dialog is closed, disable progress bar to stop indeterminate-progress timer
-		addEventHandler(WindowEvent.WINDOW_HIDING, event -> progressBar.setDisable(true));
 	}
 
 	//------------------------------------------------------------------

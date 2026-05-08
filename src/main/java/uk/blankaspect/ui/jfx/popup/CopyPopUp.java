@@ -51,7 +51,7 @@ import uk.blankaspect.ui.jfx.style.AbstractTheme;
  * The class implements a pop-up window that contains a label with a 'copy' icon and specified or default text.  A
  * specified action is performed when the primary mouse button is clicked on the label.
  * <p>
- * Static methods provide pop-ups for putting text, an image, a single file-system location or a collection of
+ * Class methods provide pop-ups for putting text, an image, a single file-system location or a collection of
  * file-system locations on the system clipboard.
  * </p>
  */

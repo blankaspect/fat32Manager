@@ -819,14 +819,33 @@ public class SceneUtils
 	//------------------------------------------------------------------
 
 	/**
+	 * Creates and returns a solid border of the specified colour and with the specified width on each side.
+	 *
+	 * @param  colour
+	 *           the colour of the border.
+	 * @param  width
+	 *           the width of each side of the border.
+	 * @return a solid {@linkplain Border border} whose colour is {@code colour} and whose width on each side is {@code
+	 *         width}.
+	 */
+
+	public static Border createSolidBorder(
+		Color	colour,
+		double	width)
+	{
+		return createSolidBorder(colour, new BorderWidths(width, width, width, width));
+	}
+
+	//------------------------------------------------------------------
+
+	/**
 	 * Creates and returns a solid border of the specified colour and with the specified set of widths.
 	 *
 	 * @param  colour
 	 *           the colour of the border.
 	 * @param  widths
 	 *           the widths of the components of the border.
-	 * @return a solid one-pixel-wide {@linkplain Border border} whose colour is {@code colour} and whose widths are
-	 *         {@code widths}.
+	 * @return a solid {@linkplain Border border} whose colour is {@code colour} and whose widths are {@code widths}.
 	 */
 
 	public static Border createSolidBorder(

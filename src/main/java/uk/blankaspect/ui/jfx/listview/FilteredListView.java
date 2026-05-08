@@ -121,7 +121,7 @@ public class FilteredListView<T>
 			SubstringFilterPane.FilterMode.WILDCARD_START;
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+	private static final	PseudoClass	PSEUDO_CLASS_HIGHLIGHTED	=
 			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** CSS colour properties. */
@@ -722,7 +722,7 @@ public class FilteredListView<T>
 				textNode.setFill(highlighted ? highlightedTextColour : textColour);
 			textNode.setFont(highlighted ? FontUtils.boldFont() : Font.getDefault());
 			textNode.getStyleClass().add(StyleClass.TEXT_SPAN);
-			textNode.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, highlighted);
+			textNode.pseudoClassStateChanged(PSEUDO_CLASS_HIGHLIGHTED, highlighted);
 		};
 		List<Text2> textNodes = SubstringFilterUtils.createTextNodes(filterMode.get(), filter, text,
 																	 FilteredListView::normalise, decorator);

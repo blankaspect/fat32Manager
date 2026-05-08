@@ -125,16 +125,16 @@ public class DaySelectionPane
 	private static final	String	PROTOTYPE_DAY_STR	= "0".repeat(MIN_DAY_NAME_LENGTH);
 
 	/** The pseudo-class that is associated with the <i>even</i> state. */
-	private static final	PseudoClass	EVEN_PSEUDO_CLASS		= PseudoClass.getPseudoClass(FxPseudoClass.EVEN);
+	private static final	PseudoClass	PSEUDO_CLASS_EVEN		= PseudoClass.getPseudoClass(FxPseudoClass.EVEN);
 
 	/** The pseudo-class that is associated with the <i>invalid</i> state. */
-	private static final	PseudoClass	INVALID_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
+	private static final	PseudoClass	PSEUDO_CLASS_INVALID	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
 
 	/** The pseudo-class that is associated with the <i>odd</i> state. */
-	private static final	PseudoClass	ODD_PSEUDO_CLASS		= PseudoClass.getPseudoClass(FxPseudoClass.ODD);
+	private static final	PseudoClass	PSEUDO_CLASS_ODD		= PseudoClass.getPseudoClass(FxPseudoClass.ODD);
 
 	/** The pseudo-class that is associated with the <i>selected</i> state. */
-	private static final	PseudoClass	SELECTED_PSEUDO_CLASS	= PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
+	private static final	PseudoClass	PSEUDO_CLASS_SELECTED	= PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -536,10 +536,10 @@ public class DaySelectionPane
 																	? getColour(ColourKey.CELL_BACKGROUND_EVEN)
 																	: getColour(ColourKey.CELL_BACKGROUND_ODD)));
 				label.setBorder(SceneUtils.createSolidBorder(getColour(ColourKey.CELL_BORDER)));
-				label.pseudoClassStateChanged(EVEN_PSEUDO_CLASS, evenColumn);
-				label.pseudoClassStateChanged(ODD_PSEUDO_CLASS, !evenColumn);
-				label.pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
-				label.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
+				label.pseudoClassStateChanged(PSEUDO_CLASS_EVEN, evenColumn);
+				label.pseudoClassStateChanged(PSEUDO_CLASS_ODD, !evenColumn);
+				label.pseudoClassStateChanged(PSEUDO_CLASS_INVALID, false);
+				label.pseudoClassStateChanged(PSEUDO_CLASS_SELECTED, false);
 				label.getStyleClass().add(StyleClass.CELL_LABEL);
 
 				// Select day when mouse is pressed on cell
@@ -922,7 +922,7 @@ public class DaySelectionPane
 													: day - numDays;
 					label.setText(Integer.toString(dayIndex + 1));
 					boolean dayInMonth = ((day >= 0) && (day < numDays));
-					label.pseudoClassStateChanged(INVALID_PSEUDO_CLASS, !dayInMonth);
+					label.pseudoClassStateChanged(PSEUDO_CLASS_INVALID, !dayInMonth);
 					label.setTextFill(dayInMonth ? getColour(ColourKey.CELL_TEXT)
 												 : getColour(ColourKey.CELL_TEXT_INVALID));
 					label.setUserData(dayInMonth ? day : null);
@@ -959,9 +959,9 @@ public class DaySelectionPane
 		{
 			boolean evenColumn = (getColumnForDay(selectedDay) % 2 == 0);
 			Label label = (Label)getChildren().get(NUM_COLUMNS + dayOffset + selectedDay);
-			label.pseudoClassStateChanged(EVEN_PSEUDO_CLASS, evenColumn);
-			label.pseudoClassStateChanged(ODD_PSEUDO_CLASS, !evenColumn);
-			label.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_EVEN, evenColumn);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_ODD, !evenColumn);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_SELECTED, false);
 			label.setBackground(SceneUtils.createColouredBackground(evenColumn
 																		? getColour(ColourKey.CELL_BACKGROUND_EVEN)
 																		: getColour(ColourKey.CELL_BACKGROUND_ODD)));
@@ -976,9 +976,9 @@ public class DaySelectionPane
 		{
 			int index = NUM_COLUMNS + dayOffset + day;
 			Label label = (Label)getChildren().get(index);
-			label.pseudoClassStateChanged(EVEN_PSEUDO_CLASS, false);
-			label.pseudoClassStateChanged(ODD_PSEUDO_CLASS, false);
-			label.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, true);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_EVEN, false);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_ODD, false);
+			label.pseudoClassStateChanged(PSEUDO_CLASS_SELECTED, true);
 			label.setBackground(SceneUtils.createColouredBackground(isFocused()
 																? getColour(ColourKey.CELL_BACKGROUND_SELECTED_FOCUSED)
 																: getColour(ColourKey.CELL_BACKGROUND_SELECTED)));

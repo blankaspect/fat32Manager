@@ -2,8 +2,8 @@
 
 Gradle build script : FAT32Manager
 
-The 'compileJava' task expects the following environment variable to be
-defined:
+The 'compileJava', 'runMain' and 'runJar' tasks expect the following
+environment variable to be defined:
   JAVAFX_HOME
     the location of the JavaFX SDK
 
@@ -50,7 +50,7 @@ val jarDir      = _path(buildDir, "bin")
 val jarFilename = "fat32Manager.jar"
 
 val jfxLibDir   = _path(System.getenv("JAVAFX_HOME"), "lib")
-val jfxLibs     = listOf(
+val jfxModules  = listOf(
     "javafx.base",
     "javafx.controls",
     "javafx.graphics",
@@ -63,7 +63,7 @@ val jfxLauncher = _path(System.getenv("JRE_DIR"), "bin", if (File.separatorChar.
 // Java-launcher arguments: add JavaFX modules to module path
 val jfxArgs = listOf(
     "--module-path", jfxLibDir,
-    "--add-modules", jfxLibs.joinToString(",")
+    "--add-modules", jfxModules.joinToString(",")
 )
 
 // Java-launcher arguments: enable native access
@@ -76,7 +76,7 @@ val vmArgs = listOf(
 // Dependencies
 
 dependencies {
-    jfxLibs.forEach { compileOnly(files(_path(jfxLibDir, it + ".jar"))) }
+    jfxModules.forEach { compileOnly(files(_path(jfxLibDir, it + ".jar"))) }
 }
 
 //----------------------------------------------------------------------

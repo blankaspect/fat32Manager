@@ -128,7 +128,7 @@ import uk.blankaspect.ui.jfx.button.Buttons;
 import uk.blankaspect.ui.jfx.button.ButtonUtils;
 import uk.blankaspect.ui.jfx.button.GraphicButton;
 import uk.blankaspect.ui.jfx.button.ImageDataButton;
-import uk.blankaspect.ui.jfx.button.SlideButton;
+import uk.blankaspect.ui.jfx.button.ToggleSwitch;
 
 import uk.blankaspect.ui.jfx.container.PaneStyle;
 import uk.blankaspect.ui.jfx.container.PathnamePane;
@@ -878,23 +878,23 @@ public class SectorClusterViewDialog
 		// Create navigation pane
 		StackPane navigationPane = new StackPane(sectorNavigationPane, clusterNavigationPane);
 
-		// Create slide-button pane
-		GridPane slideButtonPane = new GridPane();
-		slideButtonPane.setHgap(5.0);
-		slideButtonPane.setVgap(CONTROL_V_GAP);
-		slideButtonPane.setAlignment(Pos.CENTER);
+		// Create toggle-switch pane
+		GridPane toggleSwitchPane = new GridPane();
+		toggleSwitchPane.setHgap(5.0);
+		toggleSwitchPane.setVgap(CONTROL_V_GAP);
+		toggleSwitchPane.setAlignment(Pos.CENTER);
 
 		// Initialise column constraints
 		ColumnConstraints column = new ColumnConstraints();
 		column.setHalignment(HPos.RIGHT);
 		column.setMinWidth(Region.USE_PREF_SIZE);
 		column.setFillWidth(false);
-		slideButtonPane.getColumnConstraints().add(column);
+		toggleSwitchPane.getColumnConstraints().add(column);
 
 		column = new ColumnConstraints();
 		column.setHalignment(HPos.LEFT);
 		column.setFillWidth(false);
-		slideButtonPane.getColumnConstraints().add(column);
+		toggleSwitchPane.getColumnConstraints().add(column);
 
 		// Initialise row index
 		row = 0;
@@ -903,12 +903,12 @@ public class SectorClusterViewDialog
 		Label chainLabel = new Label(CHAIN_STR);
 		chainLabel.setDisable(indexFinder == null);
 
-		// Create 'chain' button
-		SlideButton chainButton = new SlideButton();
-		chainButton.setPadding(BUTTON_PADDING);
-		chainButton.setSelected(chainMode);
-		chainButton.setDisable(indexFinder == null);
-		slideButtonPane.addRow(row++, chainLabel, chainButton);
+		// Create 'chain' toggle switch
+		ToggleSwitch chainToggleSwitch = new ToggleSwitch();
+		chainToggleSwitch.setPadding(BUTTON_PADDING);
+		chainToggleSwitch.setSelected(chainMode);
+		chainToggleSwitch.setDisable(indexFinder == null);
+		toggleSwitchPane.addRow(row++, chainLabel, chainToggleSwitch);
 
 		// Create label: save sector/cluster
 		Label saveSectorClusterLabel = new Label();
@@ -918,10 +918,10 @@ public class SectorClusterViewDialog
 												.collect(Collectors.toMap(unit -> unit,
 																		  unit -> SAVE_STR + " " + unit.lcText)));
 
-		// Create 'save' button
-		SlideButton saveButton = new SlideButton();
-		saveButton.setSelected(!state.savePaneHidden);
-		slideButtonPane.addRow(row++, saveSectorClusterLabel, saveButton);
+		// Create 'save' toggle switch
+		ToggleSwitch saveToggleSwitch = new ToggleSwitch();
+		saveToggleSwitch.setSelected(!state.savePaneHidden);
+		toggleSwitchPane.addRow(row++, saveSectorClusterLabel, saveToggleSwitch);
 
 		// Create function to return tooltip text of data-unit button
 		IFunction0<String> dataUnitButtonTooltipText = () ->
@@ -1017,9 +1017,9 @@ public class SectorClusterViewDialog
 		};
 
 		// Toggle chain mode when 'chain' button is fired
-		if (chainButton != null)
+		if (chainToggleSwitch != null)
 		{
-			chainButton.setOnAction(event ->
+			chainToggleSwitch.setOnAction(event ->
 			{
 				// Toggle chain mode
 				chainMode = !chainMode;
@@ -1170,7 +1170,7 @@ public class SectorClusterViewDialog
 		offsetPane.setAlignment(Pos.CENTER_LEFT);
 
 		// Create control pane
-		HBox controlPane = new HBox(OUTER_CONTROL_PANE_GAP, slideButtonPane, centralControlPane, offsetPane);
+		HBox controlPane = new HBox(OUTER_CONTROL_PANE_GAP, toggleSwitchPane, centralControlPane, offsetPane);
 		controlPane.setAlignment(Pos.CENTER);
 		controlPane.setPadding(OUTER_CONTROL_PANE_PADDING);
 
@@ -1183,7 +1183,7 @@ public class SectorClusterViewDialog
 		contentPane.getStyleClass().add(StyleClass.CONTENT_PANE);
 
 		// Show or hide 'save' pane when 'selected' state of 'save' button changes
-		saveButton.selectedProperty().addListener((observable, oldSelected, selected) ->
+		saveToggleSwitch.selectedProperty().addListener((observable, oldSelected, selected) ->
 		{
 			// Set preferred size of data area to its current size
 			dataArea.setPrefSize(dataArea.getWidth(), dataArea.getHeight());
@@ -1233,7 +1233,7 @@ public class SectorClusterViewDialog
 		setOnHiding(event ->
 		{
 			// Update state
-			state.savePaneHidden = !saveButton.isSelected();
+			state.savePaneHidden = !saveToggleSwitch.isSelected();
 			state.dataAreaSize = new Dimension2D(dataArea.getWidth(), dataArea.getHeight());
 			saveSectorClusterPane.updateState();
 

@@ -148,9 +148,11 @@ public class LocationChooser
 	/** Keys of system properties. */
 	private interface SystemPropertyKey
 	{
-		String	DIALOG_WINDOW_DELAY_LOCATION	= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.location";
-		String	DIALOG_WINDOW_DELAY_OPACITY		= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.opacity";
-		String	DIALOG_WINDOW_DELAY_SIZE		= "blankaspect.ui.jfx.locationChooser.dialogWindowDelay.size";
+		String	WINDOW_DELAY_PREFIX	= "blankaspect.ui.jfx.locationChooser.dialog.windowDelay.";
+
+		String	DIALOG_WINDOW_DELAY_LOCATION	= WINDOW_DELAY_PREFIX + "location";
+		String	DIALOG_WINDOW_DELAY_OPACITY		= WINDOW_DELAY_PREFIX + "opacity";
+		String	DIALOG_WINDOW_DELAY_SIZE		= WINDOW_DELAY_PREFIX + "size";
 	}
 
 ////////////////////////////////////////////////////////////////////////

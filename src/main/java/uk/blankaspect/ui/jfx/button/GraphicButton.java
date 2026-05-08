@@ -155,15 +155,15 @@ public class GraphicButton
 	private static final	Map<State, Color>	DEFAULT_BORDER_COLOURS;
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+	private static final	PseudoClass	PSEUDO_CLASS_HIGHLIGHTED	=
 			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** The pseudo-class that is associated with the <i>inactive</i> state. */
-	private static final	PseudoClass	INACTIVE_PSEUDO_CLASS	=
+	private static final	PseudoClass	PSEUDO_CLASS_INACTIVE	=
 			PseudoClass.getPseudoClass(PseudoClassKey.INACTIVE);
 
 	/** The pseudo-class that is associated with the <i>selected</i> state. */
-	private static final	PseudoClass	SELECTED_PSEUDO_CLASS	=
+	private static final	PseudoClass	PSEUDO_CLASS_SELECTED	=
 			PseudoClass.getPseudoClass(FxPseudoClass.SELECTED);
 
 	/** Miscellaneous strings. */
@@ -420,7 +420,7 @@ public class GraphicButton
 		getStyleClass().add(StyleClass.GRAPHIC_BUTTON);
 
 		// Create procedure to update 'inactive' pseudo-class state
-		IProcedure0 updateInactiveState = () -> pseudoClassStateChanged(INACTIVE_PSEUDO_CLASS, !mouseWithin);
+		IProcedure0 updateInactiveState = () -> pseudoClassStateChanged(PSEUDO_CLASS_INACTIVE, !mouseWithin);
 
 		// Create procedure to update 'hover' pseudo-class state
 		IProcedure1<Boolean> updateHoverState = hovered ->
@@ -448,7 +448,7 @@ public class GraphicButton
 		selected.addListener(observable ->
 		{
 			// Update pseudo-class state
-			pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, isSelected());
+			pseudoClassStateChanged(PSEUDO_CLASS_SELECTED, isSelected());
 
 			// Update button view
 			update();
@@ -1219,7 +1219,7 @@ public class GraphicButton
 			rect.setStrokeType(StrokeType.INSIDE);
 			rect.getStyleClass().add(StyleClass.INNER_VIEW);
 			if (highlightIfSelected)
-				rect.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, true);
+				rect.pseudoClassStateChanged(PSEUDO_CLASS_HIGHLIGHTED, true);
 			getChildren().add(rect);
 
 			// Create focus-indicator border for button and add it to children

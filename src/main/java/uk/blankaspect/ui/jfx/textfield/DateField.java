@@ -94,10 +94,10 @@ public class DateField
 	private static final	String	YEAR_OUT_OF_BOUNDS_STR	= "Year out of bounds: ";
 
 	/** The pseudo-class that is associated with the <i>invalid</i> state. */
-	private static final	PseudoClass	INVALID_PSEUDO_CLASS	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
+	private static final	PseudoClass	PSEUDO_CLASS_INVALID	= PseudoClass.getPseudoClass(PseudoClassKey.INVALID);
 
 	/** The pseudo-class that is associated with the <i>valid</i> state. */
-	private static final	PseudoClass	VALID_PSEUDO_CLASS		= PseudoClass.getPseudoClass(PseudoClassKey.VALID);
+	private static final	PseudoClass	PSEUDO_CLASS_VALID		= PseudoClass.getPseudoClass(PseudoClassKey.VALID);
 
 	/** CSS colour properties. */
 	private static final	List<ColourProperty>	COLOUR_PROPERTIES	= List.of
@@ -262,16 +262,16 @@ public class DateField
 			{
 				if (getDate() == null)
 				{
-					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
-					pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
+					pseudoClassStateChanged(PSEUDO_CLASS_INVALID, false);
+					pseudoClassStateChanged(PSEUDO_CLASS_VALID, false);
 
 					if (StyleManager.INSTANCE.notUsingStyleSheet())
 						setStyle(null);
 				}
 				else
 				{
-					pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
-					pseudoClassStateChanged(VALID_PSEUDO_CLASS, true);
+					pseudoClassStateChanged(PSEUDO_CLASS_INVALID, false);
+					pseudoClassStateChanged(PSEUDO_CLASS_VALID, true);
 
 					if (StyleManager.INSTANCE.notUsingStyleSheet())
 						setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_VALID));
@@ -279,8 +279,8 @@ public class DateField
 			}
 			catch (DateTimeException e)
 			{
-				pseudoClassStateChanged(INVALID_PSEUDO_CLASS, true);
-				pseudoClassStateChanged(VALID_PSEUDO_CLASS, false);
+				pseudoClassStateChanged(PSEUDO_CLASS_INVALID, true);
+				pseudoClassStateChanged(PSEUDO_CLASS_VALID, false);
 
 				if (StyleManager.INSTANCE.notUsingStyleSheet())
 					setBackgroundColour.invoke(getColour(ColourKey.BACKGROUND_INVALID));

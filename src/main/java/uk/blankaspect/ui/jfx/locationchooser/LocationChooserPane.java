@@ -340,7 +340,7 @@ public class LocationChooserPane
 	private static final	String	READING_DIRECTORY_STR			= "Reading directory";
 
 	/** The pseudo-class that is associated with the <i>highlighted</i> state. */
-	private static final	PseudoClass	HIGHLIGHTED_PSEUDO_CLASS	=
+	private static final	PseudoClass	PSEUDO_CLASS_HIGHLIGHTED	=
 			PseudoClass.getPseudoClass(PseudoClassKey.HIGHLIGHTED);
 
 	/** CSS colour properties. */
@@ -907,7 +907,7 @@ public class LocationChooserPane
 		treeFocusIndicator.getStyleClass().add(StyleClass.FOCUS_INDICATOR);
 		treeView.focusedProperty().addListener((observable, oldFocused, focused) ->
 		{
-			treeFocusIndicator.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, focused);
+			treeFocusIndicator.pseudoClassStateChanged(PSEUDO_CLASS_HIGHLIGHTED, focused);
 			treeFocusIndicator.setBackground(
 					SceneUtils.createColouredBackground(focused ? getColour(ColourKey.FOCUS_INDICATOR)
 																: Color.TRANSPARENT));
@@ -926,7 +926,7 @@ public class LocationChooserPane
 		tableFocusIndicator.getStyleClass().add(StyleClass.FOCUS_INDICATOR);
 		tableView.focusedProperty().addListener((observable, oldFocused, focused) ->
 		{
-			tableFocusIndicator.pseudoClassStateChanged(HIGHLIGHTED_PSEUDO_CLASS, focused);
+			tableFocusIndicator.pseudoClassStateChanged(PSEUDO_CLASS_HIGHLIGHTED, focused);
 			tableFocusIndicator.setBackground(
 					SceneUtils.createColouredBackground(focused ? getColour(ColourKey.FOCUS_INDICATOR)
 																: Color.TRANSPARENT));
