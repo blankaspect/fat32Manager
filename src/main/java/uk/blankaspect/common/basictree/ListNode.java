@@ -1713,6 +1713,46 @@ public class ListNode
 
 	//------------------------------------------------------------------
 
+	/**
+	 * Creates a new instance of a {@linkplain MapNode map node} with the specified key&ndash;value pairs, adds it to
+	 * the end of the list of elements of this list node and returns it.
+	 *
+	 * @param  pairs
+	 *           the key&ndash;value pairs of the map node that will be created and added to the elements of this list
+	 *           node.
+	 * @return the map node that was created from {@code pairs} and added to the elements of this list node.
+	 */
+
+	public MapNode addMap(
+		MapNode.Pair...	pairs)
+	{
+		MapNode node = new MapNode(pairs);
+		add(node);
+		return node;
+	}
+
+	//------------------------------------------------------------------
+
+	/**
+	 * Creates a new instance of a {@linkplain MapNode map node} with the specified key&ndash;value pairs, adds it to
+	 * the end of the list of elements of this list node and returns it.
+	 *
+	 * @param  pairs
+	 *           the key&ndash;value pairs of the map node that will be created and added to the elements of this list
+	 *           node.
+	 * @return the map node that was created from {@code pairs} and added to the elements of this list node.
+	 */
+
+	public MapNode addMap(
+		Iterable<? extends MapNode.Pair>	pairs)
+	{
+		MapNode node = new MapNode(pairs);
+		add(node);
+		return node;
+	}
+
+	//------------------------------------------------------------------
+
 }
 
 //----------------------------------------------------------------------
