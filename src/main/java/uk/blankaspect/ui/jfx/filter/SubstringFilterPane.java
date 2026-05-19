@@ -24,8 +24,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import javafx.application.Platform;
-
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -297,12 +295,12 @@ public class SubstringFilterPane
 					new GraphicButton(Icons.clear01(getColour(ColourKey.CLEAR_FIELD_BUTTON_DISC),
 													getColour(ColourKey.CLEAR_FIELD_BUTTON_CROSS)),
 									  CLEAR_FIELD_STR);
-			clearFieldButton.disableProperty().bind(textField.textProperty().isEmpty());
 			clearFieldButton.setOnAction(event ->
 			{
+				textField.requestFocus();
 				textField.clear();
-				Platform.runLater(textField::requestFocus);
 			});
+			clearFieldButton.disableProperty().bind(textField.textProperty().isEmpty());
 
 			// Add button to this pane
 			getChildren().add(clearFieldButton);

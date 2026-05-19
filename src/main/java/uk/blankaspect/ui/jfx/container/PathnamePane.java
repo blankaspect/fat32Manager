@@ -22,8 +22,6 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.List;
 
-import javafx.application.Platform;
-
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 
@@ -205,11 +203,8 @@ public class PathnamePane
 			GraphicButton clearButton = new GraphicButton(clearIcon, CLEAR_FIELD_STR);
 			clearButton.setOnAction(event ->
 			{
-				Platform.runLater(() ->
-				{
-					pathnameField.clear();
-					pathnameField.requestFocus();
-				});
+				pathnameField.requestFocus();
+				pathnameField.clear();
 			});
 			clearButton.getStyleClass().add(StyleClass.CLEAR_BUTTON);
 			setMargin(clearButton, new Insets(0.0, 0.0, 0.0, -4.0));
