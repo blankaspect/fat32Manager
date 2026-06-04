@@ -1,8 +1,8 @@
 /*====================================================================*\
 
-EraseUnusedClustersDialog.java
+ErasureFillerValueDialog.java
 
-Class: 'erase unused clusters' dialog.
+Class: erasure filler value dialog.
 
 \*====================================================================*/
 
@@ -45,10 +45,10 @@ import uk.blankaspect.ui.jfx.textfield.FilterFactory;
 //----------------------------------------------------------------------
 
 
-// CLASS: 'ERASE UNUSED CLUSTERS' DIALOG
+// CLASS: ERASURE FILLER VALUE DIALOG
 
 
-public class EraseUnusedClustersDialog
+public class ErasureFillerValueDialog
 	extends SimpleModalDialog<Integer>
 {
 
@@ -56,11 +56,11 @@ public class EraseUnusedClustersDialog
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The spacing between adjacent children of the control pane. */
-	private static final	double	CONTROL_PANE_GAP	= 6.0;
+	/** The horizontal gap between adjacent components in a container. */
+	private static final	double	CONTROL_H_GAP	= 6.0;
 
 	/** The padding around the control pane. */
-	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(2.0, 24.0, 2.0, 24.0);
+	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(4.0, 32.0, 4.0, 32.0);
 
 	/** The number of columns of the <i>filler</i> field. */
 	private static final	int		FILLER_FIELD_NUM_COLUMNS	= 2;
@@ -85,7 +85,7 @@ public class EraseUnusedClustersDialog
 //  Constructors
 ////////////////////////////////////////////////////////////////////////
 
-	private EraseUnusedClustersDialog(
+	private ErasureFillerValueDialog(
 		Window	owner,
 		String	title)
 	{
@@ -98,7 +98,7 @@ public class EraseUnusedClustersDialog
 		fillerField.setTextFormatter(new TextFormatter<>(FilterFactory.hexInteger(FILLER_FIELD_NUM_COLUMNS)));
 
 		// Create control pane
-		HBox controlPane = new HBox(CONTROL_PANE_GAP, Labels.hNoShrink(FILLER_VALUE_STR), fillerField);
+		HBox controlPane = new HBox(CONTROL_H_GAP, Labels.hNoShrink(FILLER_VALUE_STR), fillerField);
 		controlPane.setAlignment(Pos.CENTER);
 		controlPane.setPadding(CONTROL_PANE_PADDING);
 
@@ -113,7 +113,7 @@ public class EraseUnusedClustersDialog
 			result = Integer.parseInt(fillerField.getText(), 16);
 			hide();
 		});
-		addButton(eraseButton, HPos.LEFT);
+		addButton(eraseButton, HPos.RIGHT);
 
 		// Create procedure to disable 'erase' button if content of 'filler' field is invalid
 		IProcedure0 updateEraseButton = () ->
@@ -155,7 +155,7 @@ public class EraseUnusedClustersDialog
 		Window	owner,
 		String	title)
 	{
-		return new EraseUnusedClustersDialog(owner, title).showDialog();
+		return new ErasureFillerValueDialog(owner, title).showDialog();
 	}
 
 	//------------------------------------------------------------------
