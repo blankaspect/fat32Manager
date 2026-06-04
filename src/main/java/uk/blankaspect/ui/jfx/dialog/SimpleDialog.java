@@ -132,7 +132,7 @@ public abstract class SimpleDialog
 	/** The default padding around the content pane. */
 	private static final	Insets	DEFAULT_CONTENT_PANE_PADDING	= new Insets(6.0, 8.0, 6.0, 8.0);
 
-	/** The default gap between buttons. */
+	/** The default gap between adjacent buttons. */
 	private static final	double	DEFAULT_BUTTON_GAP	= 8.0;
 
 	/** The default padding around a button. */
