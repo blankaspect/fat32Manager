@@ -235,9 +235,9 @@ public class Fat32ManagerApp
 	private static final	String	VIEW_CLUSTERS_STR			= "View clusters";
 	private static final	String	VALIDATE_CLUSTER_CHAINS_STR	= "Validate cluster chains";
 	private static final	String	INVALID_CLUSTERS_STR		= "Invalid clusters";
-	private static final	String	CLUSTER_CHAINS_VALID_STR	= "All the cluster chains were valid.";
-	private static final	String	UNEXPECTED_NUM_CLUSTERS_STR	= "The total length of the cluster chains was %d.\n"
-																	+ "The expected value was %d.";
+	private static final	String	CLUSTER_CHAINS_VALID_STR	= "All cluster chains were valid.";
+	private static final	String	UNEXPECTED_NUM_CLUSTERS_STR	=
+			"The total length of the cluster chains was %d.\nThe expected value was %d.";
 	private static final	String	ERASE_UNUSED_CLUSTERS_STR	= "Erase unused clusters";
 	private static final	String	UNUSED_CLUSTERS_ERASED_STR	= "All unused clusters were successfully erased.";
 	private static final	String	FORMAT_STR					= "Format";
@@ -259,8 +259,8 @@ public class Fat32ManagerApp
 	private static final	String	PREFERENCES_STR				= "Preferences";
 	private static final	String	DIRECTORY_STR				= "Directory";
 	private static final	String	SORT_BY_NAME_STR			= "Sort entries by name";
-	private static final	String	CONFIRM_SORT_STR			= "The sorting operation may modify the volume.\n"
-																	+ "Do you want to proceed?";
+	private static final	String	CONFIRM_SORT_STR			=
+			"The sorting operation may modify the volume.\nDo you want to proceed?";
 	private static final	String	SORT_STR					= "Sort";
 	private static final	String	VIEW_SECTOR_STR				= "View sector";
 	private static final	String	VIEW_CLUSTER_STR			= "View cluster";
@@ -1876,58 +1876,56 @@ public class Fat32ManagerApp
 
 	private void onEraseUnusedClusters()
 	{
-		// Display dialog
-		Integer fillerValue = EraseUnusedClustersDialog.show(primaryStage, ERASE_UNUSED_CLUSTERS_STR);
+		// Display dialog for filler value
+		Integer fillerValue = ErasureFillerValueDialog.show(primaryStage, ERASE_UNUSED_CLUSTERS_STR);
+		if (fillerValue == null)
+			return;
 
-		// Erase unused clusters
-		if (fillerValue != null)
+		// Log title of task
+		String title = ERASE_UNUSED_CLUSTERS_STR;
+		Logger.INSTANCE.info(title);
+
+		// Create task to erase unused clusters
+		Task<Void> task = new AbstractTask<>()
 		{
-			// Log title of task
-			String title = ERASE_UNUSED_CLUSTERS_STR;
-			Logger.INSTANCE.info(title);
-
-			// Create task to erase unused clusters
-			Task<Void> task = new AbstractTask<>()
 			{
-				{
-					// Initialise task
-					updateTitle(title);
-				}
+				// Initialise task
+				updateTitle(title);
+			}
 
-				@Override
-				protected Void call()
-					throws Exception
-				{
-					// Erase unused clusters of volume
-					getVolume().eraseUnusedClusters(fillerValue.byteValue(), createTaskStatus());
+			@Override
+			protected Void call()
+				throws Exception
+			{
+				// Erase unused clusters of volume
+				getVolume().eraseUnusedClusters(fillerValue.byteValue(), createTaskStatus());
 
-					// If task has been cancelled, change state to 'cancelled'
-					hardCancel(false);
+				// If task has been cancelled, change state to 'cancelled'
+				hardCancel(false);
 
-					// Return nothing
-					return null;
-				}
+				// Return nothing
+				return null;
+			}
 
-				@Override
-				protected void succeeded()
-				{
-					showMessageDialog(getTitle(), UNUSED_CLUSTERS_ERASED_STR, MessageIcon32.INFORMATION);
-				}
+			@Override
+			protected void succeeded()
+			{
+				showMessageDialog(getTitle(), UNUSED_CLUSTERS_ERASED_STR, MessageIcon32.INFORMATION);
+			}
 
-				@Override
-				protected void failed()
-				{
-					// Display error message in dialog
-					showErrorMessage(primaryStage);
-				}
-			};
+			@Override
+			protected void failed()
+			{
+				// Display error message in dialog
+				showErrorMessage(primaryStage);
+			}
+		};
 
-			// Show progress of task in dialog
-			new SimpleProgressDialog(primaryStage, task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
+		// Show progress of task in dialog
+		new SimpleProgressDialog(primaryStage, task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
 
-			// Execute task on background thread
-			executeTask(task);
-		}
+		// Execute task on background thread
+		executeTask(task);
 	}
 
 	//------------------------------------------------------------------
@@ -2112,12 +2110,13 @@ public class Fat32ManagerApp
 				Fat32Directory	directory)
 				throws VolumeException
 			{
-				int erasedEntryCount = directory.eraseDeletedEntries();
+				int erasedEntryCount = 0;
 				if (recursive)
 				{
 					for (Fat32Directory subdirectory : directory.getChildren())
 						erasedEntryCount += eraseDeletedEntries(subdirectory);
 				}
+				erasedEntryCount += directory.eraseDeletedEntries();
 				return erasedEntryCount;
 			}
 		};

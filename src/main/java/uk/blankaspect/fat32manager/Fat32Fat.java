@@ -38,14 +38,14 @@ public class Fat32Fat
 	public static final		int		ENTRY_SIZE	= 4;
 
 	public static final		int		MIN_CLUSTER_INDEX	= 2;
-	public static final		int		MAX_CLUSTER_INDEX	= 0x0FFFFFF6;
+	public static final		int		MAX_CLUSTER_INDEX	= 0x0FFF_FFF6;
 
-	public static final		int		BAD_CLUSTER_INDEX	= 0x0FFFFFF7;
+	public static final		int		BAD_CLUSTER_INDEX	= 0x0FFF_FFF7;
 
-	public static final		int		MIN_END_OF_CHAIN_INDEX	= 0x0FFFFFF8;
-	public static final		int		MAX_END_OF_CHAIN_INDEX	= 0x0FFFFFFF;
+	public static final		int		MIN_END_OF_CHAIN_INDEX	= 0x0FFF_FFF8;
+	public static final		int		MAX_END_OF_CHAIN_INDEX	= 0x0FFF_FFFF;
 
-	private static final	int		CLUSTER_INDEX_MASK	= 0x0FFFFFFF;
+	private static final	int		CLUSTER_INDEX_MASK	= 0x0FFF_FFFF;
 
 	private static final	String	FAT_NOT_INITIALISED_STR			= "FAT not initialised";
 	private static final	String	START_INDEX_OUT_OF_BOUNDS_STR	= "Start index out of bounds: ";

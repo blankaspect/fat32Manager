@@ -52,6 +52,8 @@ import javafx.scene.layout.VBox;
 
 import javafx.stage.Window;
 
+import uk.blankaspect.common.collection.CollectionUtils;
+
 import uk.blankaspect.common.exception2.LocationException;
 
 import uk.blankaspect.common.function.IFunction0;
@@ -63,12 +65,18 @@ import uk.blankaspect.common.message.MessageConstants;
 
 import uk.blankaspect.common.string.StringUtils;
 
+import uk.blankaspect.common.task.ITaskStatus;
+
 import uk.blankaspect.driveio.VolumeException;
 
 import uk.blankaspect.ui.jfx.button.Buttons;
 
+import uk.blankaspect.ui.jfx.dialog.ConfirmationDialog;
+import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
+
+import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 import uk.blankaspect.ui.jfx.observer.ChangeNotifier;
 
@@ -110,18 +118,35 @@ public class MainDirectoryTableView
 	private static final	String	UP_TO_STR				= "Up to ";
 	private static final	String	ROOT_DIRECTORY_STR		= "root directory";
 	private static final	String	OPEN_DIRECTORY_STR		= "Open directory";
+	private static final	String	OPEN_PREVIOUS_STR		= "Open previous directory";
+	private static final	String	OPEN_NEXT_STR			= "Open next directory";
 	private static final	String	REFRESH_DIRECTORY_STR	= "Refresh directory";
 	private static final	String	READING_FATS_STR		= "Reading reserved sectors and FATs";
 	private static final	String	READING_DIRECTORY_STR	= "Reading directory";
 	private static final	String	MESSAGES_STR			= "Messages";
 	private static final	String	EDIT_VOLUME_LABEL_STR	= "Edit volume label";
 	private static final	String	UPDATE_VOLUME_LABEL_STR	= "Update volume label";
+	private static final	String	DEFRAGMENT_FILE_STR		= "Defragment file";
+	private static final	String	NOT_FRAGMENTED_STR		= "The file was not fragmented.";
+	private static final	String	NOT_ENOUGH_SPACE_STR	= "There was not enough space to defragment the file.";
+	private static final	String	DEFRAGMENTED_STR		= "The file was defragmented.";
+	private static final	String	INVALID_CLUSTERS_STR	= "Invalid clusters";
+	private static final	String	ERASE_STR				= "Erase";
+	private static final	String	ERASE_FILE_STR			= "Erase file";
+	private static final	String	FILE_ERASED_STR			= "The file was erased successfully.";
+	private static final	String	ERASE_DIRECTORY_STR		= "Erase directory";
+	private static final	String	DIRECTORY_ERASED_STR	= "The directory was erased successfully.";
+	private static final	String	WARN_CANCEL_STR			=
+			"WARNING" + MessageConstants.LABEL_SEPARATOR
+			+ "The volume may be corrupted if you cancel the operation while it is running.";
+	private static final	String	VOLUME_MODIFIED_STR		=
+			"The volume was modified before the operation was cancelled.";
 
 	/** Error messages. */
 	private interface ErrorMsg
 	{
 		String	DIRECTORY_DOES_NOT_EXIST =
-				"Location: %s\nThe directory does not exist.";
+				"The directory does not exist.";
 
 		String	DIRECTORY_NO_LONGER_EXISTS =
 				"The directory no longer exists.";
@@ -185,11 +210,14 @@ public class MainDirectoryTableView
 ////////////////////////////////////////////////////////////////////////
 
 	protected static String getQuotedName(
-		Fat32Directory	directory,
+		List<String>	names,
 		String			prefix)
 	{
-		return (directory == null) ? null
-								   : prefix + (directory.isRoot() ? ROOT_DIRECTORY_STR : quote(directory.getName()));
+		if (CollectionUtils.isNullOrEmpty(names))
+			return null;
+
+		String name = names.get(names.size() - 1);
+		return prefix + (name.isEmpty() ? ROOT_DIRECTORY_STR : quote(name));
 	}
 
 	//------------------------------------------------------------------
@@ -238,12 +266,17 @@ public class MainDirectoryTableView
 		Fat32Directory			directory,
 		Fat32Directory.Entry	entry)
 	{
+		// Test for entry
+		if (entry == null)
+			return;
+
+		// Add menu items for index
 		switch (index)
 		{
 			case 0:
 			{
 				// Add menu item: open directory
-				if ((entry != null) && entry.isRegularDirectory())
+				if (entry.isRegularDirectory())
 				{
 					MenuItem menuItem =
 							new MenuItem(OPEN_STR + quote(entry.getName()), Images.icon(Images.ImageId.ARROW_DOWN));
@@ -265,7 +298,7 @@ public class MainDirectoryTableView
 			case 1:
 			{
 				// Add menu item: edit volume label
-				if ((entry != null) && entry.isVolumeLabel() && getDirectory().isRoot())
+				if (entry.isVolumeLabel() && directory.isRoot())
 				{
 					// Add separator
 					if (!menu.getItems().isEmpty())
@@ -275,6 +308,52 @@ public class MainDirectoryTableView
 					MenuItem menuItem =
 							new MenuItem(EDIT_VOLUME_LABEL_STR + ELLIPSIS_STR, Images.icon(Images.ImageId.PENCIL));
 					menuItem.setOnAction(event0 -> editVolumeLabel(entry));
+					menu.getItems().add(menuItem);
+				}
+				break;
+			}
+
+			case 2:
+			{
+				// Case: file
+				if (entry.isFile())
+				{
+					// Add separator
+					if (!menu.getItems().isEmpty())
+						menu.getItems().add(new SeparatorMenuItem());
+
+					// Add menu item: erase file
+					MenuItem menuItem = new MenuItem(ERASE_FILE_STR, Images.icon(Images.ImageId.ERASER));
+					menuItem.setOnAction(event0 -> eraseFile(entry));
+					menu.getItems().add(menuItem);
+
+					// Add separator
+					menu.getItems().add(new SeparatorMenuItem());
+
+					// Add menu item: defragment file
+					menuItem = new MenuItem(DEFRAGMENT_FILE_STR, Images.icon(Images.ImageId.DEFRAGMENT));
+					try
+					{
+						menuItem.setDisable(!directory.getVolume().isEntryFragmented(entry));
+					}
+					catch (VolumeException e)
+					{
+						Logger.INSTANCE.error(e);
+					}
+					menuItem.setOnAction(event0 -> defragmentFile(entry));
+					menu.getItems().add(menuItem);
+				}
+
+				// Case: regular directory
+				else if (entry.isRegularDirectory())
+				{
+					// Add separator
+					if (!menu.getItems().isEmpty())
+						menu.getItems().add(new SeparatorMenuItem());
+
+					// Add menu item: erase directory
+					MenuItem menuItem = new MenuItem(ERASE_DIRECTORY_STR, Images.icon(Images.ImageId.ERASER));
+					menuItem.setOnAction(event0 -> eraseDirectory(entry));
 					menu.getItems().add(menuItem);
 				}
 				break;
@@ -321,7 +400,7 @@ public class MainDirectoryTableView
 		Fat32Directory	directory)
 	{
 		// Add directory to history
-		history.add(directory);
+		history.add(directory.getNames());
 
 		// Notify listeners of change
 		historyChangedNotifier.notifyChange();
@@ -347,7 +426,7 @@ public class MainDirectoryTableView
 
 	public void selectColumns()
 	{
-		Set<Column> columns = new ColumnSelectionDialog(getWindow(), this.columns).showDialog();
+		Set<Column> columns = new ColumnSelectionDialog(window(), this.columns).showDialog();
 		if (columns != null)
 			setColumns(columns, false);
 	}
@@ -408,7 +487,7 @@ public class MainDirectoryTableView
 					onFinished.invoke();
 
 					// Display error message in dialog
-					showErrorMessage(getWindow());
+					showErrorMessage(window());
 				}
 
 				@Override
@@ -420,7 +499,7 @@ public class MainDirectoryTableView
 			};
 
 			// Show progress of task in dialog
-			new SimpleProgressDialog(getWindow(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
+			new SimpleProgressDialog(window(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
 
 			// Execute 'sort' task on background thread
 			Fat32ManagerApp.executeTask(task);
@@ -431,17 +510,12 @@ public class MainDirectoryTableView
 
 	public void refreshDirectory()
 	{
-		// Get volume
-		Fat32Volume volume = getDirectory().getVolume();
-
-		// Collect names of directories, ascending from current directory to root
-		LinkedList<String> directoryNames = new LinkedList<>();
+		// Get directory and volume
 		Fat32Directory directory = getDirectory();
-		while (directory != null)
-		{
-			directoryNames.addFirst(directory.getName());
-			directory = directory.getParent();
-		}
+		Fat32Volume volume = directory.getVolume();
+
+		// Get names of directories from root to current directory
+		List<String> names = directory.getNames();
 
 		// Create container for local variables
 		class Vars
@@ -490,14 +564,14 @@ public class MainDirectoryTableView
 
 				// Read directories
 				updateMessage(READING_DIRECTORY_STR);
-				for (int i = 0; i < directoryNames.size(); i++)
+				for (int i = 0; i < names.size(); i++)
 				{
 					// Get directory from its name
 					if (i == 0)
 						vars.directory = volume.getRootDir();
 					else
 					{
-						String name = directoryNames.get(i);
+						String name = names.get(i);
 						Fat32Directory.Entry entry = vars.directory.findEntry(name);
 						if (entry == null)
 						{
@@ -527,7 +601,7 @@ public class MainDirectoryTableView
 				// Display messages in dialog
 				if (!result.messages.isEmpty())
 				{
-					TextAreaDialog.show(getWindow(), REFRESH_DIRECTORY_KEY, getTitle() + " : " + MESSAGES_STR,
+					TextAreaDialog.show(window(), REFRESH_DIRECTORY_KEY, getTitle() + " : " + MESSAGES_STR,
 										String.join("\n\n", result.messages));
 				}
 			}
@@ -539,12 +613,12 @@ public class MainDirectoryTableView
 				setDirectory(vars.directory);
 
 				// Display error message in dialog
-				showErrorMessage(getWindow());
+				showErrorMessage(window());
 			}
 		};
 
 		// Show progress of task in dialog
-		new SimpleProgressDialog(getWindow(), task);
+		new SimpleProgressDialog(window(), task);
 
 		// Execute task on background thread
 		Fat32ManagerApp.executeTask(task);
@@ -555,7 +629,7 @@ public class MainDirectoryTableView
 	public String getOpenParentDirectoryCommand()
 	{
 		Fat32Directory directory = getDirectory();
-		return directory.isRoot() ? null : getQuotedName(directory.getParent(), UP_TO_STR);
+		return directory.isRoot() ? null : getQuotedName(List.of(directory.getParent().getName()), UP_TO_STR);
 	}
 
 	//------------------------------------------------------------------
@@ -595,16 +669,7 @@ public class MainDirectoryTableView
 	public void openPreviousDirectory()
 	{
 		if (history.hasPrevious())
-		{
-			// Set previous directory on table view
-			setDirectory(history.previous());
-
-			// Notify listeners of change to history
-			historyChangedNotifier.notifyChange();
-
-			// Request focus
-			requestFocus();
-		}
+			openDirectory(false);
 	}
 
 	//------------------------------------------------------------------
@@ -612,16 +677,7 @@ public class MainDirectoryTableView
 	public void openNextDirectory()
 	{
 		if (history.hasNext())
-		{
-			// Set next directory on table view
-			setDirectory(history.next());
-
-			// Notify listeners of change to history
-			historyChangedNotifier.notifyChange();
-
-			// Request focus
-			requestFocus();
-		}
+			openDirectory(true);
 	}
 
 	//------------------------------------------------------------------
@@ -650,36 +706,23 @@ public class MainDirectoryTableView
 			// Get list of directory names
 			List<String> names = StringUtils.split(pathname, Fat32Directory.NAME_SEPARATOR_CHAR);
 
-			// Get current directory
-			Fat32Directory directory = getDirectory();
-
-			// Descend directory tree
+			// Search for directory
+			Fat32Directory directory = null;
 			String errorPathname = null;
 			try
 			{
-				for (int i = 0; i < names.size(); i++)
-				{
-					String name = names.get(i);
-					if ((i == 0) && name.isEmpty())
-						directory = directory.getVolume().getRootDir();
-					else
-					{
-						Fat32Directory.Entry entry = (directory == null) ? null : directory.findEntry(name);
-						if ((entry == null) || !entry.isDirectory())
-						{
-							errorPathname = StringUtils.join(Fat32Directory.NAME_SEPARATOR_CHAR,
-															 names.subList(0, i + 1));
-							break;
-						}
-						directory = directory.getDirectory(entry);
-					}
-				}
+				DirectorySearchResult result = findDirectory(names);
+				directory = result.directory;
+				errorPathname = result.errorPathname;
 			}
-			catch (WrappedVolumeException e)
+			catch (VolumeException e)
 			{
-				// Display error message in dialog
-				Utils.showErrorMessage(getWindow(), OPEN_DIRECTORY_STR, e);
+				Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR, e);
 			}
+
+			// If no directory was found, use current directory
+			if (directory == null)
+				directory = getDirectory();
 
 			// Open directory
 			openDirectory(directory);
@@ -687,8 +730,8 @@ public class MainDirectoryTableView
 			// If target pathname was not reached, display error mesage
 			if (errorPathname != null)
 			{
-				Utils.showErrorMessage(getWindow(), OPEN_DIRECTORY_STR,
-									   String.format(ErrorMsg.DIRECTORY_DOES_NOT_EXIST, errorPathname));
+				Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR,
+									   new LocationException(ErrorMsg.DIRECTORY_DOES_NOT_EXIST, errorPathname));
 			}
 		}
 	}
@@ -715,7 +758,7 @@ public class MainDirectoryTableView
 			catch (WrappedVolumeException e)
 			{
 				// Display error message in dialog
-				Utils.showErrorMessage(getWindow(), OPEN_DIRECTORY_STR, e);
+				Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR, e);
 			}
 
 			// Request focus
@@ -725,11 +768,99 @@ public class MainDirectoryTableView
 
 	//------------------------------------------------------------------
 
+	private void openDirectory(
+		boolean	forward)
+	{
+		// Get title of error dialog
+		String errorDialogTitle = forward ? OPEN_NEXT_STR : OPEN_PREVIOUS_STR;
+
+		// Search for directory
+		Fat32Directory directory = null;
+		try
+		{
+			DirectorySearchResult result = findDirectory(forward ? history.next() : history.previous());
+			directory = result.directory;
+			if (result.errorPathname != null)
+			{
+				if (forward)
+				{
+					history.previous();
+					history.clearNext();
+				}
+				else
+				{
+					history.next();
+					history.clearPrevious();
+				}
+				Utils.showErrorMessage(window(), errorDialogTitle,
+									   new LocationException(ErrorMsg.DIRECTORY_DOES_NOT_EXIST, result.errorPathname));
+			}
+		}
+		catch (VolumeException e)
+		{
+			Utils.showErrorMessage(window(), errorDialogTitle, e);
+		}
+
+		// If no directory was found, clear history ...
+		if (directory == null)
+			clearHistory();
+
+		// ... otherwise, update table view
+		else
+		{
+			// Set previous directory on table view
+			setDirectory(directory);
+
+			// Notify listeners of change to history
+			historyChangedNotifier.notifyChange();
+
+			// Request focus
+			requestFocus();
+		}
+	}
+
+	//------------------------------------------------------------------
+
+	private DirectorySearchResult findDirectory(
+		List<String>	names)
+		throws VolumeException
+	{
+		Fat32Directory directory = null;
+		String errorPathname = null;
+		try
+		{
+			for (int i = 0; i < names.size(); i++)
+			{
+				String name = names.get(i);
+				if ((i == 0) && name.isEmpty())
+					directory = getDirectory().getVolume().getRootDir();
+				else
+				{
+					Fat32Directory.Entry entry = (directory == null) ? null : directory.findEntry(name);
+					if ((entry == null) || !entry.isDirectory())
+					{
+						errorPathname = StringUtils.join(Fat32Directory.NAME_SEPARATOR_CHAR, names.subList(0, i + 1));
+						break;
+					}
+					directory = directory.getDirectory(entry);
+				}
+			}
+		}
+		catch (WrappedVolumeException e)
+		{
+			if (e.getCause() instanceof VolumeException ve)
+				throw ve;
+		}
+		return new DirectorySearchResult(directory, errorPathname);
+	}
+
+	//------------------------------------------------------------------
+
 	private void editVolumeLabel(
 		Fat32Directory.Entry	entry)
 	{
 		// Display dialog to edit volume label
-		VolumeLabelDialog.Result result = VolumeLabelDialog.show(getWindow(), EDIT_VOLUME_LABEL_STR, entry.getName(),
+		VolumeLabelDialog.Result result = VolumeLabelDialog.show(window(), EDIT_VOLUME_LABEL_STR, entry.getName(),
 																 entry.getLastModificationTime());
 		if (result == null)
 			return;
@@ -770,18 +901,333 @@ public class MainDirectoryTableView
 			protected void failed()
 			{
 				// Display error message in dialog
-				showErrorMessage(getWindow());
+				showErrorMessage(window());
 			}
 		};
 
 		// Show progress of task in dialog
-		new SimpleProgressDialog(getWindow(), task);
+		new SimpleProgressDialog(window(), task);
 
 		// Execute task on background thread
 		Fat32ManagerApp.executeTask(task);
 	}
 
 	//------------------------------------------------------------------
+
+	private void eraseFile(
+		Fat32Directory.Entry	entry)
+	{
+		// Display dialog for filler value
+		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_FILE_STR);
+		if (fillerValue == null)
+			return;
+
+		// Display warning about cancelling the operation
+		if (!ConfirmationDialog.show(window(), ERASE_FILE_STR, MessageIcon32.WARNING.get(), WARN_CANCEL_STR, ERASE_STR))
+			return;
+
+		// Log description of task
+		Logger.INSTANCE.info(ERASE_FILE_STR + " " + entry.getPathname());
+
+		// Create container for local variables
+		class Vars
+		{
+			boolean modified;
+		}
+		Vars vars = new Vars();
+
+		// Create task to erase file
+		Task<Void> task = new AbstractTask<>()
+		{
+			{
+				// Initialise task
+				updateTitle(ERASE_FILE_STR);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Void call()
+				throws Exception
+			{
+				// Create task status
+				ITaskStatus taskStatus = createTaskStatus();
+
+				// Erase file
+				vars.modified = entry.getDirectory().getVolume().eraseFile(entry, fillerValue.byteValue(), taskStatus);
+
+				// If task has been cancelled, change state to 'cancelled'
+				hardCancel(false);
+
+				// Return nothing
+				return null;
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Report success
+				String message = entry.getPathname() + MessageConstants.LABEL_SEPARATOR + FILE_ERASED_STR;
+				NotificationDialog.show(window(), getTitle(), MessageIcon32.INFORMATION.get(), message);
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Display error message in dialog
+				showErrorMessage(window());
+			}
+
+			@Override
+			protected void cancelled()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Report volume modified
+				if (vars.modified)
+					NotificationDialog.show(window(), getTitle(), MessageIcon32.ALERT.get(), VOLUME_MODIFIED_STR);
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(window(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
+
+		// Execute task on background thread
+		Fat32ManagerApp.executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
+	private void eraseDirectory(
+		Fat32Directory.Entry	entry)
+	{
+		// Display dialog for filler value
+		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_DIRECTORY_STR);
+		if (fillerValue == null)
+			return;
+
+		// Display warning about cancelling the operation
+		if (!ConfirmationDialog.show(window(), ERASE_DIRECTORY_STR, MessageIcon32.WARNING.get(), WARN_CANCEL_STR,
+									 ERASE_STR))
+			return;
+
+		// Log description of task
+		Logger.INSTANCE.info(ERASE_DIRECTORY_STR + " " + entry.getPathname());
+
+		// Create container for local variables
+		class Vars
+		{
+			boolean modified;
+		}
+		Vars vars = new Vars();
+
+		// Create task to erase directory
+		Task<Void> task = new AbstractTask<>()
+		{
+			{
+				// Initialise task
+				updateTitle(ERASE_DIRECTORY_STR);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Void call()
+				throws Exception
+			{
+				// Create task status
+				ITaskStatus taskStatus = createTaskStatus();
+
+				// Erase directory
+				vars.modified =
+						entry.getDirectory().getVolume().eraseDirectory(entry, fillerValue.byteValue(), taskStatus);
+
+				// If task has been cancelled, change state to 'cancelled'
+				hardCancel(false);
+
+				// Return nothing
+				return null;
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Report success
+				String message = entry.getPathname() + MessageConstants.LABEL_SEPARATOR + DIRECTORY_ERASED_STR;
+				NotificationDialog.show(window(), getTitle(), MessageIcon32.INFORMATION.get(), message);
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Display error message in dialog
+				showErrorMessage(window());
+			}
+
+			@Override
+			protected void cancelled()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Report volume modified
+				if (vars.modified)
+					NotificationDialog.show(window(), getTitle(), MessageIcon32.ALERT.get(), VOLUME_MODIFIED_STR);
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(window(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
+
+		// Execute task on background thread
+		Fat32ManagerApp.executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
+	private void defragmentFile(
+		Fat32Directory.Entry	entry)
+	{
+		// Log description of task
+		Logger.INSTANCE.info(DEFRAGMENT_FILE_STR + " " + entry.getPathname());
+
+		// Declare record for result of task
+		record Result(
+			Fat32Volume.DefragStatus			status,
+			List<Fat32Volume.InvalidCluster>	invalidClusters)
+		{ }
+
+		// Create task to defragment file
+		Task<Result> task = new AbstractTask<>()
+		{
+			{
+				// Initialise task
+				updateTitle(DEFRAGMENT_FILE_STR);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Result call()
+				throws Exception
+			{
+				// Get volume
+				Fat32Volume volume = entry.getDirectory().getVolume();
+
+				// Create task status
+				ITaskStatus taskStatus = createTaskStatus();
+
+				// Validate cluster chain
+				List<Fat32Volume.InvalidCluster> invalidClusters = new ArrayList<>();
+				volume.validateClusterChains(List.of(entry), invalidClusters, taskStatus);
+
+				// Defragment file
+				Fat32Volume.DefragStatus status = taskStatus.isCancelled()
+														? Fat32Volume.DefragStatus.CANCEL
+														: invalidClusters.isEmpty()
+																? volume.defragmentFile(entry, taskStatus)
+																: null;
+
+				// If task has been cancelled, change state to 'cancelled'
+				hardCancel(false);
+
+				// Return result
+				return new Result(status, invalidClusters);
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Get result
+				Result result = getValue();
+
+				// Case: no invalid clusters
+				if (result.invalidClusters.isEmpty())
+				{
+					// Report result
+					String text = switch (result.status)
+					{
+						case NOT_FRAGMENTED   -> NOT_FRAGMENTED_STR;
+						case NOT_ENOUGH_SPACE -> NOT_ENOUGH_SPACE_STR;
+						case SUCCESS          -> DEFRAGMENTED_STR;
+						case CANCEL           -> null;
+					};
+					if (text != null)
+					{
+						MessageIcon32 icon = switch (result.status)
+						{
+							case NOT_FRAGMENTED   -> MessageIcon32.INFORMATION;
+							case NOT_ENOUGH_SPACE -> MessageIcon32.ALERT;
+							case SUCCESS          -> MessageIcon32.INFORMATION;
+							case CANCEL           -> null;
+						};
+						String message = entry.getPathname() + MessageConstants.LABEL_SEPARATOR + text;
+						NotificationDialog.show(window(), getTitle(), icon.get(), message);
+					}
+				}
+
+				// Case: invalid clusters
+				else
+				{
+					InvalidClusterDialog.show(window(), getTitle() + " : " + INVALID_CLUSTERS_STR,
+											  result.invalidClusters);
+				}
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Refresh directory
+				refreshDirectory();
+
+				// Display error message in dialog
+				showErrorMessage(window());
+			}
+
+			@Override
+			protected void cancelled()
+			{
+				// Refresh directory
+				refreshDirectory();
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(window(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
+
+		// Execute task on background thread
+		Fat32ManagerApp.executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////
+//  Member records
+////////////////////////////////////////////////////////////////////////
+
+
+	// RECORD: RESULT OF SEARCH FOR DIRECTORY
+
+
+	private record DirectorySearchResult(
+		Fat32Directory	directory,
+		String			errorPathname)
+	{ }
+
+	//==================================================================
 
 ////////////////////////////////////////////////////////////////////////
 //  Member classes : non-inner classes
@@ -805,7 +1251,7 @@ public class MainDirectoryTableView
 	////////////////////////////////////////////////////////////////////
 
 		private	int							index;
-		private	LinkedList<Fat32Directory>	directories;
+		private	LinkedList<List<String>>	directories;
 
 	////////////////////////////////////////////////////////////////////
 	//  Constructors
@@ -837,28 +1283,28 @@ public class MainDirectoryTableView
 
 		//--------------------------------------------------------------
 
-		public Fat32Directory getPrevious()
+		public List<String> getPrevious()
 		{
 			return hasPrevious() ? directories.get(index - 1) : null;
 		}
 
 		//--------------------------------------------------------------
 
-		public Fat32Directory getNext()
+		public List<String> getNext()
 		{
 			return hasNext() ? directories.get(index + 1) : null;
 		}
 
 		//--------------------------------------------------------------
 
-		private Fat32Directory previous()
+		private List<String> previous()
 		{
 			return hasPrevious() ? directories.get(--index) : null;
 		}
 
 		//--------------------------------------------------------------
 
-		private Fat32Directory next()
+		private List<String> next()
 		{
 			return hasNext() ? directories.get(++index) : null;
 		}
@@ -866,14 +1312,14 @@ public class MainDirectoryTableView
 		//--------------------------------------------------------------
 
 		private void add(
-			Fat32Directory	directory)
+			List<String>	names)
 		{
 			// Validate argument
-			if (directory == null)
-				throw new IllegalArgumentException("Null directory");
+			if (names == null)
+				throw new IllegalArgumentException("Null list of names");
 
 			// Don't add directory if it is current directory
-			if ((index < directories.size()) && directory.equals(directories.get(index)))
+			if ((index < directories.size()) && names.equals(directories.get(index)))
 				return;
 
 			// Increment index
@@ -893,7 +1339,7 @@ public class MainDirectoryTableView
 			}
 
 			// Add directory
-			directories.add(directory);
+			directories.add(List.copyOf(names));
 		}
 
 		//--------------------------------------------------------------
@@ -903,6 +1349,25 @@ public class MainDirectoryTableView
 			// Reset instance variables
 			directories.clear();
 			index = 0;
+		}
+
+		//--------------------------------------------------------------
+
+		private void clearPrevious()
+		{
+			if (hasPrevious())
+			{
+				directories = new LinkedList<>(directories.subList(index, directories.size()));
+				index = 0;
+			}
+		}
+
+		//--------------------------------------------------------------
+
+		private void clearNext()
+		{
+			if (hasNext())
+				directories = new LinkedList<>(directories.subList(0, index + 1));
 		}
 
 		//--------------------------------------------------------------

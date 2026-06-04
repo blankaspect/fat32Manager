@@ -46,8 +46,6 @@ import javafx.beans.property.SimpleSetProperty;
 
 import javafx.collections.FXCollections;
 
-import javafx.concurrent.Task;
-
 import javafx.css.PseudoClass;
 
 import javafx.geometry.HPos;
@@ -108,11 +106,7 @@ import uk.blankaspect.common.geometry.VHPos;
 
 import uk.blankaspect.common.logging.Logger;
 
-import uk.blankaspect.common.message.MessageConstants;
-
 import uk.blankaspect.common.string.StringUtils;
-
-import uk.blankaspect.common.task.ITaskStatus;
 
 import uk.blankaspect.common.text.Tabulator;
 
@@ -126,14 +120,11 @@ import uk.blankaspect.ui.jfx.colour.ColourUtils;
 
 import uk.blankaspect.ui.jfx.container.LabelTitledPane;
 
-import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
-import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
 
 import uk.blankaspect.ui.jfx.font.FontUtils;
 
 import uk.blankaspect.ui.jfx.image.HatchedImageFactory;
-import uk.blankaspect.ui.jfx.image.MessageIcon32;
 
 import uk.blankaspect.ui.jfx.label.Labels;
 
@@ -213,11 +204,6 @@ public class DirectoryTableView
 	private static final	String	VIEW_CLUSTER_STR		= "View cluster";
 	private static final	String	COPY_ENTRY_STR			= "Copy entry";
 	private static final	String	COPY_ALL_ENTRIES_STR	= "Copy all entries";
-	private static final	String	DEFRAGMENT_FILE_STR		= "Defragment file";
-	private static final	String	NOT_FRAGMENTED_STR		= "The file was not fragmented.";
-	private static final	String	NOT_ENOUGH_SPACE_STR	= "There was not enough space to defragment the file.";
-	private static final	String	DEFRAGMENTED_STR		= "The file was defragmented.";
-	private static final	String	INVALID_CLUSTERS_STR	= "Invalid clusters";
 
 	/** The pseudo-class that is associated with the <i>deleted</i> state. */
 	private static final	PseudoClass	PSEUDO_CLASS_DELETED	= PseudoClass.getPseudoClass(PseudoClassKey.DELETED);
@@ -568,11 +554,11 @@ public class DirectoryTableView
 								(headerMode == HeaderMode.DELETED)
 												? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
 												: volume.getFat().indexFinder(entry);
-						SectorClusterViewDialog.showSector(getWindow(), volume, indexFinder);
+						SectorClusterViewDialog.showSector(window(), volume, indexFinder);
 					}
 					catch (VolumeException e)
 					{
-						Utils.showErrorMessage(getWindow(), VIEW_SECTOR_STR, e);
+						Utils.showErrorMessage(window(), VIEW_SECTOR_STR, e);
 					}
 				});
 				menu.getItems().add(menuItem);
@@ -587,11 +573,11 @@ public class DirectoryTableView
 								(headerMode == HeaderMode.DELETED)
 												? volume.getFat().indexFinder(entry.getClusterIndex(), -1)
 												: volume.getFat().indexFinder(entry);
-						SectorClusterViewDialog.showCluster(getWindow(), volume, indexFinder);
+						SectorClusterViewDialog.showCluster(window(), volume, indexFinder);
 					}
 					catch (VolumeException e)
 					{
-						Utils.showErrorMessage(getWindow(), VIEW_CLUSTER_STR, e);
+						Utils.showErrorMessage(window(), VIEW_CLUSTER_STR, e);
 					}
 				});
 				menu.getItems().add(menuItem);
@@ -610,7 +596,7 @@ public class DirectoryTableView
 
 				// Add menu item
 				MenuItem menuItem = new MenuItem(COPY_ENTRY_STR, Images.icon(Images.ImageId.COPY));
-				menuItem.setOnAction(event0 -> Utils.copyToClipboard(getWindow(), COPY_ENTRY_STR, entry.toString()));
+				menuItem.setOnAction(event0 -> Utils.copyToClipboard(window(), COPY_ENTRY_STR, entry.toString()));
 				menu.getItems().add(menuItem);
 				hasCopy = true;
 			}
@@ -630,30 +616,12 @@ public class DirectoryTableView
 				menu.getItems().add(menuItem);
 			}
 
-			// Add menu item: defragment file
-			if ((entry != null) && (entry.getKind() == Fat32Directory.Entry.Kind.FILE))
-			{
-				// Add separator
-				if (!menu.getItems().isEmpty())
-					menu.getItems().add(new SeparatorMenuItem());
-
-				// Add menu item
-				MenuItem menuItem = new MenuItem(DEFRAGMENT_FILE_STR, Images.icon(Images.ImageId.DEFRAGMENT));
-				try
-				{
-					menuItem.setDisable(!volume.isEntryFragmented(entry));
-				}
-				catch (VolumeException e)
-				{
-					Logger.INSTANCE.error(e);
-				}
-				menuItem.setOnAction(event0 -> onDefragmentFile(entry));
-				menu.getItems().add(menuItem);
-			}
+			// Add menu items
+			addContextMenuItems(menu, index++, directory, entry);
 
 			// Display context menu
 			if (!menu.getItems().isEmpty())
-				menu.show(getWindow(), event.getScreenX(), event.getScreenY());
+				menu.show(window(), event.getScreenX(), event.getScreenY());
 		});
 	}
 
@@ -985,7 +953,7 @@ public class DirectoryTableView
 
 	//------------------------------------------------------------------
 
-	protected Window getWindow()
+	protected Window window()
 	{
 		return SceneUtils.getWindow(this);
 	}
@@ -1097,126 +1065,8 @@ public class DirectoryTableView
 		}
 		catch (BaseException e)
 		{
-			Utils.showErrorMessage(getWindow(), COPY_ALL_ENTRIES_STR, e);
+			Utils.showErrorMessage(window(), COPY_ALL_ENTRIES_STR, e);
 		}
-	}
-
-	//------------------------------------------------------------------
-
-	private void onDefragmentFile(
-		Fat32Directory.Entry	entry)
-	{
-		// Log description of task
-		Logger.INSTANCE.info(DEFRAGMENT_FILE_STR + " " + entry.getPathname());
-
-		// Declare record for result of task
-		record Result(
-			Fat32Volume.DefragStatus			status,
-			List<Fat32Volume.InvalidCluster>	invalidClusters)
-		{ }
-
-		// Create task to defragment file
-		Task<Result> task = new AbstractTask<>()
-		{
-			{
-				// Initialise task
-				updateTitle(DEFRAGMENT_FILE_STR);
-				updateProgress(-1, 1);
-			}
-
-			@Override
-			protected Result call()
-				throws Exception
-			{
-				// Get volume
-				Fat32Volume volume = directory.getVolume();
-
-				// Create task status
-				ITaskStatus taskStatus = createTaskStatus();
-
-				// Validate cluster chain
-				List<Fat32Volume.InvalidCluster> invalidClusters = new ArrayList<>();
-				volume.validateClusterChains(List.of(entry), invalidClusters, taskStatus);
-
-				// Defragment file
-				Fat32Volume.DefragStatus status = taskStatus.isCancelled()
-														? Fat32Volume.DefragStatus.CANCEL
-														: invalidClusters.isEmpty()
-																? volume.defragmentFile(entry, taskStatus)
-																: null;
-
-				// If task has been cancelled, change state to 'cancelled'
-				hardCancel(false);
-
-				// Return result
-				return new Result(status, invalidClusters);
-			}
-
-			@Override
-			protected void succeeded()
-			{
-				// Refresh table view
-				refresh();
-
-				// Get result
-				Result result = getValue();
-
-				// Case: no invalid clusters
-				if (result.invalidClusters.isEmpty())
-				{
-					// Report result
-					String text = switch (result.status)
-					{
-						case NOT_FRAGMENTED   -> NOT_FRAGMENTED_STR;
-						case NOT_ENOUGH_SPACE -> NOT_ENOUGH_SPACE_STR;
-						case SUCCESS          -> DEFRAGMENTED_STR;
-						case CANCEL           -> null;
-					};
-					if (text != null)
-					{
-						MessageIcon32 icon = switch (result.status)
-						{
-							case NOT_FRAGMENTED   -> MessageIcon32.INFORMATION;
-							case NOT_ENOUGH_SPACE -> MessageIcon32.ALERT;
-							case SUCCESS          -> MessageIcon32.INFORMATION;
-							case CANCEL           -> null;
-						};
-						String message = entry.getPathname() + MessageConstants.LABEL_SEPARATOR + text;
-						NotificationDialog.show(getWindow(), DEFRAGMENT_FILE_STR, icon.get(), message);
-					}
-				}
-
-				// Case: invalid clusters
-				else
-				{
-					InvalidClusterDialog.show(getWindow(), getTitle() + " : " + INVALID_CLUSTERS_STR,
-											  result.invalidClusters);
-				}
-			}
-
-			@Override
-			protected void failed()
-			{
-				// Refresh table view
-				refresh();
-
-				// Display error message in dialog
-				showErrorMessage(getWindow());
-			}
-
-			@Override
-			protected void cancelled()
-			{
-				// Refresh table view
-				refresh();
-			}
-		};
-
-		// Show progress of task in dialog
-		new SimpleProgressDialog(getWindow(), task, SimpleProgressDialog.CancelMode.NO_INTERRUPT);
-
-		// Execute task on background thread
-		Fat32ManagerApp.executeTask(task);
 	}
 
 	//------------------------------------------------------------------
@@ -1794,7 +1644,7 @@ public class DirectoryTableView
 		@Override
 		public Window getWindow()
 		{
-			return DirectoryTableView.this.getWindow();
+			return DirectoryTableView.this.window();
 		}
 
 		//--------------------------------------------------------------
@@ -2247,7 +2097,7 @@ public class DirectoryTableView
 			String	title)
 		{
 			// Call superclass constructor
-			super(getWindow(), MethodHandles.lookup().lookupClass().getCanonicalName(), null, title);
+			super(window(), MethodHandles.lookup().lookupClass().getCanonicalName(), null, title);
 
 			// Create pane: columns
 			VBox columnsPane = new VBox(COLUMNS_PANE_GAP);

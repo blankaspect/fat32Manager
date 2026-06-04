@@ -24,11 +24,16 @@ import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
 import java.util.function.Predicate;
+
+import java.util.random.RandomGenerator;
+
+import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
 
 import uk.blankaspect.common.function.IFunction1;
 import uk.blankaspect.common.function.IProcedure1;
@@ -43,6 +48,8 @@ import uk.blankaspect.common.number.NumberUtils;
 import uk.blankaspect.common.string.StringUtils;
 
 import uk.blankaspect.common.task.ITaskStatus;
+
+import uk.blankaspect.common.tree.TreeUtils;
 
 import uk.blankaspect.driveio.IVolumeAccessor;
 import uk.blankaspect.driveio.Volume;
@@ -226,8 +233,8 @@ public class Fat32Volume
 		(byte)0x19, (byte)0xEB, (byte)0xFE,
 	};
 
-	private static final	String	BOOT_CODE_MESSAGE	= "This volume is not bootable.\r\n"
-															+ "Press any key to reboot.\r\n";
+	private static final	String	BOOT_CODE_MESSAGE	=
+			"This volume is not bootable.\r\nPress any key to reboot.\r\n";
 
 	private static final	byte[]	FAT_ENTRIES	=
 	{
@@ -235,6 +242,11 @@ public class Fat32Volume
 		(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0x0F,
 		(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0x0F
 	};
+
+	private static final	int		ERASURE_NUM_PASSES	= 4;
+	private static final	int		ERASURE_RANDOM_PASS	= 2;
+
+	private static final	String	PRNG_NAME	= "L128X256MixRandom";
 
 	private static final	char	MIN_VOLUME_LABEL_CHAR		= '\u0021';
 	private static final	char	MAX_VOLUME_LABEL_CHAR		= '\u007E';
@@ -253,6 +265,11 @@ public class Fat32Volume
 	private static final	String	NUM_FATS_STR					= "Number of FATs";
 	private static final	String	SECTORS_PER_FAT_STR				= "Sectors per FAT";
 	private static final	String	BOOT_SECTOR_COPY_INDEX_STR		= "Index of copy of boot sector";
+	private static final	String	ERASING_FILE_STR				= "Erasing file";
+	private static final	String	ERASING_DIRECTORY_STR			= "Erasing directory";
+	private static final	String	ERASING_CLUSTERS_STR			= "Erasing clusters";
+	private static final	String	CLEARING_FAT_ENTRIES_STR		= "Clearing FAT entries";
+	private static final	String	REMOVING_DIRECTORY_ENTRY_STR	= "Removing directory entry";
 	private static final	String	ROOT_DIR_CLUSTER_INDEX_STR		= "Cluster index of root directory";
 	private static final	String	NUM_CLUSTERS_STR				= "Number of clusters";
 	private static final	String	NUM_UNUSED_CLUSTERS_STR			= "Number of unused clusters";
@@ -272,6 +289,8 @@ public class Fat32Volume
 	private static final	String	SECTOR_INDEX_OUT_OF_BOUNDS_STR	= "Sector index out of bounds: ";
 	private static final	String	CLUSTER_INDEX_OUT_OF_BOUNDS_STR	= "Cluster index out of bounds: ";
 	private static final	String	NUM_SECTORS_OUT_OF_BOUNDS_STR	= "Number of sectors out of bounds: ";
+	private static final	String	UNSUPPORTED_PRNG_STR			=
+			"The PRNG '%s' is not supported by this version of Java.";
 
 	public enum DefragStatus
 	{
@@ -309,7 +328,16 @@ public class Fat32Volume
 
 		String	FAILED_TO_VERIFY_LAST_SECTOR =
 				"Failed to verify the last sector of the volume.";
+
+		String	FAILED_TO_FIND_DIRECTORY_IN_PARENT =
+				"%s\nFailed to find the directory in its parent directory.";
 	}
+
+////////////////////////////////////////////////////////////////////////
+//  Class variables
+////////////////////////////////////////////////////////////////////////
+
+	private static	RandomGenerator	prng;
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -332,6 +360,23 @@ public class Fat32Volume
 	private	Fat32Fat		fat;
 	private	Fat32Directory	rootDir;
 	private	boolean			fixDirEntryDatesTimes;
+
+////////////////////////////////////////////////////////////////////////
+//  Static initialiser
+////////////////////////////////////////////////////////////////////////
+
+	static
+	{
+		// Initialise PRNG
+		try
+		{
+			prng = RandomGenerator.of(PRNG_NAME);
+		}
+		catch (IllegalArgumentException e)
+		{
+			throw new UnexpectedRuntimeException(String.format(UNSUPPORTED_PRNG_STR, PRNG_NAME), e);
+		}
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -1728,6 +1773,159 @@ public class Fat32Volume
 
 	//------------------------------------------------------------------
 
+	public boolean eraseFile(
+		Fat32Directory.Entry	entry,
+		byte					fillerValue,
+		ITaskStatus				taskStatus)
+		throws VolumeException
+	{
+		// Check that volume has been initialised
+		if (bytesPerSector == 0)
+			throw new IllegalStateException(VOLUME_NOT_INITIALISED_STR);
+
+		// Calculate total number of sectors that will be read and written
+		long totalNumRWSectors = ERASURE_NUM_PASSES * entry.getNumClusters() * sectorsPerCluster
+				+ 2 * numFats * sectorsPerFat
+				+ 2 * fat.clusterCount(entry.getDirectory().getClusterIndex()) * sectorsPerCluster;
+
+		// Create procedure to update progress
+		long[] sectorCount = { 0 };
+		IProcedure1<Integer> progressUpdater = deltaSectors ->
+		{
+			sectorCount[0] += deltaSectors;
+			taskStatus.setProgress(((double)sectorCount[0] / (double)totalNumRWSectors));
+		};
+
+		// Initialise task message and progress
+		String pathname = entry.getPathname();
+		taskStatus.setMessage(pathname + "\n" + ERASING_FILE_STR);
+		progressUpdater.invoke(0);
+
+		// Erase clusters of file, clear FAT entries and remove entry from its parent directory
+		BitSet clusters = new BitSet(getNumClusters());
+		boolean volumeModified = false;
+		try
+		{
+			// Open volume for reading and writing
+			open(Volume.Access.READ_WRITE);
+
+			// Erase clusters
+			volumeModified = eraseClusters(entry, clusters, fillerValue, taskStatus, progressUpdater);
+
+			// If task has not been cancelled, clear FAT entries and remove entry from its parent directory
+			if (!taskStatus.isCancelled())
+			{
+				// Update message
+				taskStatus.setMessage(pathname + "\n" + CLEARING_FAT_ENTRIES_STR);
+
+				// Clear FAT entries
+				volumeModified |= clearFatEntries(clusters, taskStatus, progressUpdater);
+
+				// Update message
+				taskStatus.setMessage(pathname + "\n" + REMOVING_DIRECTORY_ENTRY_STR);
+
+				// Remove entry from its parent directory
+				volumeModified |= removeDirectoryEntry(entry, taskStatus, progressUpdater);
+			}
+		}
+		finally
+		{
+			// Close volume
+			if (isOpen())
+				close();
+		}
+
+		// Return 'volume modified' flag
+		return volumeModified;
+	}
+
+	//------------------------------------------------------------------
+
+	public boolean eraseDirectory(
+		Fat32Directory.Entry	entry,
+		byte					fillerValue,
+		ITaskStatus				taskStatus)
+		throws VolumeException
+	{
+		// Check that volume has been initialised
+		if (bytesPerSector == 0)
+			throw new IllegalStateException(VOLUME_NOT_INITIALISED_STR);
+
+		// Get parent directory of entry
+		Fat32Directory parentDirectory = entry.getDirectory();
+
+		// Get directory that corresponds to entry
+		Fat32Directory directory = parentDirectory.findChild(entry);
+		if (directory == null)
+			throw new VolumeException(ErrorMsg.FAILED_TO_FIND_DIRECTORY_IN_PARENT, entry.getPathname());
+
+		// Calculate total number of sectors that will be read and written
+		long[] clusterCount = { entry.getNumClusters() };
+		TreeUtils.visitDepthFirst(directory, true, true, dir ->
+		{
+			for (Fat32Directory.Entry ent : dir.getEntries())
+			{
+				if (ent.isRegularDirectory() || ent.isFile())
+					clusterCount[0] += ent.getNumClusters();
+			}
+			return true;
+		});
+		long totalNumRWSectors = ERASURE_NUM_PASSES * clusterCount[0] * sectorsPerCluster
+				+ 2 * numFats * sectorsPerFat
+				+ 2 * fat.clusterCount(parentDirectory.getClusterIndex()) * sectorsPerCluster;
+
+		// Create procedure to update progress
+		long[] sectorCount = { 0 };
+		IProcedure1<Integer> progressUpdater = deltaSectors ->
+		{
+			sectorCount[0] += deltaSectors;
+			taskStatus.setProgress(((double)sectorCount[0] / (double)totalNumRWSectors));
+		};
+
+		// Initialise task message and progress
+		String pathname = entry.getPathname();
+		taskStatus.setMessage(pathname + "\n" + ERASING_DIRECTORY_STR);
+		progressUpdater.invoke(0);
+
+		// Erase directory
+		BitSet clusters = new BitSet(getNumClusters());
+		boolean volumeModified = false;
+		try
+		{
+			// Open volume for reading and writing
+			open(Volume.Access.READ_WRITE);
+
+			// Erase clusters of directory entries
+			volumeModified = eraseClusters(directory, clusters, fillerValue, taskStatus, progressUpdater);
+
+			// Erase clusters of directory
+			volumeModified |= eraseClusters(entry, clusters, fillerValue, taskStatus, progressUpdater);
+
+			// Update message
+			taskStatus.setMessage(pathname + "\n" + CLEARING_FAT_ENTRIES_STR);
+
+			// Clear FAT entries
+			volumeModified |= clearFatEntries(clusters, taskStatus, progressUpdater);
+
+			// Update message
+			taskStatus.setMessage(pathname + "\n" + REMOVING_DIRECTORY_ENTRY_STR);
+
+			// Remove entry from its parent directory
+			volumeModified |= removeDirectoryEntry(entry, taskStatus, progressUpdater);
+		}
+		finally
+		{
+			// Close volume
+			if (isOpen())
+				close();
+		}
+
+		// Return 'volume modified' flag
+		return volumeModified;
+	}
+
+	//------------------------------------------------------------------
+
 	public boolean isEntryFragmented(
 		Fat32Directory.Entry	entry)
 		throws VolumeException
@@ -1814,22 +2012,23 @@ public class Fat32Volume
 				(double)(numClustersProcessed + entry.getNumClusters()) / (double)totalNumClusters - startProgress;
 
 		// Calculate total number of sectors that will be read and written
-		int numDirectorySectors = fat.clusterCount(entry.getDirectory().getClusterIndex()) * sectorsPerCluster;
+		Fat32Directory directory = entry.getDirectory();
+		int numDirectorySectors = fat.clusterCount(directory.getClusterIndex()) * sectorsPerCluster;
 		long totalNumRWSectors = 2 * (numClusters * sectorsPerCluster + numDirectorySectors + numFats * sectorsPerFat);
-		long[] numRWSectors = { 0 };
 
 		// Create procedure to update progress
-		IProcedure1<Integer> updateProgress = deltaSectors ->
+		long[] sectorCount = { 0 };
+		IProcedure1<Integer> progressUpdater = deltaSectors ->
 		{
-			numRWSectors[0] += deltaSectors;
-			taskStatus.setProgress(startProgress + ((double)numRWSectors[0] / (double)totalNumRWSectors)
+			sectorCount[0] += deltaSectors;
+			taskStatus.setProgress(startProgress + ((double)sectorCount[0] / (double)totalNumRWSectors)
 					* deltaProgress);
 		};
 
 		// Update task message and progress
 		String pathname = entry.getPathname();
 		taskStatus.setMessage(pathname + "\n" + DEFRAGMENTING_STR);
-		updateProgress.invoke(0);
+		progressUpdater.invoke(0);
 
 		// Defragment file
 		try
@@ -1855,7 +2054,7 @@ public class Fat32Volume
 
 				// If source and destination clusters are the same, skip I/O ...
 				if (sourceIndex == destIndex + copyIndex)
-					updateProgress.invoke(2 * sectorsPerCluster);
+					progressUpdater.invoke(2 * sectorsPerCluster);
 
 				// ... otherwise, copy cluster
 				else
@@ -1865,14 +2064,14 @@ public class Fat32Volume
 					read(buffer);
 
 					// Update progress
-					updateProgress.invoke(sectorsPerCluster);
+					progressUpdater.invoke(sectorsPerCluster);
 
 					// Write cluster to destination
 					seekSector(clusterIndexToSectorIndex(destIndex + copyIndex));
 					write(buffer);
 
 					// Update progress
-					updateProgress.invoke(sectorsPerCluster);
+					progressUpdater.invoke(sectorsPerCluster);
 				}
 
 				// Get next source index
@@ -1884,7 +2083,7 @@ public class Fat32Volume
 
 			// If no clusters were copied or source and destination clusters are the same, skip I/O ...
 			if ((copyIndex == 0) || (sourceIndices[0] == destIndex))
-				updateProgress.invoke(2 * numDirectorySectors);
+				progressUpdater.invoke(2 * numDirectorySectors);
 
 			// ... otherwise, update cluster index in directory entry
 			else
@@ -1893,11 +2092,10 @@ public class Fat32Volume
 				taskStatus.setMessage(pathname + "\n" + UPDATING_PARENT_DIRECTORY_STR);
 
 				// Read clusters of directory
-				Fat32Directory directory = entry.getDirectory();
 				buffer = directory.readData(false);
 
 				// Update progress
-				updateProgress.invoke(numDirectorySectors);
+				progressUpdater.invoke(numDirectorySectors);
 
 				// Get offset to directory entry in cluster data
 				int offset = (entry.getIndex() + entry.getLength() - 1) * Fat32Directory.Entry.SIZE;
@@ -1913,7 +2111,7 @@ public class Fat32Volume
 				directory.writeData(buffer, 0, false);
 
 				// Update progress
-				updateProgress.invoke(numDirectorySectors);
+				progressUpdater.invoke(numDirectorySectors);
 
 				// Set cluster index on directory entry
 				entry.setClusterIndex(destIndex);
@@ -1921,7 +2119,7 @@ public class Fat32Volume
 
 			// If no clusters were copied, skip I/O ...
 			if (copyIndex == 0)
-				updateProgress.invoke(2 * numFats * sectorsPerFat);
+				progressUpdater.invoke(2 * numFats * sectorsPerFat);
 
 			// ... otherwise, update entries in FATs
 			else
@@ -1933,14 +2131,14 @@ public class Fat32Volume
 				int destEndIndex = destIndex + copyIndex;
 				for (int fatIndex = 0; fatIndex < numFats; fatIndex++)
 				{
+					// Initialise 'last FAT' flag
+					boolean lastFat = (fatIndex == numFats - 1);
+
 					// Read sectors of FAT
 					buffer = fat.read(fatIndex);
 
 					// Update progress
-					updateProgress.invoke(sectorsPerFat);
-
-					// Initialise 'last FAT' flag
-					boolean lastFat = (fatIndex == numFats - 1);
+					progressUpdater.invoke(sectorsPerFat);
 
 					// Update entries for old clusters
 					for (int i = 0; i < copyIndex; i++)
@@ -2002,7 +2200,7 @@ public class Fat32Volume
 					write(buffer);
 
 					// Update progress
-					updateProgress.invoke(sectorsPerFat);
+					progressUpdater.invoke(sectorsPerFat);
 				}
 			}
 
@@ -2015,6 +2213,234 @@ public class Fat32Volume
 			if (isOpen())
 				close();
 		}
+	}
+
+	//------------------------------------------------------------------
+
+	private boolean eraseClusters(
+		Fat32Directory			directory,
+		BitSet					clusters,
+		byte					fillerValue,
+		ITaskStatus				taskStatus,
+		IProcedure1<Integer>	progressUpdater)
+		throws VolumeException
+	{
+		// Erase clusters of subdirectories
+		boolean volumeModified = false;
+		for (Fat32Directory child : directory.getChildren())
+		{
+			// Test whether task has been cancelled
+			if (taskStatus.isCancelled())
+				break;
+
+			// Erase subdirectory
+			volumeModified |= eraseClusters(child, clusters, fillerValue, taskStatus, progressUpdater);
+		}
+
+		// Erase clusters of directory entries
+		for (Fat32Directory.Entry entry : directory.getEntries())
+		{
+			// Test whether task has been cancelled
+			if (taskStatus.isCancelled())
+				break;
+
+			// If entry is regular directory or file, erase clusters of entry
+			if (entry.isRegularDirectory() || entry.isFile())
+				volumeModified |= eraseClusters(entry, clusters, fillerValue, taskStatus, progressUpdater);
+		}
+
+		// Return 'volume modified' flag
+		return volumeModified;
+	}
+
+	//------------------------------------------------------------------
+
+	private boolean eraseClusters(
+		Fat32Directory.Entry	entry,
+		BitSet					clusters,
+		byte					fillerValue,
+		ITaskStatus				taskStatus,
+		IProcedure1<Integer>	progressUpdater)
+		throws VolumeException
+	{
+		// Test for clusters
+		if (entry.getNumClusters() == 0)
+			return false;
+
+		// Initialise buffers for cluster
+		byte[][] buffers = new byte[ERASURE_NUM_PASSES][];
+		int bytesPerCluster = sectorsPerCluster * bytesPerSector;
+		for (int pass = 0; pass < ERASURE_NUM_PASSES; pass++)
+		{
+			buffers[pass] = new byte[bytesPerCluster];
+			if (pass != ERASURE_RANDOM_PASS)
+			{
+				byte b = switch (pass)
+				{
+					case 0  -> (byte)0x55;
+					case 1  -> (byte)0xAA;
+					case 3  -> fillerValue;
+					default -> 0;
+				};
+				Arrays.fill(buffers[pass], b);
+			}
+		}
+
+		// Update message
+		taskStatus.setMessage(entry.getPathname() + "\n" + ERASING_CLUSTERS_STR);
+
+		// Write clusters of entry
+		boolean volumeModified = false;
+		Fat32Fat.IndexIterator it = fat.indexIterator(entry.getClusterIndex());
+		while (it.hasNext())
+		{
+			// Get index of cluster
+			int index = it.next();
+			clusters.set(index);
+
+			// Write cluster in multiple passes
+			for (int pass = 0; pass < ERASURE_NUM_PASSES; pass++)
+			{
+				// Test whether task has been cancelled
+				if (taskStatus.isCancelled())
+					break;
+
+				// If random pass, fill buffer with random data
+				if (pass == ERASURE_RANDOM_PASS)
+					prng.nextBytes(buffers[pass]);
+
+				// Seek sector
+				seekSector(clusterIndexToSectorIndex(index));
+
+				// Write cluster
+				try
+				{
+					write(buffers[pass]);
+				}
+				finally
+				{
+					volumeModified = true;
+				}
+
+				// Update progress
+				progressUpdater.invoke(sectorsPerCluster);
+			}
+		}
+
+		// Return 'volume modified' flag
+		return volumeModified;
+	}
+
+	//------------------------------------------------------------------
+
+	private boolean clearFatEntries(
+		BitSet					clusters,
+		ITaskStatus				taskStatus,
+		IProcedure1<Integer>	progressUpdater)
+		throws VolumeException
+	{
+		// Clear FAT entries
+		boolean volumeModified = false;
+		for (int fatIndex = 0; fatIndex < numFats; fatIndex++)
+		{
+			// Initialise 'last FAT' flag
+			boolean lastFat = (fatIndex == numFats - 1);
+
+			// Read sectors of FAT
+			byte[] fatData = fat.read(fatIndex);
+
+			// Update progress
+			progressUpdater.invoke(sectorsPerFat);
+
+			// Update FAT
+			for (int i = clusters.nextSetBit(0); i >= 0; i = clusters.nextSetBit(i + 1))
+			{
+				// Get offset of FAT entry
+				int offset = i * Fat32Fat.ENTRY_SIZE;
+
+				// Test current value of FAT entry
+				if (Fat32Fat.getIndex(fatData, offset) != fat.get(i))
+					throw new VolumeException(ErrorMsg.UNEXPECTED_FAT_ENTRY);
+
+				// Set new value in FAT
+				Fat32Fat.setIndex(0, fatData, offset);
+
+				// Update FAT array
+				if (lastFat)
+					fat.set(i, 0);
+			}
+
+			// Seek sector
+			seekSector(numReservedSectors + fatIndex * sectorsPerFat);
+
+			// Write sectors of FAT
+			try
+			{
+				write(fatData);
+			}
+			finally
+			{
+				volumeModified = true;
+			}
+
+			// Update progress
+			progressUpdater.invoke(sectorsPerFat);
+		}
+
+		// Return 'volume modified' flag
+		return volumeModified;
+	}
+
+	//------------------------------------------------------------------
+
+	private boolean removeDirectoryEntry(
+		Fat32Directory.Entry	entry,
+		ITaskStatus				taskStatus,
+		IProcedure1<Integer>	progressUpdater)
+		throws VolumeException
+	{
+		// Count sectors in parent directory
+		Fat32Directory directory = entry.getDirectory();
+		int numDirectorySectors = fat.clusterCount(directory.getClusterIndex()) * sectorsPerCluster;
+
+		// Read clusters of directory
+		byte[] inData = directory.readData(false);
+
+		// Update progress
+		progressUpdater.invoke(numDirectorySectors);
+
+		// Allocate buffer for new directory entries
+		byte[] outData = new byte[inData.length];
+
+		// Copy entries, omitting target entry
+		int index = 0;
+		for (Fat32Directory.Entry ent : directory.getEntries())
+		{
+			if (ent != entry)
+			{
+				System.arraycopy(inData, ent.getIndex() * Fat32Directory.Entry.SIZE, outData,
+								 index * Fat32Directory.Entry.SIZE, ent.getLength() * Fat32Directory.Entry.SIZE);
+				ent.setIndex(index);
+				index += ent.getLength();
+			}
+		}
+
+		// Write clusters of directory
+		boolean volumeModified = false;
+		try
+		{
+			directory.writeData(outData, 0);
+		}
+		finally
+		{
+			volumeModified = true;
+		}
+
+		// Update progress
+		progressUpdater.invoke(numDirectorySectors);
+
+		// Return 'volume modified' flag
+		return volumeModified;
 	}
 
 	//------------------------------------------------------------------

@@ -97,7 +97,7 @@ public class PreferencesDialog
 	private static final	int		MIN_NUM_SECTORS_SPINNER_NUM_DIGITS	= 10;
 
 	private static final	double	CONTROL_H_GAP	= 6.0;
-	private static final	double	CONTROL_V_GAP	= 6.0;
+	private static final	double	CONTROL_V_GAP	= 8.0;
 
 	private static final	Insets	CONTROL_PANE_PADDING	= new Insets(12.0);
 

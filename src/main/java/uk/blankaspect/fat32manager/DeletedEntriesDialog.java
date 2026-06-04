@@ -107,12 +107,12 @@ public class DeletedEntriesDialog
 						try
 						{
 							SectorClusterViewDialog
-									.showCluster(getWindow(), volume,
+									.showCluster(window(), volume,
 												 volume.getFat().indexFinder(entry.getClusterIndex(), -1));
 						}
 						catch (VolumeException e)
 						{
-							Utils.showErrorMessage(getWindow(), VIEW_CLUSTER_STR, e);
+							Utils.showErrorMessage(window(), VIEW_CLUSTER_STR, e);
 						}
 					}
 				}

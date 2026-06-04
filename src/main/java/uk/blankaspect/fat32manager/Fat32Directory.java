@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.List;
 
 import java.util.stream.Collectors;
@@ -633,21 +632,40 @@ public class Fat32Directory
 
 	//------------------------------------------------------------------
 
+	public List<String> getNames()
+	{
+		// Initialise list of names
+		Deque<String> names = new ArrayDeque<>();
+
+		// Collect names of directories, ascending from this directory to root
+		Fat32Directory directory = this;
+		while (directory != null)
+		{
+			names.addFirst(directory.getName());
+			directory = directory.parent;
+		}
+
+		// Return unmodifiable list of names
+		return List.copyOf(names);
+	}
+
+	//------------------------------------------------------------------
+
 	public List<Fat32Directory> getPath()
 	{
 		// Initialise list of directories
-		LinkedList<Fat32Directory> elements = new LinkedList<>();
+		Deque<Fat32Directory> directories = new ArrayDeque<>();
 
 		// Collect directories, ascending from this directory to root
 		Fat32Directory directory = this;
 		while (directory != null)
 		{
-			elements.addFirst(directory);
+			directories.addFirst(directory);
 			directory = directory.parent;
 		}
 
-		// Return list of directories
-		return elements;
+		// Return unmodifiable list of directories
+		return List.copyOf(directories);
 	}
 
 	//------------------------------------------------------------------
@@ -677,6 +695,22 @@ public class Fat32Directory
 
 		// Return pathname
 		return buffer.toString();
+	}
+
+	//------------------------------------------------------------------
+
+	public Fat32Directory findChild(
+		Entry	entry)
+	{
+		if (entry.isRegularDirectory())
+		{
+			for (Fat32Directory child : getChildren())
+			{
+				if (child.clusterIndex == entry.clusterIndex)
+					return child;
+			}
+		}
+		return null;
 	}
 
 	//------------------------------------------------------------------
@@ -1099,8 +1133,8 @@ public class Fat32Directory
 						// Get file length and set it on entry
 						if (entry.isFile())
 						{
-							entry.fileLength = NumberCodec.bytesToUIntLE(buffer, offset + FILE_LENGTH_OFFSET,
-																		 FILE_LENGTH_LENGTH);
+							entry.fileLength = NumberCodec.bytesToULongLE(buffer, offset + FILE_LENGTH_OFFSET,
+																		  FILE_LENGTH_LENGTH);
 						}
 
 						// Case: entry is volume label
@@ -1310,8 +1344,8 @@ public class Fat32Directory
 						// Get file length and set it on entry
 						if (entry.isFile())
 						{
-							entry.fileLength = NumberCodec.bytesToUIntLE(buffer, offset + FILE_LENGTH_OFFSET,
-																		 FILE_LENGTH_LENGTH);
+							entry.fileLength = NumberCodec.bytesToULongLE(buffer, offset + FILE_LENGTH_OFFSET,
+																		  FILE_LENGTH_LENGTH);
 						}
 
 						// Case: entry is volume label
@@ -1333,7 +1367,7 @@ public class Fat32Directory
 								// If entry is file, validate file length against number of clusters
 								if (entry.isFile())
 								{
-									if (numClusters != NumberUtils.roundUpQuotientLong(entry.getFileLength(),
+									if (numClusters != NumberUtils.roundUpQuotientLong(entry.fileLength,
 																					   volume.getBytesPerCluster()))
 										throw new EntryException(ErrorMsg.INCONSISTENT_FILE_LENGTH, entry.getName());
 								}
@@ -1913,6 +1947,14 @@ public class Fat32Directory
 
 		//--------------------------------------------------------------
 
+		public void setIndex(
+			int	index)
+		{
+			this.index = index;
+		}
+
+		//--------------------------------------------------------------
+
 		public int getLength()
 		{
 			return length;
@@ -1950,16 +1992,14 @@ public class Fat32Directory
 
 		public boolean isRegularDirectory()
 		{
-			return attributes.contains(Attr.DIRECTORY)
-						&& !(name.equals(SPECIAL_DIRECTORY_NAME_THIS) || name.equals(SPECIAL_DIRECTORY_NAME_PARENT));
+			return attributes.contains(Attr.DIRECTORY) && !hasSpecialDirectoryName();
 		}
 
 		//--------------------------------------------------------------
 
 		public boolean isSpecialDirectory()
 		{
-			return attributes.contains(Attr.DIRECTORY)
-						&& (name.equals(SPECIAL_DIRECTORY_NAME_THIS) || name.equals(SPECIAL_DIRECTORY_NAME_PARENT));
+			return attributes.contains(Attr.DIRECTORY) && hasSpecialDirectoryName();
 		}
 
 		//--------------------------------------------------------------
@@ -1981,13 +2021,12 @@ public class Fat32Directory
 		public Kind getKind()
 		{
 			return attributes.contains(Attr.VOLUME_LABEL)
-							? Kind.VOLUME_LABEL
-							: attributes.contains(Attr.DIRECTORY)
-									? (name.equals(SPECIAL_DIRECTORY_NAME_THIS)
-												|| name.equals(SPECIAL_DIRECTORY_NAME_PARENT))
-											? Kind.SPECIAL_DIRECTORY
-											: Kind.DIRECTORY
-									: Kind.FILE;
+					? Kind.VOLUME_LABEL
+					: attributes.contains(Attr.DIRECTORY)
+							? hasSpecialDirectoryName()
+									? Kind.SPECIAL_DIRECTORY
+									: Kind.DIRECTORY
+							: Kind.FILE;
 		}
 
 		//--------------------------------------------------------------
@@ -2105,6 +2144,13 @@ public class Fat32Directory
 		public String getAccessDateString()
 		{
 			return (accessDate == null) ? "" : ACCESS_DATE_FORMATTER.format(accessDate);
+		}
+
+		//--------------------------------------------------------------
+
+		private boolean hasSpecialDirectoryName()
+		{
+			return name.equals(SPECIAL_DIRECTORY_NAME_THIS) || name.equals(SPECIAL_DIRECTORY_NAME_PARENT);
 		}
 
 		//--------------------------------------------------------------
