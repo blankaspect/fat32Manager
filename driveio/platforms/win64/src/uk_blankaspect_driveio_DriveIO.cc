@@ -222,7 +222,8 @@ JNIEXPORT jint JNICALL Java_uk_blankaspect_driveio_DriveIO_openVolume(
 	JNIEnv*		envPtr,
 	jclass		cls,
 	jcharArray	volumeName,
-	jint		accessMode)
+	jint		accessMode,
+	jboolean	unbufferedIO)
 {
 	// Get the name of the volume
 	jsize nameLength = envPtr->GetArrayLength(volumeName);
@@ -239,7 +240,7 @@ JNIEXPORT jint JNICALL Java_uk_blankaspect_driveio_DriveIO_openVolume(
 	// Open the volume
 	try
 	{
-		volumePtr->open(accessMode);
+		volumePtr->open(accessMode, unbufferedIO);
 		return uk_blankaspect_driveio_DriveIO_RESULT_SUCCESS;
 	}
 	catch (const Exception& e)

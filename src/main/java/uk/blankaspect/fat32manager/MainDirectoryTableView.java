@@ -54,6 +54,7 @@ import javafx.stage.Window;
 
 import uk.blankaspect.common.collection.CollectionUtils;
 
+import uk.blankaspect.common.exception2.BaseException;
 import uk.blankaspect.common.exception2.LocationException;
 
 import uk.blankaspect.common.function.IFunction0;
@@ -71,8 +72,12 @@ import uk.blankaspect.driveio.VolumeException;
 
 import uk.blankaspect.ui.jfx.button.Buttons;
 
+import uk.blankaspect.ui.jfx.dialog.ButtonInfo;
 import uk.blankaspect.ui.jfx.dialog.ConfirmationDialog;
+import uk.blankaspect.ui.jfx.dialog.ErrorDialog;
+import uk.blankaspect.ui.jfx.dialog.MessageDialog;
 import uk.blankaspect.ui.jfx.dialog.NotificationDialog;
+import uk.blankaspect.ui.jfx.dialog.SimpleDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleModalDialog;
 import uk.blankaspect.ui.jfx.dialog.SimpleProgressDialog;
 
@@ -93,6 +98,9 @@ public class MainDirectoryTableView
 ////////////////////////////////////////////////////////////////////////
 //  Constants
 ////////////////////////////////////////////////////////////////////////
+
+	/** The key under which the state of the <i>erase file/directory</i> dialog is saved. */
+	private static final	String	ERASE_ENTRY_DIALOG_KEY	= "eraseEntry";
 
 	/** The key combination that invokes the <i>open directory</i> command. */
 	private static final	KeyCombination	KEY_COMBO_OPEN			= new KeyCodeCombination(KeyCode.ENTER);
@@ -131,13 +139,17 @@ public class MainDirectoryTableView
 	private static final	String	NOT_ENOUGH_SPACE_STR	= "There was not enough space to defragment the file.";
 	private static final	String	DEFRAGMENTED_STR		= "The file was defragmented.";
 	private static final	String	INVALID_CLUSTERS_STR	= "Invalid clusters";
+	private static final	String	REOPEN_STR				= "Reopen";
+	private static final	String	CONTINUE_STR			= "Continue";
 	private static final	String	ERASE_STR				= "Erase";
 	private static final	String	ERASE_FILE_STR			= "Erase file";
 	private static final	String	FILE_ERASED_STR			= "The file was erased successfully.";
 	private static final	String	ERASE_DIRECTORY_STR		= "Erase directory";
 	private static final	String	DIRECTORY_ERASED_STR	= "The directory was erased successfully.";
+	private static final	String	REOPEN_UNBUFFERED_STR	=
+			"You should reopen the volume with unbuffered I/O to erase a file or directory.";
 	private static final	String	WARN_CANCEL_STR			=
-			"WARNING" + MessageConstants.LABEL_SEPARATOR
+			"- WARNING -\n" + MessageConstants.LABEL_SEPARATOR
 			+ "The volume may be corrupted if you cancel the operation while it is running.";
 	private static final	String	VOLUME_MODIFIED_STR		=
 			"The volume was modified before the operation was cancelled.";
@@ -150,6 +162,9 @@ public class MainDirectoryTableView
 
 		String	DIRECTORY_NO_LONGER_EXISTS =
 				"The directory no longer exists.";
+
+		String	ENTRY_NO_LONGER_EXISTS =
+				"Name: %s\nThe entry no longer exists.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -551,11 +566,11 @@ public class MainDirectoryTableView
 				updateMessage(READING_FATS_STR);
 				try
 				{
-					volume.init();
+					volume.init(volume.isUnbufferedIO());
 				}
 				catch (VolumeException e)
 				{
-					Fat32ManagerApp.instance().invalidateVolume();
+					Fat32ManagerApp.instance().closeVolume();
 					throw e;
 				}
 
@@ -698,42 +713,46 @@ public class MainDirectoryTableView
 
 	//------------------------------------------------------------------
 
-	public void openDirectory(
+	public boolean openDirectory(
 		String	pathname)
 	{
-		if (!StringUtils.isNullOrEmpty(pathname))
+		// Test for pathname
+		if (StringUtils.isNullOrEmpty(pathname))
+			return false;
+
+		// Get list of directory names
+		List<String> names = StringUtils.split(pathname.equals(Fat32Directory.NAME_SEPARATOR) ? "" : pathname,
+											   Fat32Directory.NAME_SEPARATOR_CHAR);
+
+		// Search for directory
+		Fat32Directory directory = null;
+		String errorPathname = null;
+		try
 		{
-			// Get list of directory names
-			List<String> names = StringUtils.split(pathname, Fat32Directory.NAME_SEPARATOR_CHAR);
-
-			// Search for directory
-			Fat32Directory directory = null;
-			String errorPathname = null;
-			try
-			{
-				DirectorySearchResult result = findDirectory(names);
-				directory = result.directory;
-				errorPathname = result.errorPathname;
-			}
-			catch (VolumeException e)
-			{
-				Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR, e);
-			}
-
-			// If no directory was found, use current directory
-			if (directory == null)
-				directory = getDirectory();
-
-			// Open directory
-			openDirectory(directory);
-
-			// If target pathname was not reached, display error mesage
-			if (errorPathname != null)
-			{
-				Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR,
-									   new LocationException(ErrorMsg.DIRECTORY_DOES_NOT_EXIST, errorPathname));
-			}
+			DirectorySearchResult result = findDirectory(names);
+			directory = result.directory;
+			errorPathname = result.errorPathname;
 		}
+		catch (VolumeException e)
+		{
+			Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR, e);
+		}
+
+		// If no directory was found, use current directory
+		if (directory == null)
+			directory = getDirectory();
+
+		// Open directory
+		openDirectory(directory);
+
+		// If target pathname was reached, indicate success
+		if (errorPathname == null)
+			return true;
+
+		// Display error mesage and indicate failure
+		Utils.showErrorMessage(window(), OPEN_DIRECTORY_STR,
+							   new LocationException(ErrorMsg.DIRECTORY_DOES_NOT_EXIST, errorPathname));
+		return false;
 	}
 
 	//------------------------------------------------------------------
@@ -917,8 +936,50 @@ public class MainDirectoryTableView
 	private void eraseFile(
 		Fat32Directory.Entry	entry)
 	{
+		// Display recommendation to reopen volume with unbuffered I/O
+		Fat32Volume volume = entry.getDirectory().getVolume();
+		if (!volume.isUnbufferedIO())
+		{
+			switch (MessageDialog.show(window(), ERASE_FILE_STR, MessageIcon32.ALERT.get(), REOPEN_UNBUFFERED_STR,
+									   ButtonInfo.allRight(REOPEN_STR, CONTINUE_STR, SimpleDialog.CANCEL_STR)))
+			{
+				case 0:
+				{
+					// Reopen volume and erase file
+					String dirPathname = entry.getDirectory().getPathname();
+					String name = entry.getName();
+					Fat32ManagerApp.instance().reopenVolume(volume.getName(), true, () ->
+					{
+						if (openDirectory(dirPathname))
+						{
+							Fat32Directory.Entry entry0 = getDirectory().findEntry(name);
+							if (entry0 == null)
+							{
+								ErrorDialog.show(window(), ERASE_FILE_STR,
+												 new BaseException(ErrorMsg.ENTRY_NO_LONGER_EXISTS, name));
+							}
+							else
+							{
+								scrollTo(entry0);
+								getSelectionModel().select(entry0);
+								eraseFile(entry0);
+							}
+						}
+					});
+					return;
+				}
+
+				case 1:
+					// do nothing
+					break;
+
+				case 2:
+					return;
+			}
+		}
+
 		// Display dialog for filler value
-		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_FILE_STR);
+		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_FILE_STR, ERASE_ENTRY_DIALOG_KEY);
 		if (fillerValue == null)
 			return;
 
@@ -953,7 +1014,7 @@ public class MainDirectoryTableView
 				ITaskStatus taskStatus = createTaskStatus();
 
 				// Erase file
-				vars.modified = entry.getDirectory().getVolume().eraseFile(entry, fillerValue.byteValue(), taskStatus);
+				vars.modified = volume.eraseFile(entry, fillerValue.byteValue(), taskStatus);
 
 				// If task has been cancelled, change state to 'cancelled'
 				hardCancel(false);
@@ -1007,8 +1068,50 @@ public class MainDirectoryTableView
 	private void eraseDirectory(
 		Fat32Directory.Entry	entry)
 	{
+		// Display recommendation to reopen volume with unbuffered I/O
+		Fat32Volume volume = entry.getDirectory().getVolume();
+		if (!volume.isUnbufferedIO())
+		{
+			switch (MessageDialog.show(window(), ERASE_DIRECTORY_STR, MessageIcon32.ALERT.get(), REOPEN_UNBUFFERED_STR,
+									   ButtonInfo.allRight(REOPEN_STR, CONTINUE_STR, SimpleDialog.CANCEL_STR)))
+			{
+				case 0:
+				{
+					// Reopen volume and erase directory
+					String dirPathname = entry.getDirectory().getPathname();
+					String name = entry.getName();
+					Fat32ManagerApp.instance().reopenVolume(volume.getName(), true, () ->
+					{
+						if (openDirectory(dirPathname))
+						{
+							Fat32Directory.Entry entry0 = getDirectory().findEntry(name);
+							if (entry0 == null)
+							{
+								ErrorDialog.show(window(), ERASE_DIRECTORY_STR,
+												 new BaseException(ErrorMsg.ENTRY_NO_LONGER_EXISTS, name));
+							}
+							else
+							{
+								scrollTo(entry0);
+								getSelectionModel().select(entry0);
+								eraseDirectory(entry0);
+							}
+						}
+					});
+					return;
+				}
+
+				case 1:
+					// do nothing
+					break;
+
+				case 2:
+					return;
+			}
+		}
+
 		// Display dialog for filler value
-		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_DIRECTORY_STR);
+		Integer fillerValue = ErasureFillerValueDialog.show(window(), ERASE_DIRECTORY_STR, ERASE_ENTRY_DIALOG_KEY);
 		if (fillerValue == null)
 			return;
 
@@ -1044,8 +1147,7 @@ public class MainDirectoryTableView
 				ITaskStatus taskStatus = createTaskStatus();
 
 				// Erase directory
-				vars.modified =
-						entry.getDirectory().getVolume().eraseDirectory(entry, fillerValue.byteValue(), taskStatus);
+				vars.modified = volume.eraseDirectory(entry, fillerValue.byteValue(), taskStatus);
 
 				// If task has been cancelled, change state to 'cancelled'
 				hardCancel(false);

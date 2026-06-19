@@ -522,6 +522,8 @@ public class DirectoryTableView
 		{
 			// Get directory
 			Fat32Directory directory = getDirectory();
+			if (directory == null)
+				return;
 
 			// Get selected entry
 			Fat32Directory.Entry entry = getSelectionModel().getSelectedItem();

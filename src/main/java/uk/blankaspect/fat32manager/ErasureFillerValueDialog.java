@@ -20,6 +20,9 @@ package uk.blankaspect.fat32manager;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -65,6 +68,9 @@ public class ErasureFillerValueDialog
 	/** The number of columns of the <i>filler</i> field. */
 	private static final	int		FILLER_FIELD_NUM_COLUMNS	= 2;
 
+	/** The default text of the <i>filler</i> field. */
+	private static final	String	DEFAULT_FILLER_TEXT	= "00";
+
 	/** Miscellaneous strings. */
 	private static final	String	FILLER_VALUE_STR	= "Filler value";
 	private static final	String	ERASE_STR			= "Erase";
@@ -73,7 +79,7 @@ public class ErasureFillerValueDialog
 //  Class variables
 ////////////////////////////////////////////////////////////////////////
 
-	private static	String	fillerText;
+	private static	Map<String, String>	fillerText	= new HashMap<>();
 
 ////////////////////////////////////////////////////////////////////////
 //  Instance variables
@@ -87,13 +93,14 @@ public class ErasureFillerValueDialog
 
 	private ErasureFillerValueDialog(
 		Window	owner,
-		String	title)
+		String	title,
+		String	stateKey)
 	{
 		// Call superclass constructor
 		super(owner, MethodHandles.lookup().lookupClass().getName(), null, title);
 
 		// Create 'filler' text field
-		TextField fillerField = new TextField(fillerText);
+		TextField fillerField = new TextField(fillerText.getOrDefault(stateKey, DEFAULT_FILLER_TEXT));
 		fillerField.setPrefColumnCount(FILLER_FIELD_NUM_COLUMNS);
 		fillerField.setTextFormatter(new TextFormatter<>(FilterFactory.hexInteger(FILLER_FIELD_NUM_COLUMNS)));
 
@@ -142,7 +149,7 @@ public class ErasureFillerValueDialog
 		fillerField.selectAll();
 
 		// Save state when dialog is closed
-		setOnHiding(event -> fillerText = fillerField.getText());
+		setOnHiding(event -> fillerText.put(stateKey, fillerField.getText()));
 	}
 
 	//------------------------------------------------------------------
@@ -153,9 +160,10 @@ public class ErasureFillerValueDialog
 
 	public static Integer show(
 		Window	owner,
-		String	title)
+		String	title,
+		String	stateKey)
 	{
-		return new ErasureFillerValueDialog(owner, title).showDialog();
+		return new ErasureFillerValueDialog(owner, title, stateKey).showDialog();
 	}
 
 	//------------------------------------------------------------------

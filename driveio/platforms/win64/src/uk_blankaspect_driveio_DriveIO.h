@@ -78,10 +78,10 @@ JNIEXPORT jboolean JNICALL Java_uk_blankaspect_driveio_DriveIO_isVolumeOpen
 /*
  * Class:     uk_blankaspect_driveio_DriveIO
  * Method:    openVolume
- * Signature: ([CI)I
+ * Signature: ([CIZ)I
  */
 JNIEXPORT jint JNICALL Java_uk_blankaspect_driveio_DriveIO_openVolume
-  (JNIEnv *, jclass, jcharArray, jint);
+  (JNIEnv *, jclass, jcharArray, jint, jboolean);
 
 /*
  * Class:     uk_blankaspect_driveio_DriveIO

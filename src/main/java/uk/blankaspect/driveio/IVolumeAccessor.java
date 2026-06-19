@@ -66,7 +66,8 @@ public interface IVolumeAccessor
 
 	void openVolume(
 		String	volumeName,
-		int		accessFlags)
+		int		accessFlags,
+		boolean	unbufferedIO)
 		throws VolumeException;
 
 	//------------------------------------------------------------------

@@ -79,6 +79,9 @@ namespace ErrorMsg
 
 	const std::wstring	ERROR_WRITING_VOLUME
 						(L"An error occurred when writing the volume.");
+
+	const std::wstring	NOT_ENOUGH_MEMORY
+						(L"There is not enough memory to perform the current operation.");
 }
 
 //----------------------------------------------------------------------
@@ -91,7 +94,10 @@ Volume::Volume(
 	const std::string&	name) :
 
 	_fileDescriptor(-1),
-	_name          (name)
+	_name          (name),
+	_unbufferedIO  (false),
+	_buffer        (0),
+	_bufferLength  (0)
 {
 }
 
@@ -99,6 +105,8 @@ Volume::Volume(
 
 Volume::~Volume()
 {
+	delete[] _buffer;
+
 	if (_fileDescriptor >= 0)
 		::close(_fileDescriptor);
 }
@@ -147,26 +155,27 @@ void Volume::getInfo(
 ////////////////////////////////////////////////////////////////////////
 
 void Volume::open(
-	int	accessMode)
+	int		accessMode,
+	bool	unbufferedIO)
 {
 	// Test whether volume is open
 	if (_fileDescriptor >= 0)
 		throw VolumeException(ErrorMsg::VOLUME_IS_OPEN, _name);
 
 	// Get access mode
-	int accessMode0 = O_CLOEXEC | O_NONBLOCK;
+	int flags = O_CLOEXEC | O_NONBLOCK;
 	switch (accessMode)
 	{
 		case rwMode::READ:
-			accessMode0 |= O_RDONLY;
+			flags |= O_RDONLY;
 			break;
 
 		case rwMode::WRITE:
-			accessMode0 |= O_WRONLY;
+			flags |= O_WRONLY;
 			break;
 
 		case rwMode::READ_WRITE:
-			accessMode0 |= O_RDWR;
+			flags |= O_RDWR;
 			break;
 	}
 
@@ -176,7 +185,9 @@ void Volume::open(
 	{
 		// Open volume
 		const std::string pathname = DirPathname::DEVICE + "/" + _name;
-		fd = ::open(pathname.c_str(), accessMode0);
+		if (unbufferedIO)
+			flags |= O_DIRECT | O_DSYNC;
+		fd = ::open(pathname.c_str(), flags);
 		if (fd < 0)
 			throw VolumeException(ErrorMsg::FAILED_TO_OPEN_VOLUME, _name, errno);
 
@@ -188,6 +199,7 @@ void Volume::open(
 		// Update instance variables
 		_fileDescriptor = fd;
 		_bytesPerSector = sectorSize;
+		_unbufferedIO = unbufferedIO;
 	}
 	catch (...)
 	{
@@ -207,6 +219,9 @@ void Volume::close()
 	// Test whether volume is open
 	if (_fileDescriptor < 0)
 		throw VolumeException(ErrorMsg::VOLUME_IS_NOT_OPEN, _name);
+
+	// Free buffer
+	freeBuffer();
 
 	// Invalidate file descriptor
 	int fd = _fileDescriptor;
@@ -250,12 +265,21 @@ void Volume::read(
 	if (length % _bytesPerSector != 0)
 		throw VolumeException(ErrorMsg::LENGTH_NOT_INTEGRAL_MULTIPLE_OF_SECTOR_LENGTH, _name);
 
+	// Allocate buffer, if necessary
+	void* bufPtr = buffer;
+	if (_unbufferedIO && (reinterpret_cast<UInt64>(buffer) % _bytesPerSector != 0))
+		bufPtr = allocBuffer(length);
+
 	// Read data from volume into buffer
-	SInt64 readLength = ::read(_fileDescriptor, buffer, length);
+	SInt64 readLength = ::read(_fileDescriptor, bufPtr, length);
 	if (readLength < 0)
 		throw VolumeException(ErrorMsg::ERROR_READING_VOLUME, _name, errno);
 	if (readLength != length)
 		throw VolumeException(ErrorMsg::ERROR_READING_VOLUME, _name);
+
+	// Copy data to output buffer
+	if (bufPtr != buffer)
+		std::memcpy(buffer, bufPtr, length);
 }
 
 //----------------------------------------------------------------------
@@ -272,12 +296,54 @@ void Volume::write(
 	if (length % _bytesPerSector != 0)
 		throw VolumeException(ErrorMsg::LENGTH_NOT_INTEGRAL_MULTIPLE_OF_SECTOR_LENGTH, _name);
 
+	// Allocate buffer and copy data to it, if necessary
+	void* dataPtr = data;
+	if (_unbufferedIO && (reinterpret_cast<UInt64>(data) % _bytesPerSector != 0))
+	{
+		dataPtr = allocBuffer(length);
+		std::memcpy(dataPtr, data, length);
+	}
+
 	// Write data to volume
-	SInt64 writeLength = ::write(_fileDescriptor, data, length);
+	SInt64 writeLength = ::write(_fileDescriptor, dataPtr, length);
 	if (writeLength < 0)
 		throw VolumeException(ErrorMsg::ERROR_WRITING_VOLUME, _name, errno);
 	if (writeLength != length)
 		throw VolumeException(ErrorMsg::ERROR_WRITING_VOLUME, _name);
+}
+
+//----------------------------------------------------------------------
+
+UInt8* Volume::allocBuffer(
+	int	length)
+{
+	length += _bytesPerSector;
+	if ((_buffer == 0) || (_bufferLength < length))
+	{
+		// Free current buffer
+		freeBuffer();
+
+		// Allocate new buffer
+		try
+		{
+			_buffer = new UInt8[length];
+			_bufferLength = length;
+		}
+		catch (const std::bad_alloc& e)
+		{
+			throw VolumeException(ErrorMsg::NOT_ENOUGH_MEMORY, _name);
+		}
+	}
+	return _buffer + (_bytesPerSector - reinterpret_cast<UInt64>(_buffer) % _bytesPerSector);
+}
+
+//----------------------------------------------------------------------
+
+void Volume::freeBuffer()
+{
+	delete[] _buffer;
+	_buffer = 0;
+	_bufferLength = 0;
 }
 
 //----------------------------------------------------------------------

@@ -230,7 +230,8 @@ public class DriveIO
 
 	private static native int openVolume(
 		char[]	volumeName,
-		int		accessFlags);
+		int		accessFlags,
+		boolean	unbufferedIO);
 
 	//------------------------------------------------------------------
 
@@ -385,10 +386,11 @@ public class DriveIO
 		@Override
 		public void openVolume(
 			String	volumeName,
-			int		accessFlags)
+			int		accessFlags,
+			boolean	unbufferedIO)
 			throws VolumeException
 		{
-			if (DriveIO.openVolume(volumeName.toCharArray(), accessFlags) != RESULT_SUCCESS)
+			if (DriveIO.openVolume(volumeName.toCharArray(), accessFlags, unbufferedIO) != RESULT_SUCCESS)
 				throw new VolumeException(getErrorMessage());
 		}
 

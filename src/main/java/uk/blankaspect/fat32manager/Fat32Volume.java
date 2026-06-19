@@ -20,6 +20,8 @@ package uk.blankaspect.fat32manager;
 
 import java.nio.charset.StandardCharsets;
 
+import java.security.SecureRandom;
+
 import java.time.LocalDateTime;
 
 import java.util.ArrayList;
@@ -33,10 +35,10 @@ import java.util.function.Predicate;
 
 import java.util.random.RandomGenerator;
 
-import uk.blankaspect.common.exception2.UnexpectedRuntimeException;
-
 import uk.blankaspect.common.function.IFunction1;
 import uk.blankaspect.common.function.IProcedure1;
+
+import uk.blankaspect.common.logging.Logger;
 
 import uk.blankaspect.common.map.InsertionOrderStringMap;
 
@@ -289,8 +291,6 @@ public class Fat32Volume
 	private static final	String	SECTOR_INDEX_OUT_OF_BOUNDS_STR	= "Sector index out of bounds: ";
 	private static final	String	CLUSTER_INDEX_OUT_OF_BOUNDS_STR	= "Cluster index out of bounds: ";
 	private static final	String	NUM_SECTORS_OUT_OF_BOUNDS_STR	= "Number of sectors out of bounds: ";
-	private static final	String	UNSUPPORTED_PRNG_STR			=
-			"The PRNG '%s' is not supported by this version of Java.";
 
 	public enum DefragStatus
 	{
@@ -331,6 +331,9 @@ public class Fat32Volume
 
 		String	FAILED_TO_FIND_DIRECTORY_IN_PARENT =
 				"%s\nFailed to find the directory in its parent directory.";
+
+		String	UNSUPPORTED_PRNG =
+				"The '%s' PRNG is not supported by this version of Java; using the 'SecureRandom' class instead.";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -359,6 +362,7 @@ public class Fat32Volume
 	private	int				rootDirNumClusters;
 	private	Fat32Fat		fat;
 	private	Fat32Directory	rootDir;
+	private	boolean			unbufferedIO;
 	private	boolean			fixDirEntryDatesTimes;
 
 ////////////////////////////////////////////////////////////////////////
@@ -374,7 +378,12 @@ public class Fat32Volume
 		}
 		catch (IllegalArgumentException e)
 		{
-			throw new UnexpectedRuntimeException(String.format(UNSUPPORTED_PRNG_STR, PRNG_NAME), e);
+			prng = new SecureRandom();
+
+			String message = String.format(ErrorMsg.UNSUPPORTED_PRNG, PRNG_NAME);
+			Logger.INSTANCE.error(message, e);
+			System.err.println(message);
+			e.printStackTrace();
 		}
 	}
 
@@ -453,7 +462,8 @@ public class Fat32Volume
 
 	public static Params readVolumeParams(
 		String			volumeName,
-		IVolumeAccessor volumeAccessor)
+		IVolumeAccessor volumeAccessor,
+		boolean			unbufferedIO)
 		throws VolumeException
 	{
 		// Validate argument
@@ -470,7 +480,7 @@ public class Fat32Volume
 		try
 		{
 			// Open volume for reading
-			volume.open(Access.READ);
+			volume.open(Access.READ, unbufferedIO);
 
 			// Read first sector of volume
 			byte[] paramBlock = new byte[MIN_SECTOR_SIZE];
@@ -711,6 +721,7 @@ public class Fat32Volume
 		int				sectorsPerCluster,
 		int				sectorsPerFat,
 		IVolumeAccessor	accessor,
+		boolean			unbufferedIO,
 		ITaskStatus		taskStatus)
 		throws VolumeException
 	{
@@ -735,7 +746,7 @@ public class Fat32Volume
 			taskStatus.setProgress(-1.0);
 
 			// Open volume for writing
-			volume.open(Access.WRITE);
+			volume.open(Access.WRITE, unbufferedIO);
 
 			// Update task message; reset progress
 			taskStatus.setMessage(FORMATTING_STR + " " + name);
@@ -847,7 +858,7 @@ public class Fat32Volume
 			volume.close();
 
 			// Open volume for reading and writing
-			volume.open(Access.READ_WRITE);
+			volume.open(Access.READ_WRITE, unbufferedIO);
 
 			// Get index of last sector of last cluster
 			int lastSectorIndex = numAvailableSectors - 1;
@@ -1130,7 +1141,8 @@ public class Fat32Volume
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
 
-	public void init()
+	public void init(
+		boolean	unbufferedIO)
 		throws VolumeException
 	{
 		try
@@ -1139,10 +1151,10 @@ public class Fat32Volume
 			bytesPerSector = 0;
 
 			// Read volume parameters from BIOS parameter block
-			Params params = readVolumeParams(getName(), getAccessor());
+			Params params = readVolumeParams(getName(), getAccessor(), unbufferedIO);
 
 			// Open volume for reading
-			open(Access.READ);
+			open(Access.READ, unbufferedIO);
 
 			// Update instance variables
 			volumeLabel = params.volumeLabel;
@@ -1158,6 +1170,7 @@ public class Fat32Volume
 			sectorsPerFat = params.sectorsPerFat;
 			bootSectorCopyIndex = params.bootSectorCopyIndex;
 			rootDirClusterIndex = params.rootDirClusterIndex;
+			this.unbufferedIO = unbufferedIO;
 
 			// Validate sectors per FAT
 			int entriesPerFat = getMaxClusterIndex() + 1;
@@ -1301,6 +1314,13 @@ public class Fat32Volume
 
 	//------------------------------------------------------------------
 
+	public boolean isUnbufferedIO()
+	{
+		return unbufferedIO;
+	}
+
+	//------------------------------------------------------------------
+
 	public boolean isFixDirEntryDatesTimes()
 	{
 		return fixDirEntryDatesTimes;
@@ -1428,7 +1448,7 @@ public class Fat32Volume
 			byte[] buffer = new byte[bytesPerSector];
 
 			// Open volume for reading
-			open(Access.READ);
+			open(Access.READ, unbufferedIO);
 
 			// Read sector
 			seekSector(index);
@@ -1469,7 +1489,7 @@ public class Fat32Volume
 			byte[] buffer = new byte[numSectors * bytesPerSector];
 
 			// Open volume for reading
-			open(Access.READ);
+			open(Access.READ, unbufferedIO);
 
 			// Read sectors
 			seekSector(index);
@@ -1558,7 +1578,7 @@ public class Fat32Volume
 			taskStatus.setProgress((double)progress / TOTAL_PROGRESS);
 
 			// Open volume for reading and writing
-			open(Access.READ_WRITE);
+			open(Access.READ_WRITE, unbufferedIO);
 
 			// Allocate buffer for sector
 			byte[] buffer = new byte[bytesPerSector];
@@ -1735,7 +1755,7 @@ public class Fat32Volume
 			taskStatus.setProgress(0.0);
 
 			// Open volume for writing
-			open(Access.WRITE);
+			open(Access.WRITE, unbufferedIO);
 
 			// Fill unused clusters with filler value
 			int numClustersProcessed = 0;
@@ -1807,7 +1827,7 @@ public class Fat32Volume
 		try
 		{
 			// Open volume for reading and writing
-			open(Volume.Access.READ_WRITE);
+			open(Volume.Access.READ_WRITE, unbufferedIO);
 
 			// Erase clusters
 			volumeModified = eraseClusters(entry, clusters, fillerValue, taskStatus, progressUpdater);
@@ -1893,7 +1913,7 @@ public class Fat32Volume
 		try
 		{
 			// Open volume for reading and writing
-			open(Volume.Access.READ_WRITE);
+			open(Volume.Access.READ_WRITE, unbufferedIO);
 
 			// Erase clusters of directory entries
 			volumeModified = eraseClusters(directory, clusters, fillerValue, taskStatus, progressUpdater);
@@ -2034,7 +2054,7 @@ public class Fat32Volume
 		try
 		{
 			// Open volume for reading and writing
-			open(Volume.Access.READ_WRITE);
+			open(Volume.Access.READ_WRITE, unbufferedIO);
 
 			// Allocate buffer for cluster
 			int bytesPerCluster = sectorsPerCluster * bytesPerSector;

@@ -86,8 +86,11 @@ namespace ErrorMsg
 Volume::Volume(
 	const std::wstring&	name) :
 
-	_handle(INVALID_HANDLE_VALUE),
-	_name  (name)
+	_handle      (INVALID_HANDLE_VALUE),
+	_name        (name),
+	_unbufferedIO(false),
+	_buffer      (0),
+	_bufferLength(0)
 {
 }
 
@@ -95,6 +98,8 @@ Volume::Volume(
 
 Volume::~Volume()
 {
+	delete[] _buffer;
+
 	if (_handle != INVALID_HANDLE_VALUE)
 		::CloseHandle(_handle);
 }
@@ -252,7 +257,8 @@ void Volume::getInfo(
 ////////////////////////////////////////////////////////////////////////
 
 void Volume::open(
-	int	accessMode)
+	int		accessMode,
+	bool	unbufferedIO)
 {
 	// Get volume information
 	VolumeInfo info {};
@@ -281,7 +287,8 @@ void Volume::open(
 
 	// Open volume
 	std::wstring pathname(L"\\\\.\\" + _name);
-	_handle = ::CreateFile(pathname.c_str(), accessMode0, shareMode, NULL, OPEN_EXISTING, 0, NULL);
+	DWORD flags = unbufferedIO ? FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH : 0;
+	_handle = ::CreateFile(pathname.c_str(), accessMode0, shareMode, NULL, OPEN_EXISTING, flags, NULL);
 	if (_handle == INVALID_HANDLE_VALUE)
 		throw VolumeException(ErrorMsg::FAILED_TO_OPEN_VOLUME, _name, true);
 
@@ -292,6 +299,7 @@ void Volume::open(
 
 	// Update instance variables
 	_bytesPerSector = info._bytesPerSector;
+	_unbufferedIO = unbufferedIO;
 }
 
 //----------------------------------------------------------------------
@@ -301,6 +309,9 @@ void Volume::close()
 	// Test whether volume is open
 	if (_handle == INVALID_HANDLE_VALUE)
 		throw VolumeException(ErrorMsg::VOLUME_IS_NOT_OPEN, _name);
+
+	// Free buffer
+	freeBuffer();
 
 	// Invalidate handle
 	HANDLE handle = _handle;
@@ -346,12 +357,21 @@ void Volume::read(
 	if (length % _bytesPerSector != 0)
 		throw VolumeException(ErrorMsg::LENGTH_NOT_INTEGRAL_MULTIPLE_OF_SECTOR_LENGTH, _name);
 
+	// Allocate buffer, if necessary
+	void* bufPtr = buffer;
+	if (_unbufferedIO && (reinterpret_cast<UInt64>(buffer) % _bytesPerSector != 0))
+		bufPtr = allocBuffer(length);
+
 	// Read data from volume into buffer
 	DWORD readLength;
-	if (!::ReadFile(_handle, buffer, length, &readLength, NULL))
+	if (!::ReadFile(_handle, bufPtr, length, &readLength, NULL))
 		throw VolumeException(ErrorMsg::ERROR_READING_VOLUME, _name, true);
 	if (readLength != length)
 		throw VolumeException(ErrorMsg::ERROR_READING_VOLUME, _name);
+
+	// Copy data to output buffer
+	if (bufPtr != buffer)
+		std::memcpy(buffer, bufPtr, length);
 }
 
 //----------------------------------------------------------------------
@@ -368,12 +388,54 @@ void Volume::write(
 	if (length % _bytesPerSector != 0)
 		throw VolumeException(ErrorMsg::LENGTH_NOT_INTEGRAL_MULTIPLE_OF_SECTOR_LENGTH, _name);
 
+	// Allocate buffer and copy data to it, if necessary
+	void* dataPtr = data;
+	if (_unbufferedIO && (reinterpret_cast<UInt64>(data) % _bytesPerSector != 0))
+	{
+		dataPtr = allocBuffer(length);
+		std::memcpy(dataPtr, data, length);
+	}
+
 	// Write data to volume
 	DWORD writeLength;
-	if (!::WriteFile(_handle, data, length, &writeLength, NULL))
+	if (!::WriteFile(_handle, dataPtr, length, &writeLength, NULL))
 		throw VolumeException(ErrorMsg::ERROR_WRITING_VOLUME, _name, true);
 	if (writeLength != length)
 		throw VolumeException(ErrorMsg::ERROR_WRITING_VOLUME, _name);
+}
+
+//----------------------------------------------------------------------
+
+UInt8* Volume::allocBuffer(
+	int	length)
+{
+	length += _bytesPerSector;
+	if ((_buffer == 0) || (_bufferLength < length))
+	{
+		// Free current buffer
+		freeBuffer();
+
+		// Allocate new buffer
+		try
+		{
+			_buffer = new UInt8[length];
+			_bufferLength = length;
+		}
+		catch (const std::bad_alloc& e)
+		{
+			throw VolumeException(ErrorMsg::NOT_ENOUGH_MEMORY, _name);
+		}
+	}
+	return _buffer + (_bytesPerSector - reinterpret_cast<UInt64>(_buffer) % _bytesPerSector);
+}
+
+//----------------------------------------------------------------------
+
+void Volume::freeBuffer()
+{
+	delete[] _buffer;
+	_buffer = 0;
+	_bufferLength = 0;
 }
 
 //----------------------------------------------------------------------

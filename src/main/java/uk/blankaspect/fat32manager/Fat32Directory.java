@@ -752,7 +752,7 @@ public class Fat32Directory
 
 		// Open volume for reading
 		if (openClose)
-			volume.open(Volume.Access.READ);
+			volume.open(Volume.Access.READ, volume.isUnbufferedIO());
 
 		// Read directory
 		try
@@ -878,7 +878,7 @@ public class Fat32Directory
 
 		// Open volume for writing
 		if (openClose)
-			volume.open(Volume.Access.WRITE);
+			volume.open(Volume.Access.WRITE, volume.isUnbufferedIO());
 
 		// Write directory
 		try

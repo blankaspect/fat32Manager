@@ -145,8 +145,10 @@ public class Fat32ManagerApp
 	/** The name of the application when used as a key. */
 	private static final	String	NAME_KEY	= "fat32Manager";
 
+	/** The name of the file that contains the build properties of the application. */
 	private static final	String	BUILD_PROPERTIES_FILENAME	= "build.properties";
 
+	/** The name of the directory that contains the native library of the application. */
 	private static final	String	LIBRARY_DIRECTORY_NAME	= "lib";
 
 	/** The name of the log file. */
@@ -175,6 +177,9 @@ public class Fat32ManagerApp
 
 	/** The suffix of the name of a thread on which a check of the current volume is performed. */
 	private static final	String	CHECK_VOLUME_THREAD_NAME_SUFFIX	= "checkVolume";
+
+	/** The key under which the state of the <i>erase unused cluster</i> dialog is saved. */
+	private static final	String	ERASE_UNUSED_CLUSTERS_DIALOG_KEY	= "eraseUnusedClusters";
 
 	/** The padding around the properties pane. */
 	private static final	Insets	PROPERTIES_PANE_PADDING	= new Insets(0.0, 2.0, 0.0, 2.0);
@@ -807,7 +812,7 @@ public class Fat32ManagerApp
 //  Instance methods
 ////////////////////////////////////////////////////////////////////////
 
-	public void invalidateVolume()
+	public void closeVolume()
 	{
 		// Close volume
 		try
@@ -823,6 +828,17 @@ public class Fat32ManagerApp
 
 		// Invalidate volume
 		volume.set(null);
+	}
+
+	//------------------------------------------------------------------
+
+	public void reopenVolume(
+		String		name,
+		boolean		unbufferedIO,
+		IProcedure0	completionHandler)
+	{
+		closeVolume();
+		openVolume(name, unbufferedIO, completionHandler);
 	}
 
 	//------------------------------------------------------------------
@@ -1079,8 +1095,8 @@ public class Fat32ManagerApp
 				{
 					Platform.runLater(() ->
 					{
-						// Invalidate volume
-						invalidateVolume();
+						// Close volume
+						closeVolume();
 
 						// Display error message
 						Utils.showErrorMessage(primaryStage, VOLUME_STR + " " + Utils.volumeDisplayName(name),
@@ -1094,7 +1110,7 @@ public class Fat32ManagerApp
 		// Open volume that was specified on command line
 		List<String> args = getParameters().getRaw();
 		if (!args.isEmpty())
-			openVolume(args.get(0), null);
+			openVolume(args.get(0), (args.size() < 2) ? false : Boolean.parseBoolean(args.get(1)));
 	}
 
 	//------------------------------------------------------------------
@@ -1122,7 +1138,7 @@ public class Fat32ManagerApp
 		menuItem = new MenuItem(CLOSE_STR);
 		menuItem.disableProperty().bind(volume.isNull());
 		menuItem.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN));
-		menuItem.setOnAction(event -> onCloseVolume());
+		menuItem.setOnAction(event -> closeVolume());
 		menu.getItems().add(menuItem);
 
 		// Add separator
@@ -1294,131 +1310,9 @@ public class Fat32ManagerApp
 
 	//------------------------------------------------------------------
 
-	private void openVolume(
-		String		name,
-		IProcedure0	completionHandler)
-	{
-		// Log title of task
-		String title = OPEN_VOLUME_STR + " : " + name;
-		Logger.INSTANCE.info(title);
-
-		// Declare record for result of task
-		record Result(
-			Fat32Volume		volume,
-			List<String>	messages)
-		{ }
-
-		// Create task to open volume
-		Task<Result> task = new AbstractTask<>()
-		{
-			{
-				// Initialise task
-				updateTitle(title);
-				updateMessage(OPENING_STR + MessageConstants.SPACE_SEPARATOR + name);
-				updateProgress(-1, 1);
-			}
-
-			@Override
-			protected Result call()
-				throws Exception
-			{
-				// Initialise list of messages
-				List<String> messages = new ArrayList<>();
-
-				// Open volume
-				Fat32Volume volume = null;
-				try
-				{
-					// Create volume
-					volume = new Fat32Volume(name, volumeAccessor);
-					volume.setFixDirEntryDatesTimes(preferences.isFixDirEntryDatesTimes());
-
-					// Initialise volume
-					updateMessage(READING_FATS_STR);
-					try
-					{
-						volume.init();
-					}
-					catch (VolumeException e)
-					{
-						invalidateVolume();
-						throw e;
-					}
-
-					// Read root directory
-					updateMessage(READING_ROOT_DIRECTORY_STR);
-					volume.getRootDir().read(messages);
-
-					// Return result
-					return new Result(volume, messages);
-				}
-				finally
-				{
-					try
-					{
-						if ((volume != null) && volume.isOpen())
-							volume.close();
-					}
-					catch (VolumeException e)
-					{
-						// ignore
-					}
-				}
-			}
-
-			@Override
-			protected void succeeded()
-			{
-				// Get result
-				Result result = getValue();
-
-				// Update instance variable
-				volume.set(result.volume);
-
-				// Enable control pane of directory pane
-				directoryPane.getControlPane().setDisable(false);
-
-				// Clear history of table view
-				getTableView().clearHistory();
-
-				// Set root directory on table view
-				Fat32Directory directory = result.volume.getRootDir();
-				getTableView().setDirectory(directory);
-
-				// Add directory to history of table view
-				getTableView().addToHistory(directory);
-
-				// Display messages in dialog
-				if (!result.messages.isEmpty())
-				{
-					TextAreaDialog.show(primaryStage, DialogKey.OPEN_VOLUME, getTitle() + " : " + MESSAGES_STR,
-										String.join("\n\n", result.messages));
-				}
-
-				// Call completion handler
-				if (completionHandler != null)
-					completionHandler.invoke();
-			}
-
-			@Override
-			protected void failed()
-			{
-				// Display error message in dialog
-				showErrorMessage(primaryStage);
-			}
-		};
-
-		// Show progress of task in dialog
-		new SimpleProgressDialog(primaryStage, task);
-
-		// Execute task on background thread
-		executeTask(task);
-	}
-
-	//------------------------------------------------------------------
-
 	private void formatVolume1(
-		String	name)
+		String	name,
+		boolean	unbufferedIO)
 	{
 		// Log title of task
 		String title = FORMAT_STR + " " + name;
@@ -1479,7 +1373,7 @@ public class Fat32ManagerApp
 				Result result = getValue();
 
 				// Format volume
-				formatVolume2(name, result.bytesPerSector, result.startSector, result.numSectors);
+				formatVolume2(name, result.bytesPerSector, result.startSector, result.numSectors, unbufferedIO);
 			}
 
 			@Override
@@ -1503,7 +1397,8 @@ public class Fat32ManagerApp
 		String	name,
 		int		bytesPerSector,
 		int		startSector,
-		int		numSectors)
+		int		numSectors,
+		boolean	unbufferedIO)
 	{
 		// Get title of task
 		String title = FORMAT_STR + " " + name;
@@ -1544,7 +1439,7 @@ public class Fat32ManagerApp
 				// Format volume
 				Fat32Volume.format(name, result.getVolumeId(), result.getVolumeLabel(), result.getFormatterName(),
 								   bytesPerSector, startSector, numSectors, params.minNumReservedSectors(),
-								   result.getSectorsPerCluster(), params.sectorsPerFat(), volumeAccessor,
+								   result.getSectorsPerCluster(), params.sectorsPerFat(), volumeAccessor, unbufferedIO,
 								   createTaskStatus());
 
 				// Return nothing
@@ -1555,7 +1450,7 @@ public class Fat32ManagerApp
 			protected void succeeded()
 			{
 				// Open volume
-				openVolume(name, () ->
+				openVolume(name, unbufferedIO, () ->
 				{
 					// Calculate capacity of volume
 					Fat32Volume volume = getVolume();
@@ -1748,6 +1643,140 @@ public class Fat32ManagerApp
 
 	//------------------------------------------------------------------
 
+	private void openVolume(
+		String	name,
+		boolean	unbufferedIO)
+	{
+		openVolume(name, unbufferedIO, null);
+	}
+
+	//------------------------------------------------------------------
+
+	private void openVolume(
+		String		name,
+		boolean		unbufferedIO,
+		IProcedure0	completionHandler)
+	{
+		// Log title of task
+		String title = OPEN_VOLUME_STR + " : " + name;
+		Logger.INSTANCE.info(title);
+
+		// Declare record for result of task
+		record Result(
+			Fat32Volume		volume,
+			List<String>	messages)
+		{ }
+
+		// Create task to open volume
+		Task<Result> task = new AbstractTask<>()
+		{
+			{
+				// Initialise task
+				updateTitle(title);
+				updateMessage(OPENING_STR + MessageConstants.SPACE_SEPARATOR + name);
+				updateProgress(-1, 1);
+			}
+
+			@Override
+			protected Result call()
+				throws Exception
+			{
+				// Initialise list of messages
+				List<String> messages = new ArrayList<>();
+
+				// Open volume
+				Fat32Volume volume = null;
+				try
+				{
+					// Create volume
+					volume = new Fat32Volume(name, volumeAccessor);
+					volume.setFixDirEntryDatesTimes(preferences.isFixDirEntryDatesTimes());
+
+					// Initialise volume
+					updateMessage(READING_FATS_STR);
+					try
+					{
+						volume.init(unbufferedIO);
+					}
+					catch (VolumeException e)
+					{
+						closeVolume();
+						throw e;
+					}
+
+					// Read root directory
+					updateMessage(READING_ROOT_DIRECTORY_STR);
+					volume.getRootDir().read(messages);
+
+					// Return result
+					return new Result(volume, messages);
+				}
+				finally
+				{
+					try
+					{
+						if ((volume != null) && volume.isOpen())
+							volume.close();
+					}
+					catch (VolumeException e)
+					{
+						// ignore
+					}
+				}
+			}
+
+			@Override
+			protected void succeeded()
+			{
+				// Get result
+				Result result = getValue();
+
+				// Update instance variable
+				volume.set(result.volume);
+
+				// Enable control pane of directory pane
+				directoryPane.getControlPane().setDisable(false);
+
+				// Clear history of table view
+				MainDirectoryTableView tableView = getTableView();
+				tableView.clearHistory();
+
+				// Set root directory on table view
+				Fat32Directory directory = result.volume.getRootDir();
+				tableView.setDirectory(directory);
+
+				// Add directory to history of table view
+				tableView.addToHistory(directory);
+
+				// Display messages in dialog
+				if (!result.messages.isEmpty())
+				{
+					TextAreaDialog.show(primaryStage, DialogKey.OPEN_VOLUME, getTitle() + " : " + MESSAGES_STR,
+										String.join("\n\n", result.messages));
+				}
+
+				// Call completion handler
+				if (completionHandler != null)
+					completionHandler.invoke();
+			}
+
+			@Override
+			protected void failed()
+			{
+				// Display error message in dialog
+				showErrorMessage(primaryStage);
+			}
+		};
+
+		// Show progress of task in dialog
+		new SimpleProgressDialog(primaryStage, task);
+
+		// Execute task on background thread
+		executeTask(task);
+	}
+
+	//------------------------------------------------------------------
+
 	private void onOpenVolume()
 	{
 		try
@@ -1765,24 +1794,18 @@ public class Fat32ManagerApp
 
 			// Display dialog for selecting volume
 			Fat32Volume volume = getVolume();
-			String name = (volume == null) ? null : volume.getName();
-			name = VolumeSelectionDialog.show(primaryStage, OPEN_VOLUME_STR, names, name);
+			VolumeSelectionDialog.Result result =
+					VolumeSelectionDialog.show(primaryStage, OPEN_VOLUME_STR, names,
+											   (volume == null) ? null : volume.getName());
 
 			// Open volume
-			if (name != null)
-				openVolume(name, null);
+			if (result != null)
+				openVolume(result.volumeName(), result.unbufferedIO());
 		}
 		catch (VolumeException e)
 		{
 			Utils.showErrorMessage(primaryStage, OPEN_VOLUME_STR, e);
 		}
-	}
-
-	//------------------------------------------------------------------
-
-	private void onCloseVolume()
-	{
-		invalidateVolume();
 	}
 
 	//------------------------------------------------------------------
@@ -1877,7 +1900,8 @@ public class Fat32ManagerApp
 	private void onEraseUnusedClusters()
 	{
 		// Display dialog for filler value
-		Integer fillerValue = ErasureFillerValueDialog.show(primaryStage, ERASE_UNUSED_CLUSTERS_STR);
+		Integer fillerValue = ErasureFillerValueDialog.show(primaryStage, ERASE_UNUSED_CLUSTERS_STR,
+															ERASE_UNUSED_CLUSTERS_DIALOG_KEY);
 		if (fillerValue == null)
 			return;
 
@@ -2333,11 +2357,12 @@ public class Fat32ManagerApp
 				else
 				{
 					// Select volume
-					String volumeName = VolumeSelectionDialog.show(primaryStage, getTitle(), volumeNames, null);
+					VolumeSelectionDialog.Result result =
+							VolumeSelectionDialog.show(primaryStage, getTitle(), volumeNames, null);
 
 					// If volume was selected, proceed
-					if (volumeName != null)
-						formatVolume1(volumeName);
+					if (result != null)
+						formatVolume1(result.volumeName(), result.unbufferedIO());
 				}
 			}
 

@@ -114,7 +114,8 @@ public class Volume
 	//------------------------------------------------------------------
 
 	public void open(
-		Access	access)
+		Access	access,
+		boolean	unbuffered)
 		throws VolumeException
 	{
 		// Initialise exception
@@ -139,7 +140,7 @@ public class Volume
 			// Open volume
 			try
 			{
-				accessor.openVolume(name, access.flags);
+				accessor.openVolume(name, access.flags, unbuffered);
 				return;
 			}
 			catch (VolumeException e)

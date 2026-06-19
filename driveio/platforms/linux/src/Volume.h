@@ -88,6 +88,9 @@ private:
 	int			_fileDescriptor;
 	std::string	_name;
 	int			_bytesPerSector;
+	bool		_unbufferedIO;
+	UInt8*		_buffer;
+	int			_bufferLength;
 
 ////////////////////////////////////////////////////////////////////////
 //  Constructors
@@ -150,7 +153,8 @@ public:
 	//------------------------------------------------------------------
 
 	void open(
-		int	accessMode);
+		int		accessMode,
+		bool	unbufferedIO);
 
 	//------------------------------------------------------------------
 
@@ -172,6 +176,17 @@ public:
 	void write(
 		void*	data,
 		int		length);
+
+	//------------------------------------------------------------------
+
+protected:
+
+	UInt8* allocBuffer(
+		int	length);
+
+	//------------------------------------------------------------------
+
+	void freeBuffer();
 
 	//------------------------------------------------------------------
 
