@@ -10,7 +10,7 @@ Class: string-conversion methods.
 // INCLUDES
 
 
-#ifndef _DRIVEIOTEST_STR_CONV_H_
+#ifndef _DRIVEIO_STR_CONV_H_
 	#include "StrConv.h"
 #endif
 
@@ -20,27 +20,44 @@ Class: string-conversion methods.
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-static const	UInt32	LOWER_BOUND1	= 0x80;
-static const	UInt32	UPPER_BOUND1	= 0xBF;
+// The lower bound of the bytes of the tail of a UTF-8 sequence
+static const	UInt32	LOWER_BOUND_TAIL	= 0x80;
 
-static const	UInt32	LOWER_BOUND2	= 0xA0;
-static const	UInt32	UPPER_BOUND2	= 0x9F;
+// The upper bound of the bytes of the tail of a UTF-8 sequence
+static const	UInt32	UPPER_BOUND_TAIL	= 0xBF;
 
-static const	UInt32	LOWER_BOUND3	= 0x90;
-static const	UInt32	UPPER_BOUND3	= 0x8F;
+// The lower bound of the second byte of a 3-byte sequence whose first byte is 0xE0
+static const	UInt32	LOWER_BOUND_3_E0	= 0xA0;
 
+// The upper bound of the second byte of a 3-byte sequence whose first byte is 0xED
+static const	UInt32	UPPER_BOUND_3_ED	= 0x9F;
+
+// The lower bound of the second byte of a 4-byte sequence whose first byte is 0xF0
+static const	UInt32	LOWER_BOUND_4_F0	= 0x90;
+
+// The upper bound of the second byte of a 4-byte sequence whose first byte is 0xF4
+static const	UInt32	UPPER_BOUND_4_F4	= 0x8F;
+
+// The minimum value of a high surrogate
 static const	UInt32	MIN_HIGH_SURROGATE	= 0xD800;
 
+// The minimum value of a low surrogate
 static const	UInt32	MIN_LOW_SURROGATE	= 0xDC00;
+
+// The maximum value of a low surrogate
 static const	UInt32	MAX_LOW_SURROGATE	= 0xDFFF;
 
+// The Unicode replacement character
 static const	UInt32	REPLACEMENT_CHAR	= 0xFFFD;
 
-static const	UInt32	PLANE1_MIN_VALUE	= 0x10000;
+// The minimum code point of Unicode plane 1
+static const	UInt32	PLANE1_MIN_CODE_POINT	= 0x10000;
 
-static const	UInt32	MAX_VALUE	= 0x10FFFF;
+// The maximum code point
+static const	UInt32	MAX_CODE_POINT	= 0x10FFFF;
 
-static const	UInt32	MIN_VALUES[]	=
+// Minimum code points for sequences of length greater than 1
+static const	UInt32	MIN_CODE_POINTS[]	=
 {
 	1 << 7,		// 2-byte sequence
 	1 << 11,	// 3-byte sequence
@@ -57,10 +74,10 @@ std::u16string StrConv::utf8ToUtf16(
 	// Initialise output string
 	std::u16string outStr;
 
-	// Initialise decoder variables
+	// Initialise bounds and decoder variables
+	UInt32 lowerBound = LOWER_BOUND_TAIL;
+	UInt32 upperBound = UPPER_BOUND_TAIL;
 	UInt32 outCode = 0;
-	UInt32 lowerBound = LOWER_BOUND1;
-	UInt32 upperBound = UPPER_BOUND1;
 	int numBytesExpected = 0;
 	int numBytesProcessed = 0;
 
@@ -101,9 +118,9 @@ std::u16string StrConv::utf8ToUtf16(
 
 				// Adjust bounds of next byte
 				if (inByte == 0xE0)
-					lowerBound = LOWER_BOUND2;
+					lowerBound = LOWER_BOUND_3_E0;
 				else if (inByte == 0xED)
-					upperBound = UPPER_BOUND2;
+					upperBound = UPPER_BOUND_3_ED;
 
 				// Two more bytes expected
 				numBytesExpected = 2;
@@ -117,9 +134,9 @@ std::u16string StrConv::utf8ToUtf16(
 
 				// Adjust bounds of next byte
 				if (inByte == 0xF0)
-					lowerBound = LOWER_BOUND3;
+					lowerBound = LOWER_BOUND_4_F0;
 				else if (inByte == 0xF4)
-					upperBound = UPPER_BOUND3;
+					upperBound = UPPER_BOUND_4_F4;
 
 				// Three more bytes expected
 				numBytesExpected = 3;
@@ -133,10 +150,12 @@ std::u16string StrConv::utf8ToUtf16(
 		// Case: byte sequence, byte out of bounds
 		else if ((inByte < lowerBound) || (inByte > upperBound))
 		{
+			// Reset bounds
+			lowerBound = LOWER_BOUND_TAIL;
+			upperBound = UPPER_BOUND_TAIL;
+
 			// Reset decoder variables
 			outCode = 0;
-			lowerBound = LOWER_BOUND1;
-			upperBound = UPPER_BOUND1;
 			numBytesExpected = 0;
 			numBytesProcessed = 0;
 
@@ -151,8 +170,8 @@ std::u16string StrConv::utf8ToUtf16(
 		else
 		{
 			// Reset bounds
-			lowerBound = LOWER_BOUND1;
-			upperBound = UPPER_BOUND1;
+			lowerBound = LOWER_BOUND_TAIL;
+			upperBound = UPPER_BOUND_TAIL;
 
 			// Add input byte to output code
 			outCode <<= 6;
@@ -162,13 +181,13 @@ std::u16string StrConv::utf8ToUtf16(
 			if (++numBytesProcessed >= numBytesExpected)
 			{
 				// Append output code to output string
-				if (outCode < PLANE1_MIN_VALUE)
+				if (outCode < PLANE1_MIN_CODE_POINT)
 					outStr.push_back(outCode);
 				else
 				{
-					UInt32 offset = outCode - PLANE1_MIN_VALUE;
-					outStr.push_back(MIN_HIGH_SURROGATE + (offset >> 10));
-					outStr.push_back(MIN_LOW_SURROGATE + (offset & 0x3FF));
+					UInt32 delta = outCode - PLANE1_MIN_CODE_POINT;
+					outStr.push_back(MIN_HIGH_SURROGATE + (delta >> 10));
+					outStr.push_back(MIN_LOW_SURROGATE + (delta & 0x3FF));
 				}
 
 				// Reset decoder variables
@@ -195,10 +214,10 @@ std::u32string StrConv::utf8ToUtf32(
 	// Initialise output string
 	std::u32string outStr;
 
-	// Initialise decoder variables
+	// Initialise bounds and decoder variables
+	UInt32 lowerBound = LOWER_BOUND_TAIL;
+	UInt32 upperBound = UPPER_BOUND_TAIL;
 	UInt32 outCode = 0;
-	UInt32 lowerBound = LOWER_BOUND1;
-	UInt32 upperBound = UPPER_BOUND1;
 	int numBytesExpected = 0;
 	int numBytesProcessed = 0;
 
@@ -239,9 +258,9 @@ std::u32string StrConv::utf8ToUtf32(
 
 				// Adjust bounds of next byte
 				if (inByte == 0xE0)
-					lowerBound = LOWER_BOUND2;
+					lowerBound = LOWER_BOUND_3_E0;
 				else if (inByte == 0xED)
-					upperBound = UPPER_BOUND2;
+					upperBound = UPPER_BOUND_3_ED;
 
 				// Two more bytes expected
 				numBytesExpected = 2;
@@ -255,9 +274,9 @@ std::u32string StrConv::utf8ToUtf32(
 
 				// Adjust bounds of next byte
 				if (inByte == 0xF0)
-					lowerBound = LOWER_BOUND3;
+					lowerBound = LOWER_BOUND_4_F0;
 				else if (inByte == 0xF4)
-					upperBound = UPPER_BOUND3;
+					upperBound = UPPER_BOUND_4_F4;
 
 				// Three more bytes expected
 				numBytesExpected = 3;
@@ -271,10 +290,12 @@ std::u32string StrConv::utf8ToUtf32(
 		// Case: byte sequence, byte out of bounds
 		else if ((inByte < lowerBound) || (inByte > upperBound))
 		{
+			// Reset bounds
+			lowerBound = LOWER_BOUND_TAIL;
+			upperBound = UPPER_BOUND_TAIL;
+
 			// Reset decoder variables
 			outCode = 0;
-			lowerBound = LOWER_BOUND1;
-			upperBound = UPPER_BOUND1;
 			numBytesExpected = 0;
 			numBytesProcessed = 0;
 
@@ -289,8 +310,8 @@ std::u32string StrConv::utf8ToUtf32(
 		else
 		{
 			// Reset bounds
-			lowerBound = LOWER_BOUND1;
-			upperBound = UPPER_BOUND1;
+			lowerBound = LOWER_BOUND_TAIL;
+			upperBound = UPPER_BOUND_TAIL;
 
 			// Add input byte to output code
 			outCode <<= 6;
@@ -335,7 +356,7 @@ std::string StrConv::utf16ToUtf8(
 		UInt32 inCode = str[index++];
 
 		// Replace code that is out of bounds
-		if (inCode > MAX_VALUE)
+		if (inCode > MAX_CODE_POINT)
 			inCode = REPLACEMENT_CHAR;
 
 		// Test for surrogate
@@ -347,7 +368,7 @@ std::string StrConv::utf16ToUtf8(
 				if ((inCode0 >= MIN_LOW_SURROGATE) && (inCode0 <= MAX_LOW_SURROGATE))
 				{
 					++index;
-					inCode = PLANE1_MIN_VALUE + ((inCode - MIN_HIGH_SURROGATE) << 10 | (inCode0 - MIN_LOW_SURROGATE));
+					inCode = PLANE1_MIN_CODE_POINT + ((inCode - MIN_HIGH_SURROGATE) << 10 | (inCode0 - MIN_LOW_SURROGATE));
 				}
 				else
 					inCode = REPLACEMENT_CHAR;
@@ -357,18 +378,18 @@ std::string StrConv::utf16ToUtf8(
 		}
 
 		// Case: append 1-byte sequence
-		if (inCode < MIN_VALUES[0])
+		if (inCode < MIN_CODE_POINTS[0])
 			outStr.push_back(inCode & 0x7F);
 
 		// Case: append 2-byte sequence
-		else if (inCode < MIN_VALUES[1])
+		else if (inCode < MIN_CODE_POINTS[1])
 		{
 			outStr.push_back(0xC0 | (inCode >> 6));
 			outStr.push_back(0x80 | (inCode & 0x3F));
 		}
 
 		// Case: append 3-byte sequence
-		else if (inCode < MIN_VALUES[2])
+		else if (inCode < MIN_CODE_POINTS[2])
 		{
 			outStr.push_back(0xE0 | (inCode >> 12));
 			outStr.push_back(0x80 | (inCode >> 6 & 0x3F));
@@ -406,7 +427,7 @@ std::u32string StrConv::utf16ToUtf32(
 		UInt32 inCode = str[index++];
 
 		// Replace code that is out of bounds
-		if (inCode > MAX_VALUE)
+		if (inCode > MAX_CODE_POINT)
 			inCode = REPLACEMENT_CHAR;
 
 		// Test for surrogate
@@ -418,7 +439,7 @@ std::u32string StrConv::utf16ToUtf32(
 				if ((inCode0 >= MIN_LOW_SURROGATE) && (inCode0 <= MAX_LOW_SURROGATE))
 				{
 					++index;
-					inCode = PLANE1_MIN_VALUE + ((inCode - MIN_HIGH_SURROGATE) << 10 | (inCode0 - MIN_LOW_SURROGATE));
+					inCode = PLANE1_MIN_CODE_POINT + ((inCode - MIN_HIGH_SURROGATE) << 10 | (inCode0 - MIN_LOW_SURROGATE));
 				}
 				else
 					inCode = REPLACEMENT_CHAR;
@@ -451,22 +472,22 @@ std::string StrConv::utf32ToUtf8(
 		UInt32 inCode = str[i];
 
 		// Replace code that is out of bounds
-		if (inCode > MAX_VALUE)
+		if (inCode > MAX_CODE_POINT)
 			inCode = REPLACEMENT_CHAR;
 
 		// Case: append 1-byte sequence
-		if (inCode < MIN_VALUES[0])
+		if (inCode < MIN_CODE_POINTS[0])
 			outStr.push_back(inCode & 0x7F);
 
 		// Case: append 2-byte sequence
-		else if (inCode < MIN_VALUES[1])
+		else if (inCode < MIN_CODE_POINTS[1])
 		{
 			outStr.push_back(0xC0 | (inCode >> 6));
 			outStr.push_back(0x80 | (inCode & 0x3F));
 		}
 
 		// Case: append 3-byte sequence
-		else if (inCode < MIN_VALUES[2])
+		else if (inCode < MIN_CODE_POINTS[2])
 		{
 			outStr.push_back(0xE0 | (inCode >> 12));
 			outStr.push_back(0x80 | (inCode >> 6 & 0x3F));
@@ -503,17 +524,17 @@ std::u16string StrConv::utf32ToUtf16(
 		UInt32 inCode = str[i];
 
 		// Replace code that is out of bounds
-		if (inCode > MAX_VALUE)
+		if (inCode > MAX_CODE_POINT)
 			inCode = REPLACEMENT_CHAR;
 
 		// Append code(s) to output string
-		if (inCode < PLANE1_MIN_VALUE)
+		if (inCode < PLANE1_MIN_CODE_POINT)
 			outStr.push_back(inCode);
 		else
 		{
-			UInt32 offset = inCode - PLANE1_MIN_VALUE;
-			outStr.push_back(MIN_HIGH_SURROGATE + (offset >> 10));
-			outStr.push_back(MIN_LOW_SURROGATE + (offset & 0x3FF));
+			UInt32 delta = inCode - PLANE1_MIN_CODE_POINT;
+			outStr.push_back(MIN_HIGH_SURROGATE + (delta >> 10));
+			outStr.push_back(MIN_LOW_SURROGATE + (delta & 0x3FF));
 		}
 	}
 
