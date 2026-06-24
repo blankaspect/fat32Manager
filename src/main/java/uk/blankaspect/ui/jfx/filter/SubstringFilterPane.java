@@ -111,19 +111,19 @@ public class SubstringFilterPane
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.CLEAR_FIELD_BUTTON_DISC,
+			ColourKey.CLEAR_FIELD_BUTTON_BACKGROUND,
 			CssSelector.builder()
 					.cls(StyleClass.SUBSTRING_FILTER_PANE)
-					.desc(Icons.StyleClass.CLEAR01_DISC)
+					.desc(Icons.StyleClass.CLEAR02_BACKGROUND)
 					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
-			ColourKey.CLEAR_FIELD_BUTTON_CROSS,
+			ColourKey.CLEAR_FIELD_BUTTON_FOREGROUND,
 			CssSelector.builder()
 					.cls(StyleClass.SUBSTRING_FILTER_PANE)
-					.desc(Icons.StyleClass.CLEAR01_CROSS)
+					.desc(Icons.StyleClass.CLEAR02_FOREGROUND)
 					.build()
 		),
 		ColourProperty.of
@@ -170,8 +170,8 @@ public class SubstringFilterPane
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	CLEAR_FIELD_BUTTON_CROSS		= PREFIX + "clearFieldButton.cross";
-		String	CLEAR_FIELD_BUTTON_DISC			= PREFIX + "clearFieldButton.disc";
+		String	CLEAR_FIELD_BUTTON_BACKGROUND	= PREFIX + "clearFieldButton.background";
+		String	CLEAR_FIELD_BUTTON_FOREGROUND	= PREFIX + "clearFieldButton.foreground";
 		String	FILTER_MODE_BUTTON_BACKGROUND	= PREFIX + "filterModeButton.background";
 		String	FILTER_MODE_BUTTON_BORDER		= PREFIX + "filterModeButton.border";
 		String	FILTER_MODE_BUTTON_TEXT			= PREFIX + "filterModeButton.text";
@@ -292,8 +292,8 @@ public class SubstringFilterPane
 		{
 			// Create button
 			GraphicButton clearFieldButton =
-					new GraphicButton(Icons.clear01(getColour(ColourKey.CLEAR_FIELD_BUTTON_DISC),
-													getColour(ColourKey.CLEAR_FIELD_BUTTON_CROSS)),
+					new GraphicButton(Icons.clear02(getColour(ColourKey.CLEAR_FIELD_BUTTON_BACKGROUND),
+													getColour(ColourKey.CLEAR_FIELD_BUTTON_FOREGROUND)),
 									  CLEAR_FIELD_STR);
 			clearFieldButton.setOnAction(event ->
 			{

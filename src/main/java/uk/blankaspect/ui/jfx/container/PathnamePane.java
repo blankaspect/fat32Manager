@@ -73,8 +73,8 @@ public class PathnamePane
 //  Constants
 ////////////////////////////////////////////////////////////////////////
 
-	/** The gap between the text field and the button. */
-	private static final	double	GAP	= 8.0;
+	/** The gap between adjacent children of the pane. */
+	private static final	double	GAP	= 6.0;
 
 	/** The padding around the ellipsis button. */
 	private static final	Insets	ELLIPSIS_BUTTON_PADDING	= new Insets(2.0, 8.0, 2.0, 8.0);
@@ -89,21 +89,21 @@ public class PathnamePane
 		ColourProperty.of
 		(
 			FxProperty.FILL,
-			ColourKey.CLEAR_BUTTON_DISC,
+			ColourKey.CLEAR_BUTTON_BACKGROUND,
 			CssSelector.builder()
 					.cls(StyleClass.PATHNAME_PANE)
 					.desc(StyleClass.CLEAR_BUTTON)
-					.desc(Icons.StyleClass.CLEAR01_DISC)
+					.desc(Icons.StyleClass.CLEAR02_BACKGROUND)
 					.build()
 		),
 		ColourProperty.of
 		(
 			FxProperty.STROKE,
-			ColourKey.CLEAR_BUTTON_CROSS,
+			ColourKey.CLEAR_BUTTON_FOREGROUND,
 			CssSelector.builder()
 					.cls(StyleClass.PATHNAME_PANE)
 					.desc(StyleClass.CLEAR_BUTTON)
-					.desc(Icons.StyleClass.CLEAR01_CROSS)
+					.desc(Icons.StyleClass.CLEAR02_FOREGROUND)
 					.build()
 		)
 	);
@@ -120,8 +120,8 @@ public class PathnamePane
 	{
 		String	PREFIX	= StyleManager.colourKeyPrefix(MethodHandles.lookup().lookupClass().getEnclosingClass());
 
-		String	CLEAR_BUTTON_CROSS	= PREFIX + "clearButton.cross";
-		String	CLEAR_BUTTON_DISC	= PREFIX + "clearButton.disc";
+		String	CLEAR_BUTTON_BACKGROUND	= PREFIX + "clearButton.background";
+		String	CLEAR_BUTTON_FOREGROUND	= PREFIX + "clearButton.foreground";
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -186,20 +186,15 @@ public class PathnamePane
 		// Set properties of pathname field
 		HBox.setHgrow(pathnameField, Priority.ALWAYS);
 
-		// Create button: ellipsis
-		ellipsisButton = Buttons.hNoShrink(ELLIPSIS_STR);
-		ellipsisButton.setPadding(ELLIPSIS_BUTTON_PADDING);
-		ellipsisButton.prefHeightProperty().bind(pathnameField.heightProperty());
-
-		// Add children to this pane
-		getChildren().addAll(pathnameField, ellipsisButton);
+		// Add pathname field to this pane
+		getChildren().add(pathnameField);
 
 		// Create button: clear
 		if (hasClearButton)
 		{
 			// Create button
-			Group clearIcon = Icons.clear01(getColour(ColourKey.CLEAR_BUTTON_DISC),
-											getColour(ColourKey.CLEAR_BUTTON_CROSS));
+			Group clearIcon = Icons.clear02(getColour(ColourKey.CLEAR_BUTTON_BACKGROUND),
+											getColour(ColourKey.CLEAR_BUTTON_FOREGROUND));
 			GraphicButton clearButton = new GraphicButton(clearIcon, CLEAR_FIELD_STR);
 			clearButton.setOnAction(event ->
 			{
@@ -207,11 +202,19 @@ public class PathnamePane
 				pathnameField.clear();
 			});
 			clearButton.getStyleClass().add(StyleClass.CLEAR_BUTTON);
-			setMargin(clearButton, new Insets(0.0, 0.0, 0.0, -4.0));
+			setMargin(clearButton, new Insets(0.0, -3.0, 0.0, -4.0));
 
 			// Add button to this pane
 			getChildren().add(clearButton);
 		}
+
+		// Create button: ellipsis
+		ellipsisButton = Buttons.hNoShrink(ELLIPSIS_STR);
+		ellipsisButton.setPadding(ELLIPSIS_BUTTON_PADDING);
+		ellipsisButton.prefHeightProperty().bind(pathnameField.heightProperty());
+
+		// Add ellipsis button to this pane
+		getChildren().add(ellipsisButton);
 	}
 
 	//------------------------------------------------------------------
